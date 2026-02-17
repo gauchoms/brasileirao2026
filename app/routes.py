@@ -130,6 +130,7 @@ def atualizar_resultados():
 def dashboard():
     times = Time.query.order_by(Time.nome).all()
     time_id = request.args.get('time_id', type=int)
+    ordenar_por = request.args.get('ordenar', 'pontos_reais')
     time_selecionado = None
     detalhe = None
 
@@ -197,7 +198,15 @@ def dashboard():
             'cenarios': cenarios
         })
 
-    tabela.sort(key=lambda x: x['pontos_reais'], reverse=True)
+    # Ordenação
+    if ordenar_por == 'pontos_reais':
+        tabela.sort(key=lambda x: x['pontos_reais'], reverse=True)
+    elif ordenar_por == 'titulo':
+        tabela.sort(key=lambda x: x['cenarios']['titulo']['pct'], reverse=True)
+    elif ordenar_por == 'libertadores':
+        tabela.sort(key=lambda x: x['cenarios']['libertadores']['pct'], reverse=True)
+    elif ordenar_por == 'rebaixamento':
+        tabela.sort(key=lambda x: x['cenarios']['rebaixamento']['pct'], reverse=True)
 
     # Detalhe por time
     if time_id:
@@ -258,5 +267,6 @@ def dashboard():
         times=times,
         tabela=tabela,
         time_selecionado=time_selecionado,
-        detalhe=detalhe
+        detalhe=detalhe,
+        ordenar_por=ordenar_por
     )
