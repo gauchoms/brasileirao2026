@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Brasileirão 2026{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<!-- Tabela geral -->
+<h2>Visão Geral</h2>
+<div style="overflow-x: auto;">
+<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+    <thead>
+        <tr style="border-bottom: 2px solid var(--verde);">
+            <th style="text-align: left; padding: 0.7rem 1rem; color: var(--texto-fraco);">TIME</th>
+            <th style="text-align: center; padding: 0.7rem 1rem; color: var(--texto-fraco);">PTS REAIS</th>
+            <th style="text-align: center; padding: 0.7rem 1rem; color: var(--amarelo);">🏆 TÍTULO</th>
+            <th style="text-align: center; padding: 0.7rem 1rem; color: var(--verde);">🌎 LIBERTADORES</th>
+            <th style="text-align: center; padding: 0.7rem 1rem; color: #e74c3c;">⬇️ REBAIXAMENTO</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in tabela %}
+        <tr style="border-bottom: 1px solid var(--cinza-medio); transition: background 0.15s;"
+            onmouseover="this.style.background='var(--cinza)'"
+            onmouseout="this.style.background='transparent'">
+            <td style="padding: 0.7rem 1rem;">
+                <a href="/dashboard?time_id={{ row.time.id }}" style="color: var(--texto); text-decoration: none; font-weight: 500;">
+                    {{ row.time.nome }}
+                </a>
+            </td>
+            <td style="text-align: center; padding: 0.7rem 1rem; font-weight: 600; color: var(--amarelo);">
+                {{ row.pontos_reais }}
+            </td>
+            {% for tipo in ['titulo', 'libertadores', 'rebaixamento'] %}
+            {% set c = row.cenarios[tipo] %}
+            {% set cor = '#ffd700' if tipo == 'titulo' else ('#00a651' if tipo == 'libertadores' else '#e74c3c') %}
+            <td style="text-align: center; padding: 0.7rem 1rem;">
+                {% if c.projetado_ate_agora > 0 %}
+                    <span style="
+                        font-weight: 600;
+                        color: {% if c.pct >= 100 %}#00a651{% elif c.pct >= 80 %}#ffd700{% else %}#e74c3c{% endif %};">
+                        {{ c.pct }}%
+                    </span>
+                    <span style="color: var(--texto-fraco); font-size: 0.78rem; margin-left: 0.3rem;">
+                        ({{ '+' if c.diff > 0 else '' }}{{ c.diff }})
+                    </span>
+                {% else %}
+                    <span style="color: var(--texto-fraco);">—</span>
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<!-- Detalhe por time -->
+{% if time_selecionado and detalhe %}
+<div style="margin-top: 3rem;">
+    <h2>{{ time_selecionado.nome }} — Detalhe</h2>
+
+    <!-- Cards dos cenários -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        {% for tipo, label, cor in [('titulo', '🏆 Título', '#ffd700'), ('libertadores', '🌎 Libertadores', '#00a651'), ('rebaixamento', '⬇️ Rebaixamento', '#e74c3c')] %}
+        {% set c = detalhe.cenarios[tipo] %}
+        <div style="background: var(--cinza); border-radius: 8px; padding: 1.5rem; border-top: 3px solid {{ cor }};">
+            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: {{ cor }}; margin-bottom: 1rem;">{{ label }}</div>
+            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; color: {% if c.pct >= 100 %}#00a651{% elif c.pct >= 80 %}#ffd700{% else %}#e74c3c{% endif %};">
+                {{ c.pct }}%
+            </div>
+            <div style="color: var(--texto-fraco); font-size: 0.8rem; margin-top: 0.5rem;">
+                Real: <strong style="color: var(--texto);">{{ c.real }} pts</strong> |
+                Proj: <strong style="color: var(--texto);">{{ c.projetado_ate_agora }} pts</strong>
+            </div>
+            <div style="color: var(--texto-fraco); font-size: 0.8rem; margin-top: 0.3rem;">
+                Meta: <strong style="color: {{ cor }};">{{ c.meta }} pts</strong> |
+                Proj total: <strong style="color: var(--texto);">{{ c.projetado_total }} pts</strong>
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 0.85rem; font-weight: 600;
+                color: {% if c.diff > 0 %}#00a651{% elif c.diff < 0 %}#e74c3c{% else %}var(--texto-fraco){% endif %};">
+                {{ '+' if c.diff > 0 else '' }}{{ c.diff }} pts vs projetado
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Gráfico de evolução -->
+    {% if detalhe.evolucao %}
+    <div style="background: var(--cinza); border-radius: 8px; padding: 1.5rem;">
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: var(--texto-fraco); margin-bottom: 1rem;">EVOLUÇÃO POR RODADA</div>
+        <canvas id="graficoEvolucao" style="max-height: 300px;"></canvas>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if detalhe and detalhe.evolucao %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const evolucao = {{ detalhe.evolucao | tojson }};
+const labels = evolucao.map(e => 'RD ' + e.rodada);
+const ctx = document.getElementById('graficoEvolucao').getContext('2d');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Real',
+                data: evolucao.map(e => e.real),
+                borderColor: '#ffffff',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 2,
+                pointRadius: 4,
+                tension: 0.3
+            },
+            {
+                label: 'Proj. Título',
+                data: evolucao.map(e => e.titulo),
+                borderColor: '#ffd700',
+                backgroundColor: 'rgba(255,215,0,0.05)',
+                borderWidth: 1.5,
+                borderDash: [5,5],
+                pointRadius: 2,
+                tension: 0.3
+            },
+            {
+                label: 'Proj. Libertadores',
+                data: evolucao.map(e => e.libertadores),
+                borderColor: '#00a651',
+                backgroundColor: 'rgba(0,166,81,0.05)',
+                borderWidth: 1.5,
+                borderDash: [5,5],
+                pointRadius: 2,
+                tension: 0.3
+            },
+            {
+                label: 'Proj. Rebaixamento',
+                data: evolucao.map(e => e.rebaixamento),
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231,76,60,0.05)',
+                borderWidth: 1.5,
+                borderDash: [5,5],
+                pointRadius: 2,
+                tension: 0.3
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                labels: { color: '#888', font: { size: 11 } }
+            }
+        },
+        scales: {
+            x: { ticks: { color: '#888' }, grid: { color: '#2a2a2a' } },
+            y: { ticks: { color: '#888' }, grid: { color: '#2a2a2a' } }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
