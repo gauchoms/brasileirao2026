@@ -354,3 +354,24 @@ def importar_jogos():
     db.session.commit()
     return jsonify({'sucesso': True, 'jogos_importados': len(jogos_data)})
 
+@bp.route('/testar_api')
+def testar_api():
+    from app.api import get_jogos_brasileirao
+    from config import Config
+    
+    try:
+        api_key_presente = bool(Config.API_FOOTBALL_KEY)
+        api_key_primeiros = Config.API_FOOTBALL_KEY[:10] if Config.API_FOOTBALL_KEY else 'NENHUMA'
+        
+        data = get_jogos_brasileirao()
+        
+        return jsonify({
+            'api_key_configurada': api_key_presente,
+            'api_key_inicio': api_key_primeiros,
+            'api_results': data.get('results', 0),
+            'api_response_count': len(data.get('response', [])),
+            'api_errors': data.get('errors', {}),
+            'api_message': data.get('message', 'ok')
+        })
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
