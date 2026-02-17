@@ -40,4 +40,43 @@
         </div>
     </div>
 </div>
+
+<!-- Botão atualizar resultados -->
+<div style="margin-top: 2rem;">
+    <button onclick="atualizarResultados()" style="
+        background: var(--verde); color: #000; border: none;
+        padding: 0.8rem 2rem; border-radius: 6px; font-size: 0.95rem;
+        font-weight: 600; cursor: pointer; transition: opacity 0.2s;"
+        onmouseover="this.style.opacity='0.85'"
+        onmouseout="this.style.opacity='1'"
+        id="btn-atualizar">
+        🔄 Atualizar Resultados
+    </button>
+    <span id="msg-atualizar" style="margin-left: 1rem; color: var(--texto-fraco); font-size: 0.9rem;"></span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function atualizarResultados() {
+    const btn = document.getElementById('btn-atualizar');
+    const msg = document.getElementById('msg-atualizar');
+    btn.disabled = true;
+    btn.textContent = '⏳ Atualizando...';
+    msg.textContent = '';
+
+    fetch('/atualizar_resultados', { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.textContent = '🔄 Atualizar Resultados';
+        msg.textContent = `✅ ${data.atualizados} jogos atualizados!`;
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.textContent = '🔄 Atualizar Resultados';
+        msg.textContent = '❌ Erro ao atualizar.';
+    });
+}
+</script>
 {% endblock %}

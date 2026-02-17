@@ -104,6 +104,27 @@ def salvar_projecao():
 
     return jsonify({'sucesso': True, 'total_pontos': total})
 
+@bp.route('/atualizar_resultados', methods=['POST'])
+def atualizar_resultados():
+    from app.api import get_resultados_brasileirao
+
+    data = get_resultados_brasileirao()
+    jogos = data.get('response', [])
+    atualizados = 0
+
+    for fixture in jogos:
+        api_id = fixture['fixture']['id']
+        gols_casa = fixture['goals']['home']
+        gols_fora = fixture['goals']['away']
+
+        jogo = Jogo.query.filter_by(api_id=api_id).first()
+        if jogo and gols_casa is not None and gols_fora is not None:
+            jogo.gols_casa = gols_casa
+            jogo.gols_fora = gols_fora
+            atualizados += 1
+
+    db.session.commit()
+    return jsonify({'sucesso': True, 'atualizados': atualizados})
 @bp.route('/dashboard')
 def dashboard():
     return render_template('index.html')

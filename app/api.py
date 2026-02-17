@@ -12,7 +12,7 @@ def get_jogos_brasileirao():
     url = f"{BASE_URL}/fixtures"
     params = {
         "league": 71,
-        "season": 2025
+        "season": 2026
     }
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
@@ -34,3 +34,13 @@ def processar_jogos(data):
         }
         jogos.append(jogo)
     return jogos
+def get_resultados_brasileirao():
+    url = f"{BASE_URL}/fixtures"
+    params = {
+        "league": 71,
+        "season": 2026,
+        "status": "FT"  # FT = Full Time, jogos já encerrados
+    }
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+    return data
