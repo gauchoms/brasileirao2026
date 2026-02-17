@@ -298,23 +298,34 @@ def setup_inicial_render():
 def importar_times():
     from app.api import get_jogos_brasileirao, processar_jogos
     
-    if Time.query.count() > 0:
-        return jsonify({'mensagem': 'Times já importados', 'total': Time.query.count()})
-    
-    data = get_jogos_brasileirao()
-    jogos = processar_jogos(data)
-    
-    times_unicos = {}
-    for jogo in jogos:
-        times_unicos[jogo['time_casa_id']] = jogo['time_casa']
-        times_unicos[jogo['time_fora_id']] = jogo['time_fora']
-    
-    for api_id, nome in times_unicos.items():
-        time = Time(api_id=api_id, nome=nome)
-        db.session.add(time)
-    
-    db.session.commit()
-    return jsonify({'sucesso': True, 'times_importados': len(times_unicos)})
+    try:
+        if Time.query.count() > 0:
+            return jsonify({'mensagem': 'Times já importados', 'total': Time.query.count()})
+        
+        data = get_jogos_brasileirao()
+        
+        if not data or 'response' not in data:
+            return jsonify({'erro': 'API não retornou dados', 'data': str(data)[:200]})
+        
+        jogos = processar_jogos(data)
+        
+        if not jogos:
+            return jsonify({'erro': 'Nenhum jogo processado', 'response_count': len(data.get('response', []))})
+        
+        times_unicos = {}
+        for jogo in jogos:
+            times_unicos[jogo['time_casa_id']] = jogo['time_casa']
+            times_unicos[jogo['time_fora_id']] = jogo['time_fora']
+        
+        for api_id, nome in times_unicos.items():
+            time = Time(api_id=api_id, nome=nome)
+            db.session.add(time)
+        
+        db.session.commit()
+        return jsonify({'sucesso': True, 'times_importados': len(times_unicos)})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+
 
 @bp.route('/importar_jogos')
 def importar_jogos():
