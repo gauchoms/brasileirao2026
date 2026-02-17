@@ -1,4 +1,7 @@
 from app import db
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
+
 
 class Time(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -30,3 +33,15 @@ class Meta(db.Model):
     descricao = db.Column(db.String(50), nullable=False)  # 'titulo', 'libertadores', 'rebaixamento'
     pontos_alvo = db.Column(db.Integer, nullable=False)   # 68, 70 ou 45
 
+
+class Usuario(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)

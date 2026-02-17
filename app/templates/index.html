@@ -41,7 +41,7 @@
     </div>
 </div>
 
-<!-- Botão atualizar resultados -->
+{% if current_user.is_authenticated and current_user.is_admin %}
 <div style="margin-top: 2rem;">
     <button onclick="atualizarResultados()" style="
         background: var(--verde); color: #000; border: none;
@@ -54,9 +54,11 @@
     </button>
     <span id="msg-atualizar" style="margin-left: 1rem; color: var(--texto-fraco); font-size: 0.9rem;"></span>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
+{% if current_user.is_authenticated and current_user.is_admin %}
 <script>
 function atualizarResultados() {
     const btn = document.getElementById('btn-atualizar');
@@ -79,4 +81,5 @@ function atualizarResultados() {
     });
 }
 </script>
+{% endif %}
 {% endblock %}

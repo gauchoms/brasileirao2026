@@ -82,6 +82,19 @@
         <a href="/" class="logo">Brasileirão 2026</a>
         <a href="/projecoes">Projeções</a>
         <a href="/dashboard">Dashboard</a>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
+            {% if current_user.is_authenticated %}
+                <span style="color: var(--texto-fraco); font-size: 0.85rem;">
+                    👤 {{ current_user.username }}
+                    {% if current_user.is_admin %}
+                        <span style="color: var(--amarelo);">(Admin)</span>
+                    {% endif %}
+                </span>
+                <a href="/logout" style="color: #e74c3c;">Sair</a>
+            {% else %}
+                <a href="/login">Login</a>
+            {% endif %}
+        </div>
     </nav>
     <div class="container">
         {% block content %}{% endblock %}

@@ -93,24 +93,36 @@
                 vs {{ item.adversario }}
             </span>
         </div>
-
         <!-- Botões -->
         <div style="display: flex; gap: 0.5rem;">
-            {% for opcao, valor, cor in [('Vence', 3, '#00a651'), ('Empata', 1, '#ffd700'), ('Perde', 0, '#e74c3c')] %}
-            <button
-                onclick="salvarProjecao({{ item.jogo_id }}, {{ time_selecionado.id }}, '{{ projecao_selecionada }}', {{ valor }}, this)"
-                data-jogo="{{ item.jogo_id }}"
-                data-valor="{{ valor }}"
-                style="
+            {% if current_user.is_authenticated and current_user.is_admin %}
+                {% for opcao, valor, cor in [('Vence', 3, '#00a651'), ('Empata', 1, '#ffd700'), ('Perde', 0, '#e74c3c')] %}
+                <button
+                    onclick="salvarProjecao({{ item.jogo_id }}, {{ time_selecionado.id }}, '{{ projecao_selecionada }}', {{ valor }}, this)"
+                    data-jogo="{{ item.jogo_id }}"
+                    data-valor="{{ valor }}"
+                    style="
+                        padding: 0.4rem 1rem; border-radius: 6px; border: 1px solid {{ cor }};
+                        background: {% if item.projecao_atual == valor %}{{ cor }}{% else %}transparent{% endif %};
+                        color: {% if item.projecao_atual == valor %}#000{% else %}{{ cor }}{% endif %};
+                        font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+                        min-width: 70px;">
+                    {{ opcao }}
+                </button>
+                {% endfor %}
+            {% else %}
+                {% for opcao, valor, cor in [('Vence', 3, '#00a651'), ('Empata', 1, '#ffd700'), ('Perde', 0, '#e74c3c')] %}
+                <div style="
                     padding: 0.4rem 1rem; border-radius: 6px; border: 1px solid {{ cor }};
                     background: {% if item.projecao_atual == valor %}{{ cor }}{% else %}transparent{% endif %};
                     color: {% if item.projecao_atual == valor %}#000{% else %}{{ cor }}{% endif %};
-                    font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
-                    min-width: 70px;">
-                {{ opcao }}
-            </button>
-            {% endfor %}
+                    font-size: 0.85rem; font-weight: 600; min-width: 70px; text-align: center;">
+                    {{ opcao }}
+                </div>
+                {% endfor %}
+            {% endif %}
         </div>
+        
 
     </div>
     {% endfor %}

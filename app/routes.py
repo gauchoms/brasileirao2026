@@ -1,6 +1,20 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, redirect
 from app import db
 from app.models import Time, Jogo, Projecao, Meta
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash
+from functools import wraps
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect('/login?next=' + request.path)
+        if not current_user.is_admin:
+            return jsonify({'erro': 'Acesso negado. Apenas administradores.'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 bp = Blueprint('main', __name__)
 
@@ -70,6 +84,7 @@ def projecoes():
     )
 
 @bp.route('/salvar_projecao', methods=['POST'])
+@admin_required
 def salvar_projecao():
     data = request.get_json()
     jogo_id = data.get('jogo_id')
@@ -105,6 +120,7 @@ def salvar_projecao():
     return jsonify({'sucesso': True, 'total_pontos': total})
 
 @bp.route('/atualizar_resultados', methods=['POST'])
+@admin_required
 def atualizar_resultados():
     from app.api import get_resultados_brasileirao
 
@@ -273,6 +289,7 @@ def dashboard():
 
 
 @bp.route('/setup_inicial_render')
+@admin_required
 def setup_inicial_render():
     try:
         # Força criação das tabelas
@@ -295,6 +312,7 @@ def setup_inicial_render():
 
 
 @bp.route('/importar_times')
+@admin_required
 def importar_times():
     from app.api import get_jogos_brasileirao, processar_jogos
     
@@ -328,6 +346,7 @@ def importar_times():
 
 
 @bp.route('/importar_jogos')
+@admin_required
 def importar_jogos():
     from app.api import get_jogos_brasileirao, processar_jogos
     
@@ -353,7 +372,43 @@ def importar_jogos():
     
     db.session.commit()
     return jsonify({'sucesso': True, 'jogos_importados': len(jogos_data)})
+@bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        from app.models import Usuario
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        user = Usuario.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(request.args.get('next') or '/')
+        
+        return render_template('login.html', erro='Usuário ou senha incorretos')
+    
+    return render_template('login.html')
 
+@bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect('/')
+
+@bp.route('/criar_admin')
+def criar_admin():
+    from app.models import Usuario
+    
+    # Verifica se já existe admin
+    if Usuario.query.filter_by(is_admin=True).first():
+        return jsonify({'mensagem': 'Já existe um administrador cadastrado'})
+    
+    admin = Usuario(username='admin', is_admin=True)
+    admin.set_password('admin123')  # TROQUE ESSA SENHA DEPOIS!
+    db.session.add(admin)
+    db.session.commit()
+    
+    return jsonify({'sucesso': True, 'mensagem': 'Admin criado! Username: admin, Senha: admin123'})
 @bp.route('/testar_api')
 def testar_api():
     from app.api import get_jogos_brasileirao
