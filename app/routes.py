@@ -274,18 +274,25 @@ def dashboard():
 
 @bp.route('/setup_inicial_render')
 def setup_inicial_render():
-    # Cria as tabelas se não existirem
-    db.create_all()
-    
-    # Verifica se já tem times
-    count_times = Time.query.count()
-    count_jogos = Jogo.query.count()
-    
-    return jsonify({
-        'times_cadastrados': count_times,
-        'jogos_cadastrados': count_jogos,
-        'mensagem': 'Use /importar_times e /importar_jogos separadamente'
-    })
+    try:
+        # Força criação das tabelas
+        from app import db
+        from app.models import Time, Jogo, Projecao, Meta
+        db.create_all()
+        
+        # Verifica se já tem times
+        count_times = Time.query.count()
+        count_jogos = Jogo.query.count()
+        
+        return jsonify({
+            'status': 'ok',
+            'times_cadastrados': count_times,
+            'jogos_cadastrados': count_jogos,
+            'mensagem': 'Tabelas criadas. Use /importar_times e /importar_jogos'
+        })
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+
 
 @bp.route('/importar_times')
 def importar_times():
@@ -335,3 +342,4 @@ def importar_jogos():
     
     db.session.commit()
     return jsonify({'sucesso': True, 'jogos_importados': len(jogos_data)})
+
