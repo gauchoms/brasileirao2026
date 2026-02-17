@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Projeções - {{ time_selecionado.nome if time_selecionado else 'Selecione um time' }}{% endblock %}
+
+{% block content %}
+
+<!-- Contador fixo no canto -->
+{% if time_selecionado and projecao_selecionada %}
+<div id="contador" style="
+    position: fixed; top: 80px; right: 2rem; z-index: 100;
+    background: var(--cinza); border-radius: 12px; padding: 1.2rem 1.5rem;
+    border: 2px solid var(--cinza-medio); min-width: 180px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+    <div style="font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--texto-fraco); margin-bottom: 0.5rem;">
+        {{ projecao_selecionada|upper }}
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 0.3rem;">
+        <span id="pontos-atual" style="font-family: 'Bebas Neue', sans-serif; font-size: 2.8rem; color: var(--verde);">{{ pontos_projetados }}</span>
+        <span style="color: var(--texto-fraco); font-size: 1rem;">/ {{ meta }} pts</span>
+    </div>
+    <div id="barra-container" style="margin-top: 0.7rem; background: var(--cinza-medio); border-radius: 4px; height: 6px; overflow: hidden;">
+        <div id="barra-progresso" style="
+            height: 100%; border-radius: 4px; transition: width 0.3s, background 0.3s;
+            width: {{ [[(pontos_projetados / meta * 100), 0]|max, 100]|min }}%;
+            background: {% if pontos_projetados >= meta %}#00a651{% elif pontos_projetados >= meta * 0.7 %}#ffd700{% else %}#e74c3c{% endif %};">
+        </div>
+    </div>
+    <div id="status-meta" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--texto-fraco);">
+        {% if pontos_projetados >= meta %}
+            ✅ Meta atingida
+        {% else %}
+            Faltam {{ meta - pontos_projetados }} pontos
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<h1>Projeções</h1>
+
+<!-- Seleção de time e projeção -->
+<form method="GET" action="/projecoes" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+    <div>
+        <label style="display: block; font-size: 0.8rem; color: var(--texto-fraco); margin-bottom: 0.4rem; letter-spacing: 1px;">TIME</label>
+        <select name="time_id" onchange="this.form.submit()" style="
+            background: var(--cinza); color: var(--texto); border: 1px solid var(--cinza-medio);
+            padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.95rem; cursor: pointer; min-width: 200px;">
+            <option value="">Selecione um time...</option>
+            {% for time in times %}
+            <option value="{{ time.id }}" {% if time_selecionado and time.id == time_selecionado.id %}selected{% endif %}>
+                {{ time.nome }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% if time_selecionado %}
+    <div>
+        <label style="display: block; font-size: 0.8rem; color: var(--texto-fraco); margin-bottom: 0.4rem; letter-spacing: 1px;">PROJEÇÃO</label>
+        <select name="projecao" onchange="this.form.submit()" style="
+            background: var(--cinza); color: var(--texto); border: 1px solid var(--cinza-medio);
+            padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.95rem; cursor: pointer; min-width: 200px;">
+            <option value="titulo" {% if projecao_selecionada == 'titulo' %}selected{% endif %}>🏆 Título (80 pts)</option>
+            <option value="libertadores" {% if projecao_selecionada == 'libertadores' %}selected{% endif %}>🌎 Libertadores (70 pts)</option>
+            <option value="rebaixamento" {% if projecao_selecionada == 'rebaixamento' %}selected{% endif %}>⬇️ Rebaixamento (45 pts)</option>
+        </select>
+    </div>
+    {% endif %}
+</form>
+
+<!-- Lista de jogos -->
+{% if time_selecionado and projecao_selecionada %}
+<h2>{{ time_selecionado.nome }} — {{ projecao_selecionada|capitalize }}</h2>
+
+<div style="display: flex; flex-direction: column; gap: 0.6rem;">
+    {% for item in jogos %}
+    <div style="
+        background: var(--cinza); border-radius: 8px; padding: 1rem 1.5rem;
+        display: flex; align-items: center; justify-content: space-between;
+        border: 1px solid var(--cinza-medio); flex-wrap: wrap; gap: 0.8rem;">
+
+        <!-- Rodada e adversário -->
+        <div style="display: flex; align-items: center; gap: 1rem; min-width: 280px;">
+            <span style="
+                background: var(--cinza-medio); border-radius: 4px;
+                padding: 0.2rem 0.6rem; font-size: 0.75rem;
+                color: var(--texto-fraco); font-weight: 600; white-space: nowrap;">
+                RD {{ item.rodada_num }}
+            </span>
+            <span style="font-size: 0.85rem; color: var(--texto-fraco);">
+                {{ 'Casa' if item.casa else 'Fora' }}
+            </span>
+            <span style="font-weight: 500;">
+                vs {{ item.adversario }}
+            </span>
+        </div>
+
+        <!-- Botões -->
+        <div style="display: flex; gap: 0.5rem;">
+            {% for opcao, valor, cor in [('Vence', 3, '#00a651'), ('Empata', 1, '#ffd700'), ('Perde', 0, '#e74c3c')] %}
+            <button
+                onclick="salvarProjecao({{ item.jogo_id }}, {{ time_selecionado.id }}, '{{ projecao_selecionada }}', {{ valor }}, this)"
+                data-jogo="{{ item.jogo_id }}"
+                data-valor="{{ valor }}"
+                style="
+                    padding: 0.4rem 1rem; border-radius: 6px; border: 1px solid {{ cor }};
+                    background: {% if item.projecao_atual == valor %}{{ cor }}{% else %}transparent{% endif %};
+                    color: {% if item.projecao_atual == valor %}#000{% else %}{{ cor }}{% endif %};
+                    font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+                    min-width: 70px;">
+                {{ opcao }}
+            </button>
+            {% endfor %}
+        </div>
+
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const meta = {{ meta if meta else 0 }};
+let pontosAtuais = {{ pontos_projetados if pontos_projetados else 0 }};
+
+function salvarProjecao(jogoId, timeId, projecao, valor, btnClicado) {
+    fetch('/salvar_projecao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            jogo_id: jogoId,
+            time_id: timeId,
+            projecao: projecao,
+            pontos: valor
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.sucesso) {
+            // Atualiza visual dos botões
+            const cores = { 3: '#00a651', 1: '#ffd700', 0: '#e74c3c' };
+            const botoes = document.querySelectorAll(`[data-jogo="${jogoId}"]`);
+            botoes.forEach(btn => {
+                const v = parseInt(btn.dataset.valor);
+                const cor = cores[v];
+                btn.style.background = 'transparent';
+                btn.style.color = cor;
+            });
+            const corSelecionada = cores[valor];
+            btnClicado.style.background = corSelecionada;
+            btnClicado.style.color = '#000';
+
+            // Atualiza contador
+            pontosAtuais = data.total_pontos;
+            document.getElementById('pontos-atual').textContent = pontosAtuais;
+
+            const pct = Math.min(Math.max(pontosAtuais / meta * 100, 0), 100);
+            const barra = document.getElementById('barra-progresso');
+            barra.style.width = pct + '%';
+            barra.style.background = pontosAtuais >= meta ? '#00a651' : pontosAtuais >= meta * 0.7 ? '#ffd700' : '#e74c3c';
+
+            const status = document.getElementById('status-meta');
+            status.textContent = pontosAtuais >= meta ? '✅ Meta atingida' : `Faltam ${meta - pontosAtuais} pontos`;
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Brasileirão 2026 - Home{% endblock %}
+
+{% block content %}
+<h1>Brasileirão 2026</h1>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+
+    <a href="/projecoes" style="text-decoration: none;">
+        <div style="background: var(--cinza); border: 1px solid var(--cinza-medio); border-radius: 8px; padding: 2rem; transition: border-color 0.2s; cursor: pointer;" onmouseover="this.style.borderColor='var(--verde)'" onmouseout="this.style.borderColor='var(--cinza-medio)'">
+            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--verde); letter-spacing: 2px; margin-bottom: 0.5rem;">⚽ Projeções</div>
+            <div style="color: var(--texto-fraco); font-size: 0.9rem;">Defina os resultados projetados para cada time em cada rodada</div>
+        </div>
+    </a>
+
+    <a href="/dashboard" style="text-decoration: none;">
+        <div style="background: var(--cinza); border: 1px solid var(--cinza-medio); border-radius: 8px; padding: 2rem; transition: border-color 0.2s; cursor: pointer;" onmouseover="this.style.borderColor='var(--amarelo)'" onmouseout="this.style.borderColor='var(--cinza-medio)'">
+            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--amarelo); letter-spacing: 2px; margin-bottom: 0.5rem;">📊 Dashboard</div>
+            <div style="color: var(--texto-fraco); font-size: 0.9rem;">Acompanhe como cada time está em relação às projeções</div>
+        </div>
+    </a>
+
+</div>
+
+<div style="margin-top: 3rem; background: var(--cinza); border-radius: 8px; padding: 1.5rem; border-left: 3px solid var(--verde);">
+    <div style="font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 1px; color: var(--texto-fraco); margin-bottom: 1rem;">METAS DO CAMPEONATO</div>
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div>
+            <span style="color: var(--amarelo); font-weight: 600;">🏆 Título</span>
+            <span style="color: var(--texto-fraco); margin-left: 0.5rem;">80 pontos</span>
+        </div>
+        <div>
+            <span style="color: var(--verde); font-weight: 600;">🌎 Libertadores</span>
+            <span style="color: var(--texto-fraco); margin-left: 0.5rem;">70 pontos</span>
+        </div>
+        <div>
+            <span style="color: #e74c3c; font-weight: 600;">⬇️ Rebaixamento</span>
+            <span style="color: var(--texto-fraco); margin-left: 0.5rem;">45 pontos</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
