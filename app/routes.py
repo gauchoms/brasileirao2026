@@ -287,25 +287,25 @@ def dashboard():
         ordenar_por=ordenar_por
     )
 
-
 @bp.route('/setup_inicial_render')
-@admin_required
 def setup_inicial_render():
     try:
         # Força criação das tabelas
         from app import db
-        from app.models import Time, Jogo, Projecao, Meta
+        from app.models import Time, Jogo, Projecao, Meta, Usuario
         db.create_all()
         
         # Verifica se já tem times
         count_times = Time.query.count()
         count_jogos = Jogo.query.count()
+        count_usuarios = Usuario.query.count()
         
         return jsonify({
             'status': 'ok',
             'times_cadastrados': count_times,
             'jogos_cadastrados': count_jogos,
-            'mensagem': 'Tabelas criadas. Use /importar_times e /importar_jogos'
+            'usuarios_cadastrados': count_usuarios,
+            'mensagem': 'Tabelas criadas. Use /criar_admin, /importar_times e /importar_jogos'
         })
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
@@ -372,6 +372,7 @@ def importar_jogos():
     
     db.session.commit()
     return jsonify({'sucesso': True, 'jogos_importados': len(jogos_data)})
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
