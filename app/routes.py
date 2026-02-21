@@ -594,7 +594,39 @@ def perfil():
     return render_template('perfil.html', times=times)
 
 
+@bp.route('/migrar_banco_render')
+def migrar_banco_render():
+    try:
+        from sqlalchemy import text
+        
+        # Adiciona colunas novas na tabela usuario
+        comandos = [
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS nome_completo VARCHAR(200)",
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS email VARCHAR(120)",
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS avatar_tipo VARCHAR(20) DEFAULT 'sugerido'",
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS avatar_sugerido_id INTEGER",
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS avatar_custom_url VARCHAR(200)",
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS time_coracao_id INTEGER",
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'participante'",
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ativo'",
+            "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        ]
+        
+        for cmd in comandos:
+            db.session.execute(text(cmd))
+        
+        db.session.commit()
+        
+        return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas com sucesso!'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+```
 
+Salva, commita e envia:
+```
+git add .
+git commit -m "rota de migracao para adicionar colunas"
+git push
 
 
 
