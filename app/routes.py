@@ -620,15 +620,7 @@ def migrar_banco_render():
         return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas com sucesso!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
-```
-
-Salva, commita e envia:
-```
-git add .
-git commit -m "rota de migracao para adicionar colunas"
-git push
-
-
+    
 
 
 
