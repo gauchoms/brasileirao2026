@@ -621,15 +621,8 @@ def migrar_banco_render():
             "ALTER TABLE time ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE",
             "ALTER TABLE time ADD COLUMN IF NOT EXISTS ultima_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
 ]
-```
 
-Salva, commita e envia:
-```
-git add .
-git commit -m "adiciona colunas na tabela time"
-git push
-        ]
-        
+
         for cmd in comandos:
             db.session.execute(text(cmd))
         
