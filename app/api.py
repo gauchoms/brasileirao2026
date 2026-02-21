@@ -44,3 +44,37 @@ def get_resultados_brasileirao():
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
     return data
+
+def listar_ligas_disponiveis(ano=2026):
+    url = f"{BASE_URL}/leagues"
+    params = {
+        "season": ano
+    }
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+    
+    ligas = []
+    for item in data.get('response', []):
+        liga = item['league']
+        pais = item['country']
+        
+        ligas.append({
+            'api_id': liga['id'],
+            'nome': liga['name'],
+            'pais': pais['name'],
+            'logo': liga['logo'],
+            'tipo': liga['type'],
+            'temporadas': item['seasons']
+        })
+    
+    return ligas
+
+def get_jogos_competicao(league_id, season):
+    url = f"{BASE_URL}/fixtures"
+    params = {
+        "league": league_id,
+        "season": season
+    }
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+    return data

@@ -1,11 +1,24 @@
 from app import create_app, db
-from app.models import Time, Jogo
+from app.models import Time, Jogo, Competicao
 from app.api import get_jogos_brasileirao, processar_jogos
 
 app = create_app()
 
 with app.app_context():
     db.create_all()
+
+    # Cria ou busca a competição Brasileirão 2026
+    brasileirao = Competicao.query.filter_by(nome='Brasileirão Série A 2026').first()
+    if not brasileirao:
+        brasileirao = Competicao(
+            nome='Brasileirão Série A 2026',
+            ano=2026,
+            tipo='brasileirao',
+            api_league_id=71
+        )
+        db.session.add(brasileirao)
+        db.session.commit()
+        print(f"Competição criada: {brasileirao.nome}")
 
     print("Buscando jogos na API...")
     data = get_jogos_brasileirao()
@@ -38,6 +51,7 @@ with app.app_context():
         if not jogo_existente:
             novo_jogo = Jogo(
                 api_id=jogo['api_id'],
+                competicao_id=brasileirao.id,  # NOVO: associa à competição
                 rodada=jogo['rodada'],
                 time_casa_id=times_cadastrados[jogo['time_casa_id']],
                 time_fora_id=times_cadastrados[jogo['time_fora_id']],
