@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, jsonify, redirect
 from app import db
-from app.models import Time, Jogo, Projecao, Meta
+from app.models import Time, Jogo, Projecao, Meta, Competicao
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from functools import wraps
-
+from app.models import Time, Jogo, Projecao, Meta, Competicao
 
 def admin_required(f):
     @wraps(f)
@@ -410,6 +410,104 @@ def criar_admin():
     db.session.commit()
     
     return jsonify({'sucesso': True, 'mensagem': 'Admin criado! Username: admin, Senha: admin123'})
+
+@bp.route('/admin/competicoes')
+@admin_required
+def admin_competicoes():
+    competicoes = Competicao.query.all()
+    return render_template('admin/competicoes.html', competicoes=competicoes)
+
+@bp.route('/admin/listar_ligas_api')
+@admin_required
+def admin_listar_ligas_api():
+    from app.api import listar_ligas_disponiveis
+    
+    ano = request.args.get('ano', 2026, type=int)
+    ligas = listar_ligas_disponiveis(ano)
+    
+    # Filtra só ligas de campeonatos relevantes
+    ligas_filtradas = [
+        l for l in ligas 
+        if l['tipo'] in ['League', 'Cup'] and l['pais'] in [
+            'World', 'Brazil', 'England', 'Spain', 'Italy', 'Germany', 'France', 
+            'Argentina', 'Uruguay', 'Colombia', 'Chile', 'Ecuador', 'Peru'
+        ]
+    ]
+    
+    return render_template('admin/listar_ligas.html', ligas=ligas_filtradas, ano=ano)
+
+@bp.route('/admin/importar_competicao/<int:league_id>/<int:ano>')
+@admin_required
+def admin_importar_competicao(league_id, ano):
+    from app.api import get_jogos_competicao, processar_jogos, listar_ligas_disponiveis
+    
+    # Busca informações da liga
+    ligas = listar_ligas_disponiveis(ano)
+    liga_info = next((l for l in ligas if l['api_id'] == league_id), None)
+    
+    if not liga_info:
+        return jsonify({'erro': 'Liga não encontrada'}), 404
+    
+    # Cria a competição
+    competicao = Competicao.query.filter_by(api_league_id=league_id, ano=ano).first()
+    if not competicao:
+        competicao = Competicao(
+            nome=f"{liga_info['nome']} {ano}",
+            ano=ano,
+            tipo=liga_info['tipo'].lower(),
+            api_league_id=league_id
+        )
+        db.session.add(competicao)
+        db.session.commit()
+    
+    # Importa jogos
+    data = get_jogos_competicao(league_id, ano)
+    jogos = processar_jogos(data)
+    
+    times_cadastrados = {}
+    jogos_novos = 0
+    
+    for jogo in jogos:
+        # Cadastra times
+        for key in ['time_casa_id', 'time_fora_id']:
+            api_id = jogo[key]
+            nome = jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora']
+            
+            if api_id not in times_cadastrados:
+                time = Time.query.filter_by(api_id=api_id).first()
+                if not time:
+                    time = Time(api_id=api_id, nome=nome)
+                    db.session.add(time)
+                    db.session.flush()
+                times_cadastrados[api_id] = time.id
+        
+        # Cadastra jogo
+        jogo_existente = Jogo.query.filter_by(api_id=jogo['api_id']).first()
+        if not jogo_existente:
+            novo_jogo = Jogo(
+                api_id=jogo['api_id'],
+                competicao_id=competicao.id,
+                rodada=jogo['rodada'],
+                time_casa_id=times_cadastrados[jogo['time_casa_id']],
+                time_fora_id=times_cadastrados[jogo['time_fora_id']],
+                data=jogo['data'],
+                gols_casa=jogo['gols_casa'],
+                gols_fora=jogo['gols_fora']
+            )
+            db.session.add(novo_jogo)
+            jogos_novos += 1
+    
+    db.session.commit()
+    
+    return jsonify({
+        'sucesso': True,
+        'competicao': competicao.nome,
+        'jogos_importados': jogos_novos,
+        'times_total': len(times_cadastrados)
+    })
+
+
+
 @bp.route('/testar_api')
 def testar_api():
     from app.api import get_jogos_brasileirao
@@ -431,3 +529,5 @@ def testar_api():
         })
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+    
+    
