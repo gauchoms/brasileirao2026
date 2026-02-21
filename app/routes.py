@@ -599,7 +599,10 @@ def migrar_banco_render():
     try:
         from sqlalchemy import text
         
-        # Adiciona colunas novas na tabela usuario
+        # Cria todas as tabelas novas
+        db.create_all()
+        
+        # Adiciona colunas que podem estar faltando na tabela usuario
         comandos = [
             "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS nome_completo VARCHAR(200)",
             "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS email VARCHAR(120)",
@@ -610,6 +613,7 @@ def migrar_banco_render():
             "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'participante'",
             "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ativo'",
             "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            "ALTER TABLE jogo ADD COLUMN IF NOT EXISTS competicao_id INTEGER",
         ]
         
         for cmd in comandos:
@@ -617,11 +621,17 @@ def migrar_banco_render():
         
         db.session.commit()
         
-        return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas com sucesso!'})
+        # Conta quantas tabelas existem
+        resultado = db.session.execute(text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'"))
+        total_tabelas = resultado.scalar()
+        
+        return jsonify({
+            'sucesso': True, 
+            'mensagem': 'Banco atualizado!',
+            'total_tabelas': total_tabelas
+        })
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
-    
-
 
 
 
