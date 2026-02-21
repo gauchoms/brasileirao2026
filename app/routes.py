@@ -614,6 +614,20 @@ def migrar_banco_render():
             "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ativo'",
             "ALTER TABLE usuario ADD COLUMN IF NOT EXISTS data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE jogo ADD COLUMN IF NOT EXISTS competicao_id INTEGER",
+            "ALTER TABLE jogo ADD COLUMN IF NOT EXISTS competicao_id INTEGER",
+            "ALTER TABLE time ADD COLUMN IF NOT EXISTS logo_url VARCHAR(200)",
+            "ALTER TABLE time ADD COLUMN IF NOT EXISTS pais VARCHAR(50)",
+            "ALTER TABLE time ADD COLUMN IF NOT EXISTS liga_principal VARCHAR(100)",
+            "ALTER TABLE time ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE time ADD COLUMN IF NOT EXISTS ultima_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+]
+```
+
+Salva, commita e envia:
+```
+git add .
+git commit -m "adiciona colunas na tabela time"
+git push
         ]
         
         for cmd in comandos:
