@@ -506,6 +506,100 @@ def admin_importar_competicao(league_id, ano):
         'times_total': len(times_cadastrados)
     })
 
+@bp.route('/registro', methods=['GET', 'POST'])
+def registro():
+    if request.method == 'POST':
+        from app.models import Usuario
+        
+        nome_completo = request.form.get('nome_completo')
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # Verifica se usuário já existe
+        if Usuario.query.filter_by(username=username).first():
+            return render_template('registro.html', erro='Usuário já existe')
+        
+        if Usuario.query.filter_by(email=email).first():
+            return render_template('registro.html', erro='E-mail já cadastrado')
+        
+        # Cria novo usuário
+        novo_usuario = Usuario(
+            username=username,
+            email=email,
+            nome_completo=nome_completo,
+            tipo='participante'
+        )
+        novo_usuario.set_password(password)
+        
+        db.session.add(novo_usuario)
+        db.session.commit()
+        
+        # Faz login automaticamente
+        login_user(novo_usuario)
+        
+        return redirect('/perfil')
+    
+    return render_template('registro.html')
+
+@bp.route('/perfil', methods=['GET', 'POST'])
+@login_required
+def perfil():
+    times = Time.query.filter_by(ativo=True).order_by(Time.nome).all()
+    
+    print(f"DEBUG: avatar_tipo={current_user.avatar_tipo}, avatar_sugerido_id={current_user.avatar_sugerido_id}")
+    
+    if request.method == 'POST':
+        # Atualiza informações básicas
+        current_user.nome_completo = request.form.get('nome_completo')
+        current_user.email = request.form.get('email')
+        
+        # Atualiza avatar
+        avatar_tipo = request.form.get('avatar_tipo')
+        current_user.avatar_tipo = avatar_tipo
+        
+        if avatar_tipo == 'sugerido':
+            current_user.avatar_sugerido_id = request.form.get('avatar_sugerido_id', type=int)
+            current_user.avatar_custom_url = None
+        elif avatar_tipo == 'upload':
+            file = request.files.get('avatar_file')
+            if file and file.filename:
+                from werkzeug.utils import secure_filename
+                from PIL import Image
+                import os
+                
+                filename = secure_filename(f"user_{current_user.id}_{file.filename}")
+                filepath = os.path.join('app', 'static', 'uploads', 'avatars', filename)
+                
+                # Cria pasta se não existir
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                
+                # Redimensiona e salva
+                img = Image.open(file)
+                img = img.resize((200, 200), Image.Resampling.LANCZOS)
+                img.save(filepath)
+                
+                current_user.avatar_custom_url = f'/static/uploads/avatars/{filename}'
+                current_user.avatar_sugerido_id = None
+        
+        # Atualiza time do coração
+        time_id = request.form.get('time_coracao_id')
+        current_user.time_coracao_id = int(time_id) if time_id else None
+        
+        db.session.commit()
+        
+        return redirect('/')
+        
+    
+    return render_template('perfil.html', times=times)
+
+
+
+
+
+
+
+
 
 
 @bp.route('/testar_api')

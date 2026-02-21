@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}Meu Perfil{% endblock %}
+
+
+
+{% block content %}
+
+<div style="max-width: 700px; margin: 2rem auto;">
+
+    <h1>Meu Perfil</h1>
+
+
+
+    {% if mensagem %}
+
+    <div style="background: var(--verde); color: #000; padding: 1rem; border-radius: 6px; margin-bottom: 2rem;">
+
+        {{ mensagem }}
+
+    </div>
+
+    {% endif %}
+
+
+
+    <form method="POST" enctype="multipart/form-data" style="display: grid; gap: 2rem;">
+
+        
+
+        <!-- Informações Básicas -->
+
+        <div style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+
+            <h2 style="margin-bottom: 1.5rem;">Informações Básicas</h2>
+
+            
+
+            <div style="margin-bottom: 1rem;">
+
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">NOME COMPLETO</label>
+
+                <input type="text" name="nome_completo" value="{{ current_user.nome_completo or '' }}"
+
+                    style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                           border-radius: 6px; color: var(--texto); font-size: 1rem;">
+
+            </div>
+
+
+
+            <div style="margin-bottom: 1rem;">
+
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">E-MAIL</label>
+
+                <input type="email" name="email" value="{{ current_user.email or '' }}"
+
+                    style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                           border-radius: 6px; color: var(--texto); font-size: 1rem;">
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Avatar -->
+
+        <div style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+
+            <h2 style="margin-bottom: 1.5rem;">Avatar</h2>
+
+            
+
+            <div style="margin-bottom: 1.5rem;">
+
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+
+                    <input type="radio" name="avatar_tipo" value="sugerido" 
+                            
+                        {% if current_user.avatar_tipo == 'sugerido' or not current_user.avatar_tipo %}checked{% endif %}
+                        
+                        onclick="document.getElementById('avatares-sugeridos').style.display='grid'; document.getElementById('upload-custom').style.display='none';">
+
+                    <span>Escolher avatar sugerido</span>
+
+                </label>
+
+            </div>
+
+
+
+            <div id="avatares-sugeridos" style="display: {% if current_user.avatar_tipo == 'sugerido' or not current_user.avatar_tipo %}grid{% else %}none{% endif %}; grid-template-columns: repeat(6, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+
+                {% for i in range(1, 13) %}
+
+                <label style="cursor: pointer;">
+                    <input type="radio" name="avatar_sugerido_id" value="{{ i }}" 
+                        {% if current_user.avatar_sugerido_id|int == i|int %}checked{% endif %}
+                        style="display: none;" onchange="this.nextElementSibling.style.borderColor='var(--verde)'">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--cinza-medio); 
+                                display: flex; align-items: center; justify-content: center; font-size: 2rem;
+                                border: 2px solid {% if current_user.avatar_sugerido_id|int == i|int %}var(--verde){% else %}transparent{% endif %}; transition: border-color 0.2s;"
+                        onmouseover="this.style.borderColor='var(--verde)'"
+                        onmouseout="if(!this.previousElementSibling.checked) this.style.borderColor='{% if current_user.avatar_sugerido_id|int == i|int %}var(--verde){% else %}transparent{% endif %}'">
+                        {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][i-1] }}
+                    </div>
+                </label>
+        
+
+                {% endfor %}
+
+            </div>
+
+
+
+            <div style="margin-bottom: 1rem;">
+
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+
+                    <input type="radio" name="avatar_tipo" value="upload"
+
+                        {% if current_user.avatar_tipo == 'upload' %}checked{% endif %}
+
+                        onclick="document.getElementById('avatares-sugeridos').style.display='none'; document.getElementById('upload-custom').style.display='block';">
+
+                    <span>Enviar minha foto</span>
+
+                </label>
+
+            </div>
+
+
+
+            <div id="upload-custom" style="display: {% if current_user.avatar_tipo == 'upload' %}block{% else %}none{% endif %};">
+
+                <input type="file" name="avatar_file" accept="image/*"
+
+                    style="padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                           border-radius: 6px; color: var(--texto); width: 100%;">
+
+                <div style="color: var(--texto-fraco); font-size: 0.8rem; margin-top: 0.5rem;">
+
+                    Máximo 2MB • JPG ou PNG
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Time do Coração -->
+
+        <div style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+
+            <h2 style="margin-bottom: 1.5rem;">Time do Coração</h2>
+
+            
+
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">BUSCAR TIME</label>
+
+            <input type="text" id="busca-time" placeholder="Digite o nome do time..."
+
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                       border-radius: 6px; color: var(--texto); font-size: 1rem; margin-bottom: 1rem;">
+
+            
+
+            <select name="time_coracao_id" id="select-time"
+
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+
+                <option value="">Nenhum time selecionado</option>
+
+                {% for time in times %}
+
+                <option value="{{ time.id }}" {% if current_user.time_coracao_id == time.id %}selected{% endif %}>
+
+                    {{ time.nome }}{% if time.pais %} ({{ time.pais }}){% endif %}
+
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+
+        <button type="submit" 
+
+            style="width: 100%; padding: 1rem; background: var(--verde); color: #000; border: none; 
+
+                   border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;"
+
+            onmouseover="this.style.opacity='0.85'" 
+
+            onmouseout="this.style.opacity='1'">
+
+            Salvar Perfil
+
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+<script>
+
+// Filtro de busca de times
+
+document.getElementById('busca-time').addEventListener('input', function(e) {
+
+    const busca = e.target.value.toLowerCase();
+
+    const select = document.getElementById('select-time');
+
+    const options = select.querySelectorAll('option');
+
+    
+
+    options.forEach(option => {
+
+        const texto = option.textContent.toLowerCase();
+
+        option.style.display = texto.includes(busca) ? 'block' : 'none';
+
+    });
+
+});
+
+</script>
+
+{% endblock %}

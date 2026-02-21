@@ -88,8 +88,16 @@
                 {% if current_user.is_admin %}
                     <a href="/admin/competicoes">⚙️ Admin</a>
                 {% endif %}
-                <span style="color: var(--texto-fraco); font-size: 0.85rem;">
-                    👤 {{ current_user.username }}
+                <a href="/perfil">👤 Perfil</a>
+                <span style="display: flex; align-items: center; gap: 0.5rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                    {% if current_user.avatar_tipo == 'sugerido' and current_user.avatar_sugerido_id %}
+                        <span style="font-size: 1.5rem;">{{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][current_user.avatar_sugerido_id - 1] }}</span>
+                    {% elif current_user.avatar_tipo == 'upload' and current_user.avatar_custom_url %}
+                        <img src="{{ current_user.avatar_custom_url }}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                    {% else %}
+                        <span style="font-size: 1.5rem;">👤</span>
+                    {% endif %}
+                    {{ current_user.username }}
                     {% if current_user.is_admin %}
                         <span style="color: var(--amarelo);">(Admin)</span>
                     {% endif %}
@@ -97,6 +105,7 @@
                 <a href="/logout" style="color: #e74c3c;">Sair</a>
             {% else %}
                 <a href="/login">Login</a>
+                <a href="/registro">Criar Conta</a>
             {% endif %}
         </div>
 
