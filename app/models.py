@@ -101,6 +101,11 @@ class Bolao(db.Model):
     data_pagamento = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(20), default='ativo')  # ativo, encerrado
     data_criacao = db.Column(db.DateTime, default=db.func.now())
+    # Relacionamentos
+    competicao = db.relationship('Competicao', backref='boloes')
+    dono = db.relationship('Usuario', foreign_keys=[dono_id], backref='boloes_criados')
+    regra = db.relationship('RegraPontuacao', backref='boloes')
+    participantes = db.relationship('ParticipanteBolao', backref='bolao', lazy='dynamic')
 
 class SolicitacaoPagamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -122,6 +127,8 @@ class ParticipanteBolao(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     data_entrada = db.Column(db.DateTime, default=db.func.now())
     pontos_totais = db.Column(db.Integer, default=0)
+     # Relacionamento
+    usuario = db.relationship('Usuario', backref='participacoes')
 
 class SolicitacaoEntrada(db.Model):
     id = db.Column(db.Integer, primary_key=True)

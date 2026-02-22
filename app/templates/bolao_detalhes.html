@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bolao.nome }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 2rem auto;">
+    
+    <!-- Cabeçalho -->
+    <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <h1 style="margin-bottom: 0.5rem;">{{ bolao.nome }}</h1>
+                <div style="color: var(--texto-fraco); font-size: 0.95rem;">
+                    {{ bolao.competicao.nome }}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="background: var(--cinza-medio); padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--texto-fraco);">Código de Convite</div>
+                    <div style="font-size: 1.5rem; font-weight: 600; color: var(--verde); font-family: monospace;">
+                        {{ bolao.codigo_convite }}
+                    </div>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--texto-fraco);">
+                    Compartilhe com seus amigos
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--cinza-medio);">
+        <a href="#" onclick="mostrarTab('ranking'); return false;" id="tab-ranking"
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--verde); border-bottom: 3px solid var(--verde);">
+            🏆 Ranking
+        </a>
+        <a href="#" onclick="mostrarTab('palpites'); return false;" id="tab-palpites"
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
+            🎯 Meus Palpites
+        </a>
+        {% if eh_dono %}
+        <a href="#" onclick="mostrarTab('participantes'); return false;" id="tab-participantes"
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
+            👥 Participantes
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Conteúdo das Tabs -->
+    <div id="content-ranking">
+        <h2>Ranking</h2>
+        <p style="color: var(--texto-fraco);">Em breve: ranking dos participantes</p>
+    </div>
+
+    <div id="content-palpites" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2>Meus Palpites</h2>
+            
+            <div style="display: flex; gap: 1rem;">
+                <!-- Filtro Status -->
+                <select id="filtro-status" onchange="filtrarJogos()" 
+                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                           border-radius: 6px; color: var(--texto); font-size: 0.9rem;">
+                    <option value="todos">Todos os jogos</option>
+                    <option value="abertos">Pode palpitar</option>
+                    <option value="encerrados">Já encerrados</option>
+                </select>
+                
+                <!-- Filtro Rodada -->
+                <select id="filtro-rodada" onchange="filtrarJogos()"
+                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                           border-radius: 6px; color: var(--texto); font-size: 0.9rem;">
+                    <option value="">Todas as rodadas</option>
+                    {% set rodadas = [] %}
+                    {% for jogo in jogos %}
+                        {% set rodada_num = jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') %}
+                        {% if rodada_num not in rodadas %}
+                            {% set _ = rodadas.append(rodada_num) %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for rodada in rodadas|sort %}
+                        <option value="{{ rodada }}">Rodada {{ rodada }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div style="display: grid; gap: 1rem;" id="lista-jogos">
+            {% for jogo in jogos %}
+            <div class="jogo-item" 
+                 data-status="{% if jogo.gols_casa is none %}aberto{% else %}encerrado{% endif %}"
+                 data-rodada="{{ jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') }}"
+                 style="background: var(--cinza); padding: 1.5rem; border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2rem;">
+                    
+                    <!-- Time Casa -->
+                    <div style="text-align: right;">
+                        <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_casa.nome }}</div>
+                        <div style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.3rem;">
+                            {% if jogo.gols_casa is not none %}
+                                Resultado: {{ jogo.gols_casa }}
+                            {% else %}
+                                {{ jogo.data[:10] if jogo.data else 'A definir' }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Palpite -->
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        {% if jogo.gols_casa is none %}
+                            <input type="number" min="0" max="99" 
+                                   value="{{ palpites_usuario[jogo.id].gols_casa_palpite if jogo.id in palpites_usuario else '' }}"
+                                   id="casa-{{ jogo.id }}"
+                                   style="width: 60px; padding: 0.5rem; text-align: center; background: var(--cinza-medio); 
+                                          border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto); 
+                                          font-size: 1.2rem; font-weight: 600;">
+                            <span style="font-size: 1.2rem; color: var(--texto-fraco);">×</span>
+                            <input type="number" min="0" max="99"
+                                   value="{{ palpites_usuario[jogo.id].gols_fora_palpite if jogo.id in palpites_usuario else '' }}"
+                                   id="fora-{{ jogo.id }}"
+                                   style="width: 60px; padding: 0.5rem; text-align: center; background: var(--cinza-medio); 
+                                          border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto); 
+                                          font-size: 1.2rem; font-weight: 600;">
+                            <button onclick="salvarPalpite({{ jogo.id }}, {{ bolao.id }})"
+                                    style="background: var(--verde); color: #000; border: none; padding: 0.5rem 1rem; 
+                                           border-radius: 6px; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                                Salvar
+                            </button>
+                        {% else %}
+                            <div style="text-align: center;">
+                                {% if jogo.id in palpites_usuario %}
+                                    <div style="font-size: 1.2rem; font-weight: 600;">
+                                        {{ palpites_usuario[jogo.id].gols_casa_palpite }} × {{ palpites_usuario[jogo.id].gols_fora_palpite }}
+                                    </div>
+                                    <div style="margin-top: 0.3rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600;
+                                               background: {% if palpites_usuario[jogo.id].pontos_obtidos >= 5 %}var(--verde){% elif palpites_usuario[jogo.id].pontos_obtidos > 0 %}var(--amarelo){% else %}#e74c3c{% endif %}; 
+                                               color: #000;">
+                                        {{ palpites_usuario[jogo.id].pontos_obtidos }} pts
+                                    </div>
+                                {% else %}
+                                    <div style="color: var(--texto-fraco); font-size: 0.9rem;">Sem palpite</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Time Fora -->
+                    <div style="text-align: left;">
+                        <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_fora.nome }}</div>
+                        <div style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.3rem;">
+                            {% if jogo.gols_fora is not none %}
+                                Resultado: {{ jogo.gols_fora }}
+                            {% else %}
+                                Rodada {{ jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if eh_dono %}
+    <div id="content-participantes" style="display: none;">
+        <h2>Participantes</h2>
+        <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px;">
+            <p style="color: var(--texto-fraco); margin-bottom: 1rem;">{{ bolao.participantes.count() }} participantes</p>
+            {% for part in bolao.participantes.all() %}
+            <div style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; border-bottom: 1px solid var(--cinza-medio);">
+                <span style="font-size: 1.5rem;">
+                    {% if part.usuario.avatar_tipo == 'sugerido' and part.usuario.avatar_sugerido_id %}
+                        {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][part.usuario.avatar_sugerido_id - 1] }}
+                    {% else %}
+                        👤
+                    {% endif %}
+                </span>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">{{ part.usuario.nome_completo or part.usuario.username }}</div>
+                    <div style="font-size: 0.85rem; color: var(--texto-fraco);">{{ part.pontos_totais }} pontos</div>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--texto-fraco);">
+                    Entrou em {{ part.data_entrada.strftime('%d/%m/%Y') }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function mostrarTab(tab) {
+    // Esconde todos
+    document.getElementById('content-ranking').style.display = 'none';
+    document.getElementById('content-palpites').style.display = 'none';
+    {% if eh_dono %}
+    document.getElementById('content-participantes').style.display = 'none';
+    {% endif %}
+    
+    // Remove destaque
+    document.getElementById('tab-ranking').style.color = 'var(--texto-fraco)';
+    document.getElementById('tab-ranking').style.borderBottom = '3px solid transparent';
+    document.getElementById('tab-palpites').style.color = 'var(--texto-fraco)';
+    document.getElementById('tab-palpites').style.borderBottom = '3px solid transparent';
+    {% if eh_dono %}
+    document.getElementById('tab-participantes').style.color = 'var(--texto-fraco)';
+    document.getElementById('tab-participantes').style.borderBottom = '3px solid transparent';
+    {% endif %}
+    
+    // Mostra selecionado
+    document.getElementById('content-' + tab).style.display = 'block';
+    document.getElementById('tab-' + tab).style.color = 'var(--verde)';
+    document.getElementById('tab-' + tab).style.borderBottom = '3px solid var(--verde)';
+}
+
+function salvarPalpite(jogoId, bolaoId) {
+    const golsCasa = document.getElementById('casa-' + jogoId).value;
+    const golsFora = document.getElementById('fora-' + jogoId).value;
+    
+    if (golsCasa === '' || golsFora === '') {
+        alert('Preencha o placar completo');
+        return;
+    }
+    
+    fetch('/salvar_palpite', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            bolao_id: bolaoId,
+            jogo_id: jogoId,
+            gols_casa: parseInt(golsCasa),
+            gols_fora: parseInt(golsFora)
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.sucesso) {
+            alert('Palpite salvo!');
+        } else {
+            alert('Erro: ' + (data.erro || 'Desconhecido'));
+        }
+    })
+    .catch(err => {
+        alert('Erro ao salvar palpite');
+    });
+}
+
+function filtrarJogos() {
+    const filtroStatus = document.getElementById('filtro-status').value;
+    const filtroRodada = document.getElementById('filtro-rodada').value;
+    const jogos = document.querySelectorAll('.jogo-item');
+    
+    jogos.forEach(jogo => {
+        let mostrar = true;
+        
+        // Filtro de status
+        if (filtroStatus !== 'todos') {
+            if (jogo.dataset.status !== filtroStatus) {
+                mostrar = false;
+            }
+        }
+        
+        // Filtro de rodada
+        if (filtroRodada !== '' && jogo.dataset.rodada !== filtroRodada) {
+            mostrar = false;
+        }
+        
+        jogo.style.display = mostrar ? 'block' : 'none';
+    });
+}
+</script>
+{% endblock %}

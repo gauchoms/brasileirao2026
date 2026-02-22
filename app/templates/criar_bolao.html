@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Criar Bolão{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 2rem auto;">
+    <h1 style="margin-bottom: 2rem;">Criar Novo Bolão</h1>
+
+    {% if erro %}
+    <div style="background: #e74c3c; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+        {{ erro }}
+    </div>
+    {% endif %}
+
+    <form method="POST" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">NOME DO BOLÃO</label>
+            <input type="text" name="nome" required placeholder="Ex: Bolão da Copa 2026"
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">COMPETIÇÃO</label>
+            <select name="competicao_id" required
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                <option value="">Selecione uma competição</option>
+                {% for comp in competicoes %}
+                <option value="{{ comp.id }}">{{ comp.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">REGRA DE PONTUAÇÃO</label>
+            <select name="regra_pontuacao_id" required
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                {% for regra in regras %}
+                <option value="{{ regra.id }}">
+                    {{ regra.nome }} (Placar exato: {{ regra.pontos_placar_exato }}pts, Resultado: {{ regra.pontos_resultado_certo }}pts)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIPO DE ACESSO</label>
+            <select name="tipo_acesso"
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                <option value="publico">Público (qualquer um pode entrar com o código)</option>
+                <option value="privado">Privado (você precisa aprovar cada participante)</option>
+            </select>
+        </div>
+
+        <div style="background: var(--cinza-medio); padding: 1rem; border-radius: 6px; margin-bottom: 2rem;">
+            <div style="color: var(--texto-fraco); font-size: 0.9rem; margin-bottom: 0.5rem;">VALOR</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: var(--amarelo);">R$ 15,00</div>
+            <div style="color: var(--texto-fraco); font-size: 0.8rem; margin-top: 0.5rem;">
+                Pagamento via Mercado Pago após criar o bolão
+            </div>
+        </div>
+
+        <button type="submit" 
+            style="width: 100%; padding: 1rem; background: var(--verde); color: #000; border: none; 
+                   border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;"
+            onmouseover="this.style.opacity='0.85'" 
+            onmouseout="this.style.opacity='1'">
+            Criar Bolão e Pagar R$ 15,00
+        </button>
+
+        <div style="text-align: center; margin-top: 1rem;">
+            <a href="/meus_boloes" style="color: var(--texto-fraco); text-decoration: none; font-size: 0.9rem;">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

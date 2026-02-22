@@ -85,6 +85,7 @@
         <a href="/dashboard">Dashboard</a>
         <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
             {% if current_user.is_authenticated %}
+                <a href="/meus_boloes">🎯 Bolões</a>
                 {% if current_user.is_admin %}
                     <a href="/admin/competicoes">⚙️ Admin</a>
                 {% endif %}

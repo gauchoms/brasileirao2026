@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, redirect
 from app import db
-from app.models import Time, Jogo, Projecao, Meta, Competicao
+from app.models import Time, Jogo, Projecao, Meta, Competicao, Bolao, ParticipanteBolao, RegraPontuacao,Palpite
+
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from functools import wraps
@@ -641,6 +642,152 @@ def migrar_banco_render():
         return jsonify({'erro': str(e)}), 500
 
 
+@bp.route('/meus_boloes')
+@login_required
+def meus_boloes():
+    from app.models import Bolao, ParticipanteBolao
+    
+    # Bolões que o usuário criou
+    boloes_dono = Bolao.query.filter_by(dono_id=current_user.id).all()
+    
+    # Bolões que o usuário participa
+    boloes_participante = ParticipanteBolao.query.filter_by(usuario_id=current_user.id).all()
+    
+    return render_template('meus_boloes.html', 
+                         boloes_dono=boloes_dono,
+                         boloes_participante=boloes_participante)
+
+@bp.route('/criar_bolao', methods=['GET', 'POST'])
+@login_required
+def criar_bolao():
+    from app.models import Bolao, RegraPontuacao
+    import secrets
+    
+    if request.method == 'POST':
+        nome = request.form.get('nome')
+        competicao_id = request.form.get('competicao_id', type=int)
+        regra_pontuacao_id = request.form.get('regra_pontuacao_id', type=int)
+        tipo_acesso = request.form.get('tipo_acesso', 'publico')
+        
+        # Gera código de convite único
+        codigo_convite = secrets.token_urlsafe(6).upper()[:8]
+        
+        # Cria o bolão
+        novo_bolao = Bolao(
+            nome=nome,
+            competicao_id=competicao_id,
+            dono_id=current_user.id,
+            codigo_convite=codigo_convite,
+            regra_pontuacao_id=regra_pontuacao_id,
+            tipo_acesso=tipo_acesso,
+            status_pagamento='pendente',
+            valor_pago=15.00
+        )
+        
+        db.session.add(novo_bolao)
+        db.session.commit()
+        
+        # TODO: Redirecionar para pagamento Mercado Pago
+        # Por enquanto, vamos direto para o bolão
+        return redirect(f'/bolao/{novo_bolao.id}')
+    
+    # GET - mostra formulário
+    competicoes = Competicao.query.all()
+    
+    # Cria regra padrão se não existir
+    regra_padrao = RegraPontuacao.query.first()
+    if not regra_padrao:
+        regra_padrao = RegraPontuacao(
+            nome='Padrão',
+            criador_id=1,  # Admin
+            pontos_placar_exato=5,
+            pontos_resultado_certo=3,
+            pontos_gols_time_casa=1,
+            pontos_gols_time_fora=1
+        )
+        db.session.add(regra_padrao)
+        db.session.commit()
+    
+    regras = RegraPontuacao.query.filter_by(publica=True).all()
+    
+    return render_template('criar_bolao.html', competicoes=competicoes, regras=regras)
+
+
+@bp.route('/bolao/<int:bolao_id>')
+@login_required
+def bolao_detalhes(bolao_id):
+    from app.models import Bolao, ParticipanteBolao, Palpite
+    
+    bolao = Bolao.query.get_or_404(bolao_id)
+    
+    # Verifica se o usuário é o dono
+    eh_dono = bolao.dono_id == current_user.id
+    
+    # Verifica se o usuário participa
+    participa = ParticipanteBolao.query.filter_by(
+        bolao_id=bolao_id,
+        usuario_id=current_user.id
+    ).first() is not None
+    
+    # Se não é dono e não participa, redireciona
+    if not eh_dono and not participa:
+        return redirect('/meus_boloes')
+    
+    # Busca jogos da competição
+    jogos = Jogo.query.filter_by(competicao_id=bolao.competicao_id).order_by(Jogo.data).all()
+    
+    # Busca palpites do usuário neste bolão
+    palpites_usuario = {}
+    palpites = Palpite.query.filter_by(bolao_id=bolao_id, usuario_id=current_user.id).all()
+    for p in palpites:
+        palpites_usuario[p.jogo_id] = p
+    
+    return render_template('bolao_detalhes.html', 
+                         bolao=bolao, 
+                         eh_dono=eh_dono,
+                         jogos=jogos,
+                         palpites_usuario=palpites_usuario)
+
+
+@bp.route('/salvar_palpite', methods=['POST'])
+@login_required
+def salvar_palpite():
+    from app.models import Palpite
+    
+    data = request.get_json()
+    bolao_id = data.get('bolao_id')
+    jogo_id = data.get('jogo_id')
+    gols_casa = data.get('gols_casa')
+    gols_fora = data.get('gols_fora')
+    
+    # Verifica se o jogo já aconteceu
+    jogo = Jogo.query.get(jogo_id)
+    if jogo.gols_casa is not None:
+        return jsonify({'erro': 'Jogo já aconteceu, não pode mais palpitar'}), 400
+    
+    # Busca ou cria palpite
+    palpite = Palpite.query.filter_by(
+        bolao_id=bolao_id,
+        usuario_id=current_user.id,
+        jogo_id=jogo_id
+    ).first()
+    
+    if palpite:
+        palpite.gols_casa_palpite = gols_casa
+        palpite.gols_fora_palpite = gols_fora
+    else:
+        palpite = Palpite(
+            bolao_id=bolao_id,
+            usuario_id=current_user.id,
+            jogo_id=jogo_id,
+            gols_casa_palpite=gols_casa,
+            gols_fora_palpite=gols_fora
+        )
+        db.session.add(palpite)
+    
+    db.session.commit()
+    
+    return jsonify({'sucesso': True})
 
 
 @bp.route('/testar_api')
