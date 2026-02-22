@@ -883,7 +883,9 @@ def migrar_uso():
             db.session.commit()
         
         # Marca o Brasileirão como "projecao"
-        brasileirao = Competicao.query.filter(Competicao.nome.like('%Brasileirão%')).first()
+        brasileirao = Competicao.query.filter(Competicao.nome.like('%Serie A%')).first()
+
+        #brasileirao = Competicao.query.filter(Competicao.nome.like('%Brasileirão%')).first()
         if brasileirao:
             brasileirao.uso = 'projecao'
             db.session.commit()
