@@ -47,10 +47,76 @@
     </div>
 
     <!-- Conteúdo das Tabs -->
+    
     <div id="content-ranking">
-        <h2>Ranking</h2>
-        <p style="color: var(--texto-fraco);">Em breve: ranking dos participantes</p>
+        <h2 style="margin-bottom: 1.5rem;">🏆 Ranking</h2>
+        
+        {% if bolao.participantes.count() > 0 %}
+        <div style="background: var(--cinza); border-radius: 8px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--verde);">
+                        <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); width: 60px;">POS</th>
+                        <th style="text-align: left; padding: 0.7rem; color: var(--texto-fraco);">PARTICIPANTE</th>
+                        <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco);">PONTOS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set participantes_ordenados = bolao.participantes.all()|sort(attribute='pontos_totais', reverse=True) %}
+                    {% for part in participantes_ordenados %}
+                    <tr style="border-bottom: 1px solid var(--cinza-medio);">
+                        <td style="text-align: center; padding: 1rem; font-weight: 600; font-size: 1.1rem;">
+                            {% if loop.index == 1 %}
+                                <span style="color: var(--amarelo);">🥇</span>
+                            {% elif loop.index == 2 %}
+                                <span style="color: #C0C0C0;">🥈</span>
+                            {% elif loop.index == 3 %}
+                                <span style="color: #CD7F32;">🥉</span>
+                            {% else %}
+                                {{ loop.index }}º
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="font-size: 2rem;">
+                                    {% if part.usuario.avatar_tipo == 'sugerido' and part.usuario.avatar_sugerido_id %}
+                                        {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][part.usuario.avatar_sugerido_id - 1] }}
+                                    {% elif part.usuario.avatar_tipo == 'upload' and part.usuario.avatar_custom_url %}
+                                        <img src="{{ part.usuario.avatar_custom_url }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    {% else %}
+                                        👤
+                                    {% endif %}
+                                </span>
+                                <div>
+                                    <div style="font-weight: 600;">{{ part.usuario.nome_completo or part.usuario.username }}</div>
+                                    {% if part.usuario.time_coracao_id %}
+                                    <div style="font-size: 0.85rem; color: var(--texto-fraco);">
+                                        {{ part.usuario.time_coracao.nome if part.usuario.time_coracao else '' }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align: center; padding: 1rem;">
+                            <div style="font-size: 1.5rem; font-weight: 600; color: var(--verde);">
+                                {{ part.pontos_totais }}
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--texto-fraco);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
+            <p>Nenhum participante ainda.</p>
+            <p style="margin-top: 0.5rem;">Compartilhe o código <strong>{{ bolao.codigo_convite }}</strong> com seus amigos!</p>
+        </div>
+        {% endif %}
     </div>
+    
 
     <div id="content-palpites" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">

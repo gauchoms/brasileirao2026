@@ -819,6 +819,17 @@ def criar_bolao():
         
         db.session.add(novo_bolao)
         db.session.commit()
+
+        # ADICIONA: Criador entra automaticamente como participante
+        participante = ParticipanteBolao(
+            bolao_id=novo_bolao.id,
+            usuario_id=current_user.id,
+            pontos_totais=0
+        )
+        db.session.add(participante)
+        db.session.commit()
+        
+        
         
         # TODO: Redirecionar para pagamento Mercado Pago
         # Por enquanto, vamos direto para o bolão
