@@ -917,3 +917,26 @@ def debug_jogos():
         'jogos_sem_competicao': jogos_sem_competicao,
         'total_jogos': total_jogos
     })
+@bp.route('/corrigir_jogos_brasileirao')
+def corrigir_jogos_brasileirao():
+    from sqlalchemy import text
+    
+    serie_a = Competicao.query.filter_by(nome='Serie A 2026').first()
+    if not serie_a:
+        return jsonify({'erro': 'Serie A não encontrada'})
+    
+    # Atualiza jogos sem competicao_id para Serie A 2026
+    result = db.session.execute(
+        text("UPDATE jogo SET competicao_id = :comp_id WHERE competicao_id IS NULL"),
+        {'comp_id': serie_a.id}
+    )
+    db.session.commit()
+    
+    # Verifica quantos foram atualizados
+    jogos_serie_a = Jogo.query.filter_by(competicao_id=serie_a.id).count()
+    
+    return jsonify({
+        'sucesso': True,
+        'jogos_atualizados': result.rowcount,
+        'total_jogos_serie_a': jogos_serie_a
+    })
