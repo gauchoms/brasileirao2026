@@ -869,3 +869,32 @@ def testar_api():
         return jsonify({'erro': str(e)}), 500
     
     
+@bp.route('/migrar_uso')
+def migrar_uso():
+    from sqlalchemy import text, inspect
+    
+    try:
+        # Verifica se a coluna já existe
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('competicao')]
+        
+        if 'uso' not in columns:
+            db.session.execute(text("ALTER TABLE competicao ADD COLUMN uso VARCHAR(20) DEFAULT 'ambos'"))
+            db.session.commit()
+        
+        # Marca o Brasileirão como "projecao"
+        brasileirao = Competicao.query.filter(Competicao.nome.like('%Brasileirão%')).first()
+        if brasileirao:
+            brasileirao.uso = 'projecao'
+            db.session.commit()
+        
+        # Marca outras competições como "bolao"
+        outras = Competicao.query.filter(~Competicao.nome.like('%Brasileirão%')).all()
+        for comp in outras:
+            if comp.uso == 'ambos':  # Só atualiza se ainda não foi definido
+                comp.uso = 'bolao'
+        db.session.commit()
+        
+        return jsonify({'sucesso': True, 'brasileirao': brasileirao.nome if brasileirao else None})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
