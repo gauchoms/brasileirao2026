@@ -71,11 +71,13 @@ class AvatarSugerido(db.Model):
     categoria = db.Column(db.String(50), nullable=False)
 
 class Competicao(db.Model):
+    
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     ano = db.Column(db.Integer, nullable=False)
     tipo = db.Column(db.String(50), nullable=False)  # brasileirao, copa_mundo, libertadores
     api_league_id = db.Column(db.Integer, nullable=True)
+    uso = db.Column(db.String(20), default='ambos')  # projecao, bolao, ambos
 
 class RegraPontuacao(db.Model):
     id = db.Column(db.Integer, primary_key=True)

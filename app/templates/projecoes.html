@@ -36,9 +36,23 @@
 {% endif %}
 
 <h1>Projeções</h1>
-
+<!-- Seleção de Competição -->
+    <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">COMPETIÇÃO</label>
+        <select onchange="window.location.href='/projecoes?competicao_id=' + this.value" 
+            style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                   border-radius: 6px; color: var(--texto); font-size: 1rem;">
+            {% for comp in competicoes %}
+            <option value="{{ comp.id }}" {% if competicao_selecionada == comp.id %}selected{% endif %}>
+                {{ comp.nome }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
 <!-- Seleção de time e projeção -->
+
 <form method="GET" action="/projecoes" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+    <input type="hidden" name="competicao_id" value="{{ competicao_selecionada }}">
     <div>
         <label style="display: block; font-size: 0.8rem; color: var(--texto-fraco); margin-bottom: 0.4rem; letter-spacing: 1px;">TIME</label>
         <select name="time_id" onchange="this.form.submit()" style="

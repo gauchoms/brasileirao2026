@@ -31,7 +31,28 @@ def index():
 
 @bp.route('/projecoes')
 def projecoes():
-    times = Time.query.order_by(Time.nome).all()
+    # Busca competições disponíveis para projeção
+    competicoes_disponiveis = Competicao.query.filter(
+        (Competicao.uso == 'projecao') | (Competicao.uso == 'ambos')
+    ).all()
+    
+    # Competição selecionada (default: primeira disponível)
+    competicao_id = request.args.get('competicao_id', type=int)
+    if not competicao_id and competicoes_disponiveis:
+        competicao_id = competicoes_disponiveis[0].id
+    
+    # Busca apenas times que jogam na competição selecionada
+    if competicao_id:
+        times_ids = db.session.query(Jogo.time_casa_id).filter_by(competicao_id=competicao_id).union(
+            db.session.query(Jogo.time_fora_id).filter_by(competicao_id=competicao_id)
+        ).distinct()
+        times = Time.query.filter(Time.id.in_(times_ids)).order_by(Time.nome).all()
+    else:
+        times = []
+    
+
+
+
     time_id = request.args.get('time_id', type=int)
     projecao_selecionada = request.args.get('projecao', 'titulo')
 
@@ -40,11 +61,13 @@ def projecoes():
     pontos_projetados = 0
     meta = METAS.get(projecao_selecionada, 80)
 
-    if time_id:
+    if time_id and competicao_id:
         time_selecionado = Time.query.get(time_id)
 
+        # Filtra jogos pela competição selecionada
         todos_jogos = Jogo.query.filter(
-            (Jogo.time_casa_id == time_id) | (Jogo.time_fora_id == time_id)
+            ((Jogo.time_casa_id == time_id) | (Jogo.time_fora_id == time_id)),
+            Jogo.competicao_id == competicao_id
         ).all()
 
         for jogo in todos_jogos:
@@ -76,6 +99,8 @@ def projecoes():
         jogos.sort(key=lambda x: int(x['rodada_num']) if x['rodada_num'].isdigit() else 0)
 
     return render_template('projecoes.html',
+        competicoes=competicoes_disponiveis,
+        competicao_selecionada=competicao_id,
         times=times,
         time_selecionado=time_selecionado,
         projecao_selecionada=projecao_selecionada,
@@ -83,6 +108,7 @@ def projecoes():
         pontos_projetados=pontos_projetados,
         meta=meta
     )
+
 
 @bp.route('/salvar_projecao', methods=['POST'])
 @admin_required
@@ -145,7 +171,25 @@ def atualizar_resultados():
 
 @bp.route('/dashboard')
 def dashboard():
-    times = Time.query.order_by(Time.nome).all()
+    # Busca competições disponíveis para projeção
+    competicoes_disponiveis = Competicao.query.filter(
+        (Competicao.uso == 'projecao') | (Competicao.uso == 'ambos')
+    ).all()
+    
+    # Competição selecionada (default: primeira disponível)
+    competicao_id = request.args.get('competicao_id', type=int)
+    if not competicao_id and competicoes_disponiveis:
+        competicao_id = competicoes_disponiveis[0].id
+    
+    # Busca apenas times que jogam na competição selecionada
+    if competicao_id:
+        times_ids = db.session.query(Jogo.time_casa_id).filter_by(competicao_id=competicao_id).union(
+            db.session.query(Jogo.time_fora_id).filter_by(competicao_id=competicao_id)
+        ).distinct()
+        times = Time.query.filter(Time.id.in_(times_ids)).order_by(Time.nome).all()
+    else:
+        times = []
+    
     time_id = request.args.get('time_id', type=int)
     ordenar_por = request.args.get('ordenar', 'pontos_reais')
     time_selecionado = None
@@ -159,10 +203,11 @@ def dashboard():
 
     tabela = []
     for time in times:
-        # Pontos reais acumulados
+        # Pontos reais acumulados (só jogos da competição selecionada)
         pontos_reais = 0
         jogos_time = Jogo.query.filter(
-            (Jogo.time_casa_id == time.id) | (Jogo.time_fora_id == time.id)
+            ((Jogo.time_casa_id == time.id) | (Jogo.time_fora_id == time.id)),
+            Jogo.competicao_id == competicao_id
         ).all()
 
         for jogo in jogos_time:
@@ -181,9 +226,12 @@ def dashboard():
 
         cenarios = {}
         for tipo, meta in METAS_DICT.items():
-            pontos_proj = db.session.query(db.func.sum(Projecao.pontos)).filter(
+            pontos_proj = db.session.query(db.func.sum(Projecao.pontos)).join(
+                Jogo, Projecao.jogo_id == Jogo.id
+            ).filter(
                 Projecao.time_id == time.id,
-                Projecao.tipo == tipo
+                Projecao.tipo == tipo,
+                Jogo.competicao_id == competicao_id
             ).scalar() or 0
 
             # Pontos projetados até os jogos já disputados
@@ -229,7 +277,8 @@ def dashboard():
     if time_id:
         time_selecionado = Time.query.get(time_id)
         jogos_time = Jogo.query.filter(
-            (Jogo.time_casa_id == time_id) | (Jogo.time_fora_id == time_id)
+            ((Jogo.time_casa_id == time_id) | (Jogo.time_fora_id == time_id)),
+            Jogo.competicao_id == competicao_id
         ).all()
 
         evolucao = []
@@ -281,12 +330,19 @@ def dashboard():
         }
 
     return render_template('dashboard.html',
+        competicoes=competicoes_disponiveis,
+        competicao_selecionada=competicao_id,
         times=times,
         tabela=tabela,
         time_selecionado=time_selecionado,
         detalhe=detalhe,
         ordenar_por=ordenar_por
     )
+
+
+
+
+
 
 @bp.route('/setup_inicial_render')
 def setup_inicial_render():
