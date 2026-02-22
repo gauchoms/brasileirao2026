@@ -24,6 +24,34 @@ METAS = {
     'libertadores': 70,
     'rebaixamento': 45
 }
+def calcular_pontos_palpite(palpite, jogo, regra):
+    """
+    Calcula os pontos obtidos em um palpite baseado na regra de pontuação.
+    """
+    pontos = 0
+    
+    # Placar exato
+    if (palpite.gols_casa_palpite == jogo.gols_casa and 
+        palpite.gols_fora_palpite == jogo.gols_fora):
+        pontos += regra.pontos_placar_exato
+        return pontos  # Se acertou o placar exato, já retorna (não soma os outros)
+    
+    # Resultado certo (vitória/empate/derrota)
+    resultado_real = 'empate' if jogo.gols_casa == jogo.gols_fora else ('casa' if jogo.gols_casa > jogo.gols_fora else 'fora')
+    resultado_palpite = 'empate' if palpite.gols_casa_palpite == palpite.gols_fora_palpite else ('casa' if palpite.gols_casa_palpite > palpite.gols_fora_palpite else 'fora')
+    
+    if resultado_real == resultado_palpite:
+        pontos += regra.pontos_resultado_certo
+    
+    # Gols do time da casa
+    if palpite.gols_casa_palpite == jogo.gols_casa:
+        pontos += regra.pontos_gols_time_casa
+    
+    # Gols do time de fora
+    if palpite.gols_fora_palpite == jogo.gols_fora:
+        pontos += regra.pontos_gols_time_fora
+    
+    return pontos
 
 @bp.route('/')
 def index():
@@ -146,14 +174,20 @@ def salvar_projecao():
 
     return jsonify({'sucesso': True, 'total_pontos': total})
 
+
+
 @bp.route('/atualizar_resultados', methods=['POST'])
 @admin_required
 def atualizar_resultados():
     from app.api import get_resultados_brasileirao
+    from app.models import Palpite, Bolao, ParticipanteBolao
 
     data = get_resultados_brasileirao()
     jogos = data.get('response', [])
-    atualizados = 0
+    
+    novos_atualizados = 0
+    ja_tinham_placar = 0
+    palpites_calculados = 0
 
     for fixture in jogos:
         api_id = fixture['fixture']['id']
@@ -161,13 +195,56 @@ def atualizar_resultados():
         gols_fora = fixture['goals']['away']
 
         jogo = Jogo.query.filter_by(api_id=api_id).first()
+        
         if jogo and gols_casa is not None and gols_fora is not None:
-            jogo.gols_casa = gols_casa
-            jogo.gols_fora = gols_fora
-            atualizados += 1
+            tinha_placar = jogo.gols_casa is not None and jogo.gols_fora is not None
+            
+            if not tinha_placar:
+                # Jogo NOVO com resultado
+                jogo.gols_casa = gols_casa
+                jogo.gols_fora = gols_fora
+                novos_atualizados += 1
+                
+                # CALCULA PONTOS de todos os palpites deste jogo
+                palpites = Palpite.query.filter_by(jogo_id=jogo.id).all()
+                for palpite in palpites:
+                    bolao = Bolao.query.get(palpite.bolao_id)
+                    regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
+                    
+                    # Calcula pontos
+                    pontos = calcular_pontos_palpite(palpite, jogo, regra)
+                    palpite.pontos_obtidos = pontos
+                    palpites_calculados += 1
+                    
+                    # Atualiza pontos totais do participante
+                    participante = ParticipanteBolao.query.filter_by(
+                        bolao_id=palpite.bolao_id,
+                        usuario_id=palpite.usuario_id
+                    ).first()
+                    if participante:
+                        # Recalcula total somando todos os palpites
+                        total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
+                            bolao_id=palpite.bolao_id,
+                            usuario_id=palpite.usuario_id
+                        ).scalar() or 0
+                        participante.pontos_totais = total
+                
+            elif jogo.gols_casa != gols_casa or jogo.gols_fora != gols_fora:
+                # Placar mudou (raro)
+                jogo.gols_casa = gols_casa
+                jogo.gols_fora = gols_fora
+                ja_tinham_placar += 1
 
     db.session.commit()
-    return jsonify({'sucesso': True, 'atualizados': atualizados})
+    
+    return jsonify({
+        'sucesso': True,
+        'novos_resultados': novos_atualizados,
+        'atualizados': ja_tinham_placar,
+        'palpites_calculados': palpites_calculados
+    })
+
+
 
 @bp.route('/dashboard')
 def dashboard():

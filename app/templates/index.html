@@ -72,7 +72,7 @@ function atualizarResultados() {
     .then(data => {
         btn.disabled = false;
         btn.textContent = '🔄 Atualizar Resultados';
-        msg.textContent = `✅ ${data.atualizados} jogos atualizados!`;
+        msg.textContent = `✅ ${data.novos_resultados} novos resultados! ${data.palpites_calculados} palpites calculados.`;
     })
     .catch(() => {
         btn.disabled = false;
