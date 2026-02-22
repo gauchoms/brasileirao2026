@@ -901,7 +901,7 @@ def migrar_uso():
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
     
-    @bp.route('/debug_jogos')
+@bp.route('/debug_jogos')
 def debug_jogos():
     serie_a = Competicao.query.filter_by(nome='Serie A 2026').first()
     if not serie_a:
