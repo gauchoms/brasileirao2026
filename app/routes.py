@@ -900,3 +900,20 @@ def migrar_uso():
         return jsonify({'sucesso': True, 'brasileirao': brasileirao.nome if brasileirao else None})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+    
+    @bp.route('/debug_jogos')
+def debug_jogos():
+    serie_a = Competicao.query.filter_by(nome='Serie A 2026').first()
+    if not serie_a:
+        return jsonify({'erro': 'Serie A não encontrada'})
+    
+    jogos_serie_a = Jogo.query.filter_by(competicao_id=serie_a.id).count()
+    jogos_sem_competicao = Jogo.query.filter_by(competicao_id=None).count()
+    total_jogos = Jogo.query.count()
+    
+    return jsonify({
+        'serie_a_id': serie_a.id,
+        'jogos_serie_a': jogos_serie_a,
+        'jogos_sem_competicao': jogos_sem_competicao,
+        'total_jogos': total_jogos
+    })
