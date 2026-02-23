@@ -228,9 +228,49 @@
         </div>
     </div>
 
+    
     {% if eh_dono %}
     <div id="content-participantes" style="display: none;">
-        <h2>Participantes</h2>
+        <h2 style="margin-bottom: 1.5rem;">Participantes</h2>
+        
+        <!-- Solicitações Pendentes -->
+        {% set solicitacoes = solicitacoes_pendentes %}
+        {% if solicitacoes|length > 0 %}
+        <div style="background: var(--amarelo); color: #000; padding: 1rem; border-radius: 6px; margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem;">⏳ Solicitações Pendentes ({{ solicitacoes|length }})</h3>
+            <div style="display: grid; gap: 0.5rem;">
+                {% for sol in solicitacoes %}
+                <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 1.5rem;">
+                            {% if sol.usuario.avatar_tipo == 'sugerido' and sol.usuario.avatar_sugerido_id %}
+                                {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][sol.usuario.avatar_sugerido_id - 1] }}
+                            {% else %}
+                                👤
+                            {% endif %}
+                        </span>
+                        <div>
+                            <div style="font-weight: 600;">{{ sol.usuario.nome_completo or sol.usuario.username }}</div>
+                            <div style="font-size: 0.85rem; opacity: 0.8;">Solicitou em {{ sol.data_solicitacao.strftime('%d/%m/%Y às %H:%M') }}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button onclick="responderSolicitacao({{ sol.id }}, 'aprovar')" 
+                            style="background: #00a651; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            ✓ Aprovar
+                        </button>
+                        <button onclick="responderSolicitacao({{ sol.id }}, 'rejeitar')" 
+                            style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            ✗ Rejeitar
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Participantes Aprovados -->
         <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px;">
             <p style="color: var(--texto-fraco); margin-bottom: 1rem;">{{ bolao.participantes.count() }} participantes</p>
             {% for part in bolao.participantes.all() %}
@@ -338,5 +378,24 @@ function filtrarJogos() {
         jogo.style.display = mostrar ? 'block' : 'none';
     });
 }
+function responderSolicitacao(solicitacaoId, acao) {
+    fetch('/responder_solicitacao', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            solicitacao_id: solicitacaoId,
+            acao: acao
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.sucesso) {
+            location.reload();
+        } else {
+            alert('Erro: ' + (data.erro || 'Desconhecido'));
+        }
+    });
+}
 </script>
+
 {% endblock %}

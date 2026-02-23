@@ -6,11 +6,18 @@
 <div style="max-width: 1200px; margin: 2rem auto;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <h1>Meus Bolões</h1>
-        <a href="/criar_bolao" style="background: var(--verde); color: #000; padding: 0.8rem 1.5rem;
-            border-radius: 6px; text-decoration: none; font-weight: 600;">
-            ➕ Criar Novo Bolão
-        </a>
+        <div style="display: flex; gap: 1rem;">
+            <a href="/entrar_bolao" style="background: var(--cinza-medio); color: var(--texto); padding: 0.8rem 1.5rem;
+                border-radius: 6px; text-decoration: none; font-weight: 600;">
+                🔑 Entrar com Código
+            </a>
+            <a href="/criar_bolao" style="background: var(--verde); color: #000; padding: 0.8rem 1.5rem;
+                border-radius: 6px; text-decoration: none; font-weight: 600;">
+                ➕ Criar Novo Bolão
+            </a>
+        </div>
     </div>
+    
 
     <div style="display: grid; gap: 1.5rem;">
         {% if boloes_dono|length > 0 %}

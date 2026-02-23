@@ -140,6 +140,9 @@ class SolicitacaoEntrada(db.Model):
     data_solicitacao = db.Column(db.DateTime, default=db.func.now())
     data_resposta = db.Column(db.DateTime, nullable=True)
     respondido_por = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
+      # Relacionamentos
+    usuario = db.relationship('Usuario', foreign_keys=[usuario_id], backref='solicitacoes')
+    respondente = db.relationship('Usuario', foreign_keys=[respondido_por])
 
 class Palpite(db.Model):
     id = db.Column(db.Integer, primary_key=True)

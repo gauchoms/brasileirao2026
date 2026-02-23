@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, redirect
 from app import db
-from app.models import Time, Jogo, Projecao, Meta, Competicao, Bolao, ParticipanteBolao, RegraPontuacao,Palpite
+from app.models import Time, Jogo, Projecao, Meta, Competicao, Bolao, ParticipanteBolao, RegraPontuacao,Palpite,SolicitacaoEntrada
 
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
@@ -669,6 +669,12 @@ def registro():
         db.session.add(novo_usuario)
         db.session.commit()
         
+        # Envia email de boas-vindas
+        if novo_usuario.email:
+            from app.email import email_boas_vindas
+            email_boas_vindas(novo_usuario)
+        
+               
         # Faz login automaticamente
         login_user(novo_usuario)
         
@@ -886,11 +892,20 @@ def bolao_detalhes(bolao_id):
     for p in palpites:
         palpites_usuario[p.jogo_id] = p
     
+    # Busca solicitações pendentes (se for dono)
+    solicitacoes_pendentes = []
+    if eh_dono:
+        solicitacoes_pendentes = SolicitacaoEntrada.query.filter_by(
+            bolao_id=bolao_id,
+            status='pendente'
+        ).all()
+    
     return render_template('bolao_detalhes.html', 
                          bolao=bolao, 
                          eh_dono=eh_dono,
                          jogos=jogos,
-                         palpites_usuario=palpites_usuario)
+                         palpites_usuario=palpites_usuario,
+                         solicitacoes_pendentes=solicitacoes_pendentes)
 
 
 @bp.route('/salvar_palpite', methods=['POST'])
@@ -1028,3 +1043,177 @@ def corrigir_jogos_brasileirao():
         'jogos_atualizados': result.rowcount,
         'total_jogos_serie_a': jogos_serie_a
     })
+
+
+@bp.route('/entrar_bolao', methods=['GET', 'POST'])
+@login_required
+def entrar_bolao():
+    from app.models import Bolao, ParticipanteBolao, SolicitacaoEntrada
+    
+    if request.method == 'POST':
+        codigo = request.form.get('codigo', '').strip().upper()
+        
+        # Busca bolão pelo código
+        bolao = Bolao.query.filter_by(codigo_convite=codigo).first()
+        
+        if not bolao:
+            return render_template('entrar_bolao.html', erro='Código inválido. Verifique e tente novamente.')
+        
+        # Verifica se já participa
+        ja_participa = ParticipanteBolao.query.filter_by(
+            bolao_id=bolao.id,
+            usuario_id=current_user.id
+        ).first()
+        
+        if ja_participa:
+            return render_template('entrar_bolao.html', erro=f'Você já participa do bolão "{bolao.nome}"!')
+        
+        # Verifica se é o dono
+        if bolao.dono_id == current_user.id:
+            return render_template('entrar_bolao.html', erro=f'Você é o criador do bolão "{bolao.nome}"!')
+        
+        # PÚBLICO: Entra automaticamente
+        if bolao.tipo_acesso == 'publico':
+            participante = ParticipanteBolao(
+                bolao_id=bolao.id,
+                usuario_id=current_user.id,
+                pontos_totais=0
+            )
+            db.session.add(participante)
+            db.session.commit()
+    
+            # Envia email para o usuário
+            if solicitacao.usuario.email:
+                from app.email import email_solicitacao_respondida
+                email_solicitacao_respondida(solicitacao, acao == 'aprovar')
+            
+            return jsonify({'sucesso': True})
+            
+            
+        
+        # PRIVADO: Cria solicitação
+        else:
+            # Verifica se já tem solicitação pendente
+            solicitacao_existente = SolicitacaoEntrada.query.filter_by(
+                bolao_id=bolao.id,
+                usuario_id=current_user.id,
+                status='pendente'
+            ).first()
+            
+            if solicitacao_existente:
+                return render_template('entrar_bolao.html', 
+                    erro=f'Você já solicitou entrada no bolão "{bolao.nome}". Aguarde aprovação do criador.')
+            
+            # Cria solicitação
+            solicitacao = SolicitacaoEntrada(
+                bolao_id=bolao.id,
+                usuario_id=current_user.id,
+                status='pendente'
+            )
+            db.session.add(solicitacao)
+            db.session.commit()
+            
+            return render_template('entrar_bolao.html', 
+                sucesso=f'Solicitação enviada para o bolão "{bolao.nome}"! Aguarde aprovação.')
+    
+    return render_template('entrar_bolao.html')
+
+
+@bp.route('/admin/gerenciar')
+@admin_required
+def admin_gerenciar():
+    from app.models import Usuario, Bolao
+    
+    usuarios = Usuario.query.all()
+    boloes = Bolao.query.all()
+    
+    return render_template('admin/gerenciar.html', usuarios=usuarios, boloes=boloes)
+
+@bp.route('/admin/excluir_usuario/<int:user_id>', methods=['POST'])
+@admin_required
+def admin_excluir_usuario(user_id):
+    from app.models import Usuario, Palpite, ParticipanteBolao, SolicitacaoEntrada
+    
+    usuario = Usuario.query.get_or_404(user_id)
+    
+    if usuario.is_admin:
+        return jsonify({'erro': 'Não pode excluir admin'}), 400
+    
+    # Deleta palpites
+    Palpite.query.filter_by(usuario_id=user_id).delete()
+    
+    # Deleta participações
+    ParticipanteBolao.query.filter_by(usuario_id=user_id).delete()
+    
+    # Deleta solicitações
+    SolicitacaoEntrada.query.filter_by(usuario_id=user_id).delete()
+    
+    # Deleta bolões criados por ele (e tudo relacionado)
+    boloes = Bolao.query.filter_by(dono_id=user_id).all()
+    for bolao in boloes:
+        Palpite.query.filter_by(bolao_id=bolao.id).delete()
+        ParticipanteBolao.query.filter_by(bolao_id=bolao.id).delete()
+        SolicitacaoEntrada.query.filter_by(bolao_id=bolao.id).delete()
+        db.session.delete(bolao)
+    
+    # Deleta usuário
+    db.session.delete(usuario)
+    db.session.commit()
+    
+    return jsonify({'sucesso': True})
+
+@bp.route('/admin/excluir_bolao/<int:bolao_id>', methods=['POST'])
+@admin_required
+def admin_excluir_bolao(bolao_id):
+    from app.models import Bolao, Palpite, ParticipanteBolao, SolicitacaoEntrada
+    
+    bolao = Bolao.query.get_or_404(bolao_id)
+    
+    # Deleta tudo relacionado
+    Palpite.query.filter_by(bolao_id=bolao_id).delete()
+    ParticipanteBolao.query.filter_by(bolao_id=bolao_id).delete()
+    SolicitacaoEntrada.query.filter_by(bolao_id=bolao_id).delete()
+    
+    # Deleta bolão
+    db.session.delete(bolao)
+    db.session.commit()
+    
+    return jsonify({'sucesso': True})
+
+
+@bp.route('/responder_solicitacao', methods=['POST'])
+@login_required
+def responder_solicitacao():
+    from app.models import SolicitacaoEntrada, ParticipanteBolao, Bolao
+    
+    data = request.get_json()
+    solicitacao_id = data.get('solicitacao_id')
+    acao = data.get('acao')  # 'aprovar' ou 'rejeitar'
+    
+    solicitacao = SolicitacaoEntrada.query.get_or_404(solicitacao_id)
+    bolao = Bolao.query.get(solicitacao.bolao_id)
+    
+    # Verifica se é o dono do bolão
+    if bolao.dono_id != current_user.id:
+        return jsonify({'erro': 'Apenas o criador pode aprovar solicitações'}), 403
+    
+    if acao == 'aprovar':
+        # Adiciona como participante
+        participante = ParticipanteBolao(
+            bolao_id=solicitacao.bolao_id,
+            usuario_id=solicitacao.usuario_id,
+            pontos_totais=0
+        )
+        db.session.add(participante)
+        solicitacao.status = 'aprovada'
+        solicitacao.respondido_por = current_user.id
+        solicitacao.data_resposta = db.func.now()
+        
+    elif acao == 'rejeitar':
+        solicitacao.status = 'rejeitada'
+        solicitacao.respondido_por = current_user.id
+        solicitacao.data_resposta = db.func.now()
+    
+    db.session.commit()
+    
+    return jsonify({'sucesso': True})

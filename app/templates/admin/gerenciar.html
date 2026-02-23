@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Sistema{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 2rem auto;">
+    <h1 style="margin-bottom: 2rem;">Gerenciar Sistema</h1>
+
+    <div style="display: grid; gap: 2rem;">
+        
+        <!-- Usuários -->
+        <div style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+            <h2 style="margin-bottom: 1.5rem;">👥 Usuários ({{ usuarios|length }})</h2>
+            <div style="display: grid; gap: 0.5rem;">
+                {% for user in usuarios %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--cinza-medio); border-radius: 6px;">
+                    <div>
+                        <strong>{{ user.username }}</strong>
+                        {% if user.nome_completo %} - {{ user.nome_completo }}{% endif %}
+                        <span style="color: var(--texto-fraco); font-size: 0.85rem; margin-left: 1rem;">
+                            {{ user.email or 'Sem email' }}
+                        </span>
+                        {% if user.is_admin %}
+                            <span style="background: var(--amarelo); color: #000; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">ADMIN</span>
+                        {% endif %}
+                    </div>
+                    {% if not user.is_admin %}
+                    <button onclick="excluirUsuario({{ user.id }}, '{{ user.username }}')" 
+                        style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">
+                        Excluir
+                    </button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Bolões -->
+        <div style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+            <h2 style="margin-bottom: 1.5rem;">🎯 Bolões ({{ boloes|length }})</h2>
+            <div style="display: grid; gap: 0.5rem;">
+                {% for bolao in boloes %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--cinza-medio); border-radius: 6px;">
+                    <div>
+                        <strong>{{ bolao.nome }}</strong>
+                        <span style="color: var(--texto-fraco); font-size: 0.85rem; margin-left: 1rem;">
+                            Criado por: {{ bolao.dono.username }} • {{ bolao.participantes.count() }} participantes
+                        </span>
+                    </div>
+                    <button onclick="excluirBolao({{ bolao.id }}, '{{ bolao.nome }}')" 
+                        style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">
+                        Excluir
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="mensagem" style="position: fixed; bottom: 2rem; right: 2rem; background: var(--cinza); 
+    padding: 1rem 1.5rem; border-radius: 8px; border-left: 3px solid var(--verde); 
+    display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function excluirUsuario(userId, username) {
+    if (!confirm(`Tem certeza que deseja excluir o usuário "${username}"?\n\nIsso removerá todos os palpites e participações dele!`)) {
+        return;
+    }
+    
+    fetch(`/admin/excluir_usuario/${userId}`, { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        if (data.sucesso) {
+            location.reload();
+        } else {
+            alert('Erro: ' + (data.erro || 'Desconhecido'));
+        }
+    });
+}
+
+function excluirBolao(bolaoId, nome) {
+    if (!confirm(`Tem certeza que deseja excluir o bolão "${nome}"?\n\nIsso removerá todos os palpites e participantes!`)) {
+        return;
+    }
+    
+    fetch(`/admin/excluir_bolao/${bolaoId}`, { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        if (data.sucesso) {
+            location.reload();
+        } else {
+            alert('Erro: ' + (data.erro || 'Desconhecido'));
+        }
+    });
+}
+</script>
+{% endblock %}

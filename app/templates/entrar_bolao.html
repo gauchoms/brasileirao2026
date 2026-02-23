@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}Entrar em Bolão{% endblock %}
+
+
+
+{% block content %}
+
+<div style="max-width: 500px; margin: 4rem auto;">
+
+    <h1 style="text-align: center; margin-bottom: 2rem;">Entrar em Bolão</h1>
+
+
+
+    {% if erro %}
+
+    <div style="background: #e74c3c; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; text-align: center;">
+
+        {{ erro }}
+
+    </div>
+
+    {% endif %}
+
+
+
+    {% if sucesso %}
+
+    <div style="background: var(--verde); color: #000; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; text-align: center;">
+
+        {{ sucesso }}
+
+    </div>
+
+    {% endif %}
+
+
+
+    <form method="POST" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+
+        <div style="margin-bottom: 1.5rem;">
+
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">CÓDIGO DO BOLÃO</label>
+
+            <input type="text" name="codigo" required placeholder="Ex: IIXTBTB-" maxlength="20"
+
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                       border-radius: 6px; color: var(--texto); font-size: 1.5rem; text-align: center; font-weight: 600; 
+
+                       font-family: monospace; text-transform: uppercase;">
+
+        </div>
+
+
+
+        <button type="submit" 
+
+            style="width: 100%; padding: 1rem; background: var(--verde); color: #000; border: none; 
+
+                   border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;"
+
+            onmouseover="this.style.opacity='0.85'" 
+
+            onmouseout="this.style.opacity='1'">
+
+            Entrar no Bolão
+
+        </button>
+
+
+
+        <div style="text-align: center; margin-top: 1rem;">
+
+            <a href="/meus_boloes" style="color: var(--texto-fraco); text-decoration: none; font-size: 0.9rem;">← Voltar para Meus Bolões</a>
+
+        </div>
+
+    </form>
+
+
+
+    <div style="background: var(--cinza-medio); padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
+
+        <div style="font-size: 0.9rem; color: var(--texto-fraco);">
+
+            <strong>Como funciona:</strong><br>
+
+            • Peça o código para o criador do bolão<br>
+
+            • Se o bolão for <strong>público</strong>, você entra automaticamente<br>
+
+            • Se for <strong>privado</strong>, sua solicitação será enviada para aprovação
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
