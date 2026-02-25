@@ -1,44 +1,104 @@
-{% extends "base.html" %}
-
-{% block title %}Gerenciar Competições{% endblock %}
-
-{% block content %}
-<h1>Competições Cadastradas</h1>
-
-<div style="margin: 2rem 0;">
-    <a href="/admin/listar_ligas_api" style="
-        background: var(--verde); color: #000; padding: 0.8rem 1.5rem;
-        border-radius: 6px; text-decoration: none; font-weight: 600;
-        display: inline-block;">
-        ➕ Adicionar Nova Competição
-    </a>
-</div>
-
-<div style="display: grid; gap: 1rem;">
-    {% for comp in competicoes %}
-    <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; border-left: 3px solid var(--verde);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h3 style="color: var(--amarelo); margin-bottom: 0.5rem;">{{ comp.nome }}</h3>
-                <div style="color: var(--texto-fraco); font-size: 0.9rem;">
-                    Tipo: {{ comp.tipo }} • Ano: {{ comp.ano }} • API ID: {{ comp.api_league_id }}
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-size: 1.2rem; font-weight: 600; color: var(--verde);">
-                    {{ comp.id }}
-                </div>
-                <div style="font-size: 0.8rem; color: var(--texto-fraco);">ID</div>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-
-{% if competicoes|length == 0 %}
-<div style="text-align: center; padding: 3rem; color: var(--texto-fraco);">
-    Nenhuma competição cadastrada ainda.
-</div>
-{% endif %}
-
+{% extends "base.html" %}
+
+
+
+{% block title %}Gerenciar Competições{% endblock %}
+
+
+
+{% block content %}
+
+<h1>Competições Cadastradas</h1>
+
+
+
+<div style="margin: 2rem 0;">
+
+    <a href="/admin/listar_ligas_api" style="
+
+        background: var(--verde); color: #000; padding: 0.8rem 1.5rem;
+
+        border-radius: 6px; text-decoration: none; font-weight: 600;
+
+        display: inline-block;">
+
+        ➕ Adicionar Nova Competição
+
+    </a>
+
+</div>
+
+
+<div style="display: grid; gap: 1rem;">
+    {% for comp in competicoes %}
+    <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; border-left: 3px solid var(--verde);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+                <h3 style="color: var(--amarelo); margin-bottom: 0.5rem;">{{ comp.nome }}</h3>
+                <div style="color: var(--texto-fraco); font-size: 0.9rem;">
+                    Tipo: {{ comp.tipo }} • Ano: {{ comp.ano }} • API ID: {{ comp.api_league_id }}
+                </div>
+                
+                <!-- Checkbox Dashboard -->
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.8rem; cursor: pointer;">
+                    <input type="checkbox" 
+                           {% if comp.disponivel_dashboard %}checked{% endif %}
+                           onchange="toggleDashboard({{ comp.id }}, this.checked)"
+                           style="width: 18px; height: 18px; cursor: pointer;">
+                    <span style="font-size: 0.9rem; font-weight: 600;">
+                        📊 Disponível no Dashboard
+                    </span>
+                </label>
+            </div>
+            
+            <div style="text-align: right;">
+                <div style="font-size: 1.2rem; font-weight: 600; color: var(--verde);">
+                    {{ comp.id }}
+                </div>
+                <div style="font-size: 0.8rem; color: var(--texto-fraco);">ID</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+
+
+{% if competicoes|length == 0 %}
+
+<div style="text-align: center; padding: 3rem; color: var(--texto-fraco);">
+
+    Nenhuma competição cadastrada ainda.
+
+</div>
+
+{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleDashboard(competicaoId, ativo) {
+    fetch('/admin/toggle_dashboard_competicao', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            competicao_id: competicaoId,
+            ativo: ativo
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.sucesso) {
+            console.log('Dashboard atualizado');
+        } else {
+            alert('Erro ao atualizar');
+            location.reload();
+        }
+    });
+}
+</script>
+
+
+
 {% endblock %}

@@ -289,14 +289,19 @@ def atualizar_resultados():
 @bp.route('/dashboard')
 def dashboard():
     # Busca competições disponíveis para projeção
-    competicoes_disponiveis = Competicao.query.filter(
-        (Competicao.uso == 'projecao') | (Competicao.uso == 'ambos')
-    ).all()
+ # Busca apenas competições disponíveis para dashboard
+    competicoes = Competicao.query.filter_by(disponivel_dashboard=True).all()
+    
+    # Se não tiver nenhuma, usa Série A como fallback
+    if not competicoes:
+        competicoes = Competicao.query.filter(
+            (Competicao.nome.like('%Serie A%')) | (Competicao.nome.like('%Série A%'))
+        ).all()
     
     # Competição selecionada (default: primeira disponível)
     competicao_id = request.args.get('competicao_id', type=int)
-    if not competicao_id and competicoes_disponiveis:
-        competicao_id = competicoes_disponiveis[0].id
+    if not competicao_id and competicoes:
+        competicao_id = competicoes[0].id
     
     # Busca apenas times que jogam na competição selecionada
     if competicao_id:
@@ -447,7 +452,7 @@ def dashboard():
         }
 
     return render_template('dashboard.html',
-        competicoes=competicoes_disponiveis,
+        competicoes=competicoes,
         competicao_selecionada=competicao_id,
         times=times,
         tabela=tabela,
@@ -1564,5 +1569,35 @@ def corrigir_serie_a_uso():
         db.session.execute(text("UPDATE competicao SET uso = 'ambos' WHERE nome LIKE '%Serie A%' OR nome LIKE '%Série A%'"))
         db.session.commit()
         return jsonify({'sucesso': True, 'mensagem': 'Série A agora disponível para bolões'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+@bp.route('/admin/toggle_dashboard_competicao', methods=['POST'])
+@admin_required
+def toggle_dashboard_competicao():
+    data = request.get_json()
+    competicao_id = data.get('competicao_id')
+    ativo = data.get('ativo')
+    
+    competicao = Competicao.query.get_or_404(competicao_id)
+    competicao.disponivel_dashboard = ativo
+    db.session.commit()
+    
+    return jsonify({'sucesso': True})
+
+@bp.route('/migrar_dashboard_flag_render')
+def migrar_dashboard_flag_render():
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('competicao')]
+        
+        if 'disponivel_dashboard' not in columns:
+            db.session.execute(text("ALTER TABLE competicao ADD COLUMN disponivel_dashboard BOOLEAN DEFAULT FALSE"))
+            # Marca Série A como disponível
+            db.session.execute(text("UPDATE competicao SET disponivel_dashboard = TRUE WHERE nome LIKE '%Serie A%' OR nome LIKE '%Série A%'"))
+        
+        db.session.commit()
+        return jsonify({'sucesso': True, 'mensagem': 'Dashboard flag adicionado'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500

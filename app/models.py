@@ -79,6 +79,8 @@ class Competicao(db.Model):
     tipo = db.Column(db.String(50), nullable=False)  # brasileirao, copa_mundo, libertadores
     api_league_id = db.Column(db.Integer, nullable=True)
     uso = db.Column(db.String(20), default='ambos')  # projecao, bolao, ambos
+    disponivel_dashboard = db.Column(db.Boolean, default=False)  # ADICIONA ESTA LINHA
+
     
 class RegraPontuacao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
