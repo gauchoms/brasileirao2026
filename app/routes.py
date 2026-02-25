@@ -1555,3 +1555,14 @@ def migrar_competicao_nullable():
         return jsonify({'sucesso': True, 'mensagem': 'competicao_id agora aceita NULL'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+@bp.route('/corrigir_serie_a_uso')
+def corrigir_serie_a_uso():
+    from sqlalchemy import text
+    
+    try:
+        # Marca Série A como uso='ambos'
+        db.session.execute(text("UPDATE competicao SET uso = 'ambos' WHERE nome LIKE '%Serie A%' OR nome LIKE '%Série A%'"))
+        db.session.commit()
+        return jsonify({'sucesso': True, 'mensagem': 'Série A agora disponível para bolões'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
