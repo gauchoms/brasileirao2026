@@ -1447,7 +1447,7 @@ def atualizar_jogos_bolao(bolao_id):
         return jsonify({'erro': str(e)}), 500
 
 
-        @bp.route('/migrar_pontuacao_render')
+@bp.route('/migrar_pontuacao_render')
 def migrar_pontuacao_render():
     from sqlalchemy import text, inspect
     
