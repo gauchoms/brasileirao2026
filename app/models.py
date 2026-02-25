@@ -79,17 +79,27 @@ class Competicao(db.Model):
     tipo = db.Column(db.String(50), nullable=False)  # brasileirao, copa_mundo, libertadores
     api_league_id = db.Column(db.Integer, nullable=True)
     uso = db.Column(db.String(20), default='ambos')  # projecao, bolao, ambos
-
+    
 class RegraPontuacao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
-    criador_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    pontos_placar_exato = db.Column(db.Integer, default=5)
-    pontos_resultado_certo = db.Column(db.Integer, default=3)
-    pontos_gols_time_casa = db.Column(db.Integer, default=1)
-    pontos_gols_time_fora = db.Column(db.Integer, default=1)
-    bonus_placar_perfeito = db.Column(db.Integer, default=0)
-    publica = db.Column(db.Boolean, default=True)
+    criador_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
+    
+    # Modo de pontuação: 'placar_exato', 'acertos_parciais', 'com_bonus'
+    modo = db.Column(db.String(20), default='acertos_parciais')
+    
+    # Pontuação
+    pontos_placar_exato = db.Column(db.Integer, default=10)
+    pontos_gols_vencedor = db.Column(db.Integer, default=3)
+    pontos_gols_perdedor = db.Column(db.Integer, default=1)
+    pontos_diferenca_gols = db.Column(db.Integer, default=2)
+    
+    # Bônus por jogos elásticos (só se modo = 'com_bonus')
+    limite_gols_bonus = db.Column(db.Integer, default=4)
+    pontos_por_gol_extra = db.Column(db.Integer, default=1)
+    
+    publica = db.Column(db.Boolean, default=False)
+    data_criacao = db.Column(db.DateTime)
 
 class Bolao(db.Model):
     id = db.Column(db.Integer, primary_key=True)

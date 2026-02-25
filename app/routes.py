@@ -31,25 +31,65 @@ def calcular_pontos_palpite(palpite, jogo, regra):
     pontos = 0
     
     # Placar exato
-    if (palpite.gols_casa_palpite == jogo.gols_casa and 
-        palpite.gols_fora_palpite == jogo.gols_fora):
-        pontos += regra.pontos_placar_exato
-        return pontos  # Se acertou o placar exato, já retorna (não soma os outros)
+    placar_exato = (palpite.gols_casa_palpite == jogo.gols_casa and 
+                    palpite.gols_fora_palpite == jogo.gols_fora)
     
-    # Resultado certo (vitória/empate/derrota)
+    if placar_exato:
+        pontos += regra.pontos_placar_exato
+        
+        # Se modo A (só placar exato), retorna aqui
+        if regra.modo == 'placar_exato':
+            return pontos
+    
+    # Se modo A e não acertou placar exato, retorna 0
+    if regra.modo == 'placar_exato' and not placar_exato:
+        return 0
+    
+    # Se acertou placar exato no modo B ou C, não soma acertos parciais
+    if placar_exato:
+        # Mas se for modo C, ainda pode ganhar bônus de gols
+        if regra.modo == 'com_bonus':
+            total_gols = jogo.gols_casa + jogo.gols_fora
+            if total_gols > regra.limite_gols_bonus:
+                gols_extras = total_gols - regra.limite_gols_bonus
+                pontos += gols_extras * regra.pontos_por_gol_extra
+        return pontos
+    
+    # Acertos parciais (modo B e C)
+    
+    # Determina vencedor/perdedor/empate
     resultado_real = 'empate' if jogo.gols_casa == jogo.gols_fora else ('casa' if jogo.gols_casa > jogo.gols_fora else 'fora')
     resultado_palpite = 'empate' if palpite.gols_casa_palpite == palpite.gols_fora_palpite else ('casa' if palpite.gols_casa_palpite > palpite.gols_fora_palpite else 'fora')
     
-    if resultado_real == resultado_palpite:
-        pontos += regra.pontos_resultado_certo
+    # Acertou gols do vencedor
+    if resultado_real != 'empate' and resultado_palpite == resultado_real:
+        gols_vencedor_real = jogo.gols_casa if resultado_real == 'casa' else jogo.gols_fora
+        gols_vencedor_palpite = palpite.gols_casa_palpite if resultado_palpite == 'casa' else palpite.gols_fora_palpite
+        
+        if gols_vencedor_real == gols_vencedor_palpite:
+            pontos += regra.pontos_gols_vencedor
     
-    # Gols do time da casa
-    if palpite.gols_casa_palpite == jogo.gols_casa:
-        pontos += regra.pontos_gols_time_casa
+    # Acertou gols do perdedor
+    if resultado_real != 'empate' and resultado_palpite == resultado_real:
+        gols_perdedor_real = jogo.gols_fora if resultado_real == 'casa' else jogo.gols_casa
+        gols_perdedor_palpite = palpite.gols_fora_palpite if resultado_palpite == 'casa' else palpite.gols_casa_palpite
+        
+        if gols_perdedor_real == gols_perdedor_palpite:
+            pontos += regra.pontos_gols_perdedor
     
-    # Gols do time de fora
-    if palpite.gols_fora_palpite == jogo.gols_fora:
-        pontos += regra.pontos_gols_time_fora
+    # Acertou diferença de gols
+    diferenca_real = abs(jogo.gols_casa - jogo.gols_fora)
+    diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
+    
+    if diferenca_real == diferenca_palpite:
+        pontos += regra.pontos_diferenca_gols
+    
+    # Bônus por jogos elásticos (só modo C)
+    if regra.modo == 'com_bonus':
+        total_gols = jogo.gols_casa + jogo.gols_fora
+        if total_gols > regra.limite_gols_bonus:
+            gols_extras = total_gols - regra.limite_gols_bonus
+            pontos += gols_extras * regra.pontos_por_gol_extra
     
     return pontos
 
@@ -813,8 +853,8 @@ def criar_bolao():
     if request.method == 'POST':
         nome = request.form.get('nome')
         tipo_bolao = request.form.get('tipo_bolao', 'campeonato_completo')
-        regra_pontuacao_id = request.form.get('regra_pontuacao_id', type=int)
         tipo_acesso = request.form.get('tipo_acesso', 'publico')
+        modo_pontuacao = request.form.get('modo_pontuacao', 'acertos_parciais')
         
         competicao_id = None
         time_especifico_id = None
@@ -830,6 +870,43 @@ def criar_bolao():
             time_especifico_id = request.form.get('time_id_ano', type=int)
             ano = request.form.get('ano', type=int)
         
+        # Cria a regra de pontuação conforme o modo
+        if modo_pontuacao == 'placar_exato':
+            regra = RegraPontuacao(
+                nome=f"Regra de {nome}",
+                criador_id=current_user.id,
+                modo='placar_exato',
+                pontos_placar_exato=request.form.get('pts_placar_exato_a', 10, type=int),
+                pontos_gols_vencedor=0,
+                pontos_gols_perdedor=0,
+                pontos_diferenca_gols=0
+            )
+        elif modo_pontuacao == 'acertos_parciais':
+            regra = RegraPontuacao(
+                nome=f"Regra de {nome}",
+                criador_id=current_user.id,
+                modo='acertos_parciais',
+                pontos_placar_exato=request.form.get('pts_placar_exato_b', 10, type=int),
+                pontos_gols_vencedor=request.form.get('pts_gols_vencedor_b', 3, type=int),
+                pontos_gols_perdedor=request.form.get('pts_gols_perdedor_b', 1, type=int),
+                pontos_diferenca_gols=request.form.get('pts_diferenca_gols_b', 2, type=int)
+            )
+        else:  # com_bonus
+            regra = RegraPontuacao(
+                nome=f"Regra de {nome}",
+                criador_id=current_user.id,
+                modo='com_bonus',
+                pontos_placar_exato=request.form.get('pts_placar_exato_c', 10, type=int),
+                pontos_gols_vencedor=request.form.get('pts_gols_vencedor_c', 3, type=int),
+                pontos_gols_perdedor=request.form.get('pts_gols_perdedor_c', 1, type=int),
+                pontos_diferenca_gols=request.form.get('pts_diferenca_gols_c', 2, type=int),
+                limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int),
+                pontos_por_gol_extra=request.form.get('pts_por_gol_extra', 1, type=int)
+            )
+        
+        db.session.add(regra)
+        db.session.flush()  # Garante que a regra tem um ID
+        
         # Gera código de convite único
         codigo_convite = secrets.token_urlsafe(6).upper()[:8]
         
@@ -839,7 +916,7 @@ def criar_bolao():
             competicao_id=competicao_id,
             dono_id=current_user.id,
             codigo_convite=codigo_convite,
-            regra_pontuacao_id=regra_pontuacao_id,
+            regra_pontuacao_id=regra.id,
             tipo_acesso=tipo_acesso,
             tipo_bolao=tipo_bolao,
             time_especifico_id=time_especifico_id,
@@ -847,6 +924,7 @@ def criar_bolao():
             status_pagamento='pendente',
             valor_pago=15.00
         )
+        
         
         db.session.add(novo_bolao)
         db.session.commit()
