@@ -11,7 +11,7 @@
             <div>
                 <h1 style="margin-bottom: 0.5rem;">{{ bolao.nome }}</h1>
                 <div style="color: var(--texto-fraco); font-size: 0.95rem;">
-                    {{ bolao.competicao.nome }}
+                    {{ bolao.competicao.nome if bolao.competicao else 'Múltiplas competições' }}
                 </div>
             </div>
             <div style="text-align: right;">
@@ -24,6 +24,15 @@
                 <div style="font-size: 0.8rem; color: var(--texto-fraco);">
                     Compartilhe com seus amigos
                 </div>
+                
+                {% if eh_dono %}
+                <button onclick="atualizarJogosBolao({{ bolao.id }})" id="btn-atualizar-jogos"
+                    style="margin-top: 0.5rem; width: 100%; background: var(--amarelo); color: #000; border: none; 
+                           padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                    🔄 Atualizar Jogos
+                </button>
+                <div id="msg-atualizar-jogos" style="margin-top: 0.5rem; font-size: 0.75rem; display: none;"></div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -163,6 +172,7 @@
                     <div style="text-align: right;">
                         <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_casa.nome }}</div>
                         <div style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.3rem;">
+                            <div>{{ jogo.competicao.nome }}</div>
                             {% if jogo.gols_casa is not none %}
                                 Resultado: {{ jogo.gols_casa }}
                             {% else %}
@@ -214,10 +224,11 @@
                     <div style="text-align: left;">
                         <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_fora.nome }}</div>
                         <div style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.3rem;">
+                            <div>{{ jogo.competicao.nome }}</div>
                             {% if jogo.gols_fora is not none %}
                                 Resultado: {{ jogo.gols_fora }}
                             {% else %}
-                                Rodada {{ jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') }}
+                                {{ jogo.data[:10] if jogo.data else 'A definir' }}
                             {% endif %}
                         </div>
                     </div>
@@ -396,6 +407,40 @@ function responderSolicitacao(solicitacaoId, acao) {
         }
     });
 }
+
+function atualizarJogosBolao(bolaoId) {
+    const btn = document.getElementById('btn-atualizar-jogos');
+    const msg = document.getElementById('msg-atualizar-jogos');
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Atualizando...';
+    msg.style.display = 'none';
+    
+    fetch(`/atualizar_jogos_bolao/${bolaoId}`, { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        msg.style.display = 'block';
+        if (data.sucesso) {
+            msg.style.color = 'var(--verde)';
+            msg.textContent = `✅ ${data.novos_jogos} novos jogos importados!`;
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            msg.style.color = '#e74c3c';
+            msg.textContent = '❌ ' + (data.erro || 'Erro desconhecido');
+        }
+        btn.disabled = false;
+        btn.textContent = '🔄 Atualizar Jogos';
+    })
+    .catch(err => {
+        msg.style.display = 'block';
+        msg.style.color = '#e74c3c';
+        msg.textContent = '❌ Erro ao atualizar';
+        btn.disabled = false;
+        btn.textContent = '🔄 Atualizar Jogos';
+    });
+}
+
+
 </script>
 
 {% endblock %}

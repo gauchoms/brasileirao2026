@@ -21,6 +21,7 @@ class Jogo(db.Model):
     rodada = db.Column(db.String(50), nullable=False)
     time_casa_id = db.Column(db.Integer, db.ForeignKey('time.id'), nullable=False)
     time_fora_id = db.Column(db.Integer, db.ForeignKey('time.id'), nullable=False)
+    competicao = db.relationship('Competicao', backref='jogos')  # ADICIONA ESTA LINHA
     data = db.Column(db.String(50), nullable=True)
     gols_casa = db.Column(db.Integer, nullable=True)
     gols_fora = db.Column(db.Integer, nullable=True)
@@ -98,6 +99,12 @@ class Bolao(db.Model):
     codigo_convite = db.Column(db.String(10), unique=True, nullable=False)
     regra_pontuacao_id = db.Column(db.Integer, db.ForeignKey('regra_pontuacao.id'), nullable=False)
     tipo_acesso = db.Column(db.String(20), default='publico')  # publico, privado
+
+        # NOVOS CAMPOS
+    tipo_bolao = db.Column(db.String(30), default='campeonato_completo')  # campeonato_completo, time_campeonato, time_ano_completo
+    time_especifico_id = db.Column(db.Integer, db.ForeignKey('time.id'), nullable=True)
+    ano = db.Column(db.Integer, nullable=True)
+
     status_pagamento = db.Column(db.String(20), default='pendente')  # pendente, aprovado, recusado
     valor_pago = db.Column(db.Float, default=0.0)
     data_pagamento = db.Column(db.DateTime, nullable=True)
@@ -108,6 +115,9 @@ class Bolao(db.Model):
     dono = db.relationship('Usuario', foreign_keys=[dono_id], backref='boloes_criados')
     regra = db.relationship('RegraPontuacao', backref='boloes')
     participantes = db.relationship('ParticipanteBolao', backref='bolao', lazy='dynamic')
+
+    time_especifico = db.relationship('Time', backref='boloes_time')  # NOVO relacionamento
+
 
 class SolicitacaoPagamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)

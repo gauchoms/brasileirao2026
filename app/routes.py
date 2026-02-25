@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, redirect
 from app import db
 from app.models import Time, Jogo, Projecao, Meta, Competicao, Bolao, ParticipanteBolao, RegraPontuacao,Palpite,SolicitacaoEntrada
-
+import os
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from functools import wraps
@@ -557,18 +557,26 @@ def admin_listar_ligas_api():
     from app.api import listar_ligas_disponiveis
     
     ano = request.args.get('ano', 2026, type=int)
+    pais_filtro = request.args.get('pais', 'todos')
+    
     ligas = listar_ligas_disponiveis(ano)
     
-    # Filtra só ligas de campeonatos relevantes
-    ligas_filtradas = [
-        l for l in ligas 
-        if l['tipo'] in ['League', 'Cup'] and l['pais'] in [
-            'World', 'Brazil', 'England', 'Spain', 'Italy', 'Germany', 'France', 
-            'Argentina', 'Uruguay', 'Colombia', 'Chile', 'Ecuador', 'Peru'
-        ]
-    ]
+    # Filtra por país se selecionado
+    if pais_filtro != 'todos':
+        ligas_filtradas = [l for l in ligas if l['pais'] == pais_filtro]
+    else:
+        # Mostra todas, mas filtra só League e Cup
+        ligas_filtradas = [l for l in ligas if l['tipo'] in ['League', 'Cup']]
     
-    return render_template('admin/listar_ligas.html', ligas=ligas_filtradas, ano=ano)
+    # Extrai lista única de países para o filtro
+    paises_disponiveis = sorted(list(set([l['pais'] for l in ligas if l['tipo'] in ['League', 'Cup']])))
+    
+    return render_template('admin/listar_ligas.html', 
+                         ligas=ligas_filtradas, 
+                         ano=ano, 
+                         pais_filtro=pais_filtro,
+                         paises=paises_disponiveis)
+
 
 @bp.route('/admin/importar_competicao/<int:league_id>/<int:ano>')
 @admin_required
@@ -804,9 +812,23 @@ def criar_bolao():
     
     if request.method == 'POST':
         nome = request.form.get('nome')
-        competicao_id = request.form.get('competicao_id', type=int)
+        tipo_bolao = request.form.get('tipo_bolao', 'campeonato_completo')
         regra_pontuacao_id = request.form.get('regra_pontuacao_id', type=int)
         tipo_acesso = request.form.get('tipo_acesso', 'publico')
+        
+        competicao_id = None
+        time_especifico_id = None
+        ano = None
+        
+        # Processa conforme o tipo
+        if tipo_bolao == 'campeonato_completo':
+            competicao_id = request.form.get('competicao_id', type=int)
+        elif tipo_bolao == 'time_campeonato':
+            competicao_id = request.form.get('competicao_id_time', type=int)
+            time_especifico_id = request.form.get('time_id_campeonato', type=int)
+        elif tipo_bolao == 'time_ano_completo':
+            time_especifico_id = request.form.get('time_id_ano', type=int)
+            ano = request.form.get('ano', type=int)
         
         # Gera código de convite único
         codigo_convite = secrets.token_urlsafe(6).upper()[:8]
@@ -819,14 +841,30 @@ def criar_bolao():
             codigo_convite=codigo_convite,
             regra_pontuacao_id=regra_pontuacao_id,
             tipo_acesso=tipo_acesso,
+            tipo_bolao=tipo_bolao,
+            time_especifico_id=time_especifico_id,
+            ano=ano,
             status_pagamento='pendente',
             valor_pago=15.00
         )
         
         db.session.add(novo_bolao)
         db.session.commit()
-
-        # ADICIONA: Criador entra automaticamente como participante
+         
+        #Se for bolão de time no ano completo, importa jogos automaticamente
+        if tipo_bolao == 'time_ano_completo' and time_especifico_id:
+            from app.api import importar_jogos_time_ano
+            # Busca o time para pegar o api_id
+            time = Time.query.get(time_especifico_id)
+            if time and time.api_id:
+                try:
+                    resultado = importar_jogos_time_ano(time.api_id, ano)
+                    # Aqui você poderia mostrar uma mensagem de sucesso
+                    # flash(f"Importados {resultado['total_jogos']} jogos de {len(resultado['competicoes_criadas'])} competições")
+                except Exception as e:
+                    print(f"Erro ao importar jogos: {str(e)}")
+        
+        # Criador entra automaticamente como participante
         participante = ParticipanteBolao(
             bolao_id=novo_bolao.id,
             usuario_id=current_user.id,
@@ -835,21 +873,23 @@ def criar_bolao():
         db.session.add(participante)
         db.session.commit()
         
-        
-        
         # TODO: Redirecionar para pagamento Mercado Pago
-        # Por enquanto, vamos direto para o bolão
         return redirect(f'/bolao/{novo_bolao.id}')
     
     # GET - mostra formulário
-    competicoes = Competicao.query.all()
+    competicoes = Competicao.query.filter(
+        (Competicao.uso == 'bolao') | (Competicao.uso == 'ambos')
+    ).all()
+    
+    # Busca todos os times ativos
+    times = Time.query.filter_by(ativo=True).order_by(Time.nome).all()
     
     # Cria regra padrão se não existir
     regra_padrao = RegraPontuacao.query.first()
     if not regra_padrao:
         regra_padrao = RegraPontuacao(
             nome='Padrão',
-            criador_id=1,  # Admin
+            criador_id=1,
             pontos_placar_exato=5,
             pontos_resultado_certo=3,
             pontos_gols_time_casa=1,
@@ -860,7 +900,22 @@ def criar_bolao():
     
     regras = RegraPontuacao.query.filter_by(publica=True).all()
     
-    return render_template('criar_bolao.html', competicoes=competicoes, regras=regras)
+    return render_template('criar_bolao.html', competicoes=competicoes, regras=regras, times=times)
+
+@bp.route('/api/times_por_competicao/<int:competicao_id>')
+@login_required
+def api_times_por_competicao(competicao_id):
+    # Busca times que jogam na competição
+    times_ids = db.session.query(Jogo.time_casa_id).filter_by(competicao_id=competicao_id).union(
+        db.session.query(Jogo.time_fora_id).filter_by(competicao_id=competicao_id)
+    ).distinct()
+    
+    times = Time.query.filter(Time.id.in_(times_ids)).order_by(Time.nome).all()
+    
+    return jsonify({
+        'times': [{'id': t.id, 'nome': t.nome} for t in times]
+    })
+
 
 
 @bp.route('/bolao/<int:bolao_id>')
@@ -883,9 +938,30 @@ def bolao_detalhes(bolao_id):
     if not eh_dono and not participa:
         return redirect('/meus_boloes')
     
-    # Busca jogos da competição
-    jogos = Jogo.query.filter_by(competicao_id=bolao.competicao_id).order_by(Jogo.data).all()
+
+# Busca jogos conforme o tipo de bolão
+    if bolao.tipo_bolao == 'campeonato_completo':
+        # Todos os jogos da competição
+        jogos = Jogo.query.filter_by(competicao_id=bolao.competicao_id).order_by(Jogo.data).all()
     
+    elif bolao.tipo_bolao == 'time_campeonato':
+        # Apenas jogos do time específico naquela competição
+        jogos = Jogo.query.filter(
+            ((Jogo.time_casa_id == bolao.time_especifico_id) | (Jogo.time_fora_id == bolao.time_especifico_id)),
+            Jogo.competicao_id == bolao.competicao_id
+        ).order_by(Jogo.data).all()
+    
+    elif bolao.tipo_bolao == 'time_ano_completo':
+        # Todos os jogos do time em todas as competições do ano
+        jogos = Jogo.query.join(Competicao).filter(
+            ((Jogo.time_casa_id == bolao.time_especifico_id) | (Jogo.time_fora_id == bolao.time_especifico_id)),
+            Competicao.ano == bolao.ano
+        ).order_by(Jogo.data).all()
+    
+    else:
+        jogos = []
+
+
     # Busca palpites do usuário neste bolão
     palpites_usuario = {}
     palpites = Palpite.query.filter_by(bolao_id=bolao_id, usuario_id=current_user.id).all()
@@ -1217,3 +1293,77 @@ def responder_solicitacao():
     db.session.commit()
     
     return jsonify({'sucesso': True})
+
+
+@bp.route('/atualizar_jogos_bolao/<int:bolao_id>', methods=['POST'])
+@login_required
+def atualizar_jogos_bolao(bolao_id):
+    from app.models import Bolao, Time
+    from app.api import importar_jogos_time_ano, get_jogos_competicao
+    
+    bolao = Bolao.query.get_or_404(bolao_id)
+    
+    # Verifica se é o dono
+    if bolao.dono_id != current_user.id:
+        return jsonify({'erro': 'Apenas o criador pode atualizar jogos'}), 403
+    
+    try:
+        novos_jogos = 0
+        
+        if bolao.tipo_bolao == 'time_ano_completo':
+            # Reimporta todos os jogos do time no ano
+            time = Time.query.get(bolao.time_especifico_id)
+            if time and time.api_id:
+                resultado = importar_jogos_time_ano(time.api_id, bolao.ano)
+                novos_jogos = resultado['total_jogos']
+        
+        elif bolao.tipo_bolao in ['campeonato_completo', 'time_campeonato']:
+            # Reimporta jogos da competição
+            if bolao.competicao and bolao.competicao.api_league_id:
+                jogos_data = get_jogos_competicao(bolao.competicao.api_league_id, bolao.competicao.ano)
+                
+                from app.api import processar_jogos
+                jogos = processar_jogos(jogos_data)
+                
+                times_cadastrados = {}
+                
+                for jogo in jogos:
+                    # Verifica se jogo já existe
+                    jogo_existente = Jogo.query.filter_by(api_id=jogo['api_id']).first()
+                    if jogo_existente:
+                        continue
+                    
+                    # Cadastra times se necessário
+                    for key in ['time_casa_id', 'time_fora_id']:
+                        api_id = jogo[key]
+                        nome = jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora']
+                        
+                        if api_id not in times_cadastrados:
+                            time_db = Time.query.filter_by(api_id=api_id).first()
+                            if not time_db:
+                                time_db = Time(api_id=api_id, nome=nome, ativo=True)
+                                db.session.add(time_db)
+                                db.session.flush()
+                            times_cadastrados[api_id] = time_db.id
+                    
+                    # Cria novo jogo
+                    novo_jogo = Jogo(
+                        api_id=jogo['api_id'],
+                        competicao_id=bolao.competicao_id,
+                        rodada=jogo['rodada'],
+                        time_casa_id=times_cadastrados[jogo['time_casa_id']],
+                        time_fora_id=times_cadastrados[jogo['time_fora_id']],
+                        data=jogo['data'],
+                        gols_casa=jogo['gols_casa'],
+                        gols_fora=jogo['gols_fora']
+                    )
+                    db.session.add(novo_jogo)
+                    novos_jogos += 1
+                
+                db.session.commit()
+        
+        return jsonify({'sucesso': True, 'novos_jogos': novos_jogos})
+    
+    except Exception as e:
+        print(f"Erro ao atualizar jogos: {str(e)}")
+        return jsonify({'erro': str(e)}), 500
