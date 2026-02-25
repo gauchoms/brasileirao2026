@@ -1445,3 +1445,42 @@ def atualizar_jogos_bolao(bolao_id):
     except Exception as e:
         print(f"Erro ao atualizar jogos: {str(e)}")
         return jsonify({'erro': str(e)}), 500
+
+
+        @bp.route('/migrar_pontuacao_render')
+def migrar_pontuacao_render():
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(db.engine)
+        
+        # Migra tabela regra_pontuacao
+        columns_regra = [col['name'] for col in inspector.get_columns('regra_pontuacao')]
+        
+        novas_colunas_regra = {
+            'modo': "VARCHAR(20) DEFAULT 'acertos_parciais'",
+            'pontos_gols_vencedor': 'INTEGER DEFAULT 0',
+            'pontos_gols_perdedor': 'INTEGER DEFAULT 0',
+            'pontos_diferenca_gols': 'INTEGER DEFAULT 0',
+            'ativar_bonus_gols': 'INTEGER DEFAULT 0',
+            'limite_gols_bonus': 'INTEGER DEFAULT 4',
+            'pontos_por_gol_extra': 'INTEGER DEFAULT 1',
+            'data_criacao': 'TIMESTAMP'
+        }
+        
+        for coluna, tipo in novas_colunas_regra.items():
+            if coluna not in columns_regra:
+                if 'TIMESTAMP' in tipo:
+                    db.session.execute(text(f"ALTER TABLE regra_pontuacao ADD COLUMN {coluna} TIMESTAMP"))
+                else:
+                    db.session.execute(text(f"ALTER TABLE regra_pontuacao ADD COLUMN {coluna} {tipo}"))
+        
+        db.session.commit()
+        
+        return jsonify({
+            'sucesso': True,
+            'mensagem': 'Migração concluída!'
+        })
+    
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
