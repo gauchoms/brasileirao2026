@@ -1475,6 +1475,13 @@ def migrar_pontuacao_render():
                 else:
                     db.session.execute(text(f"ALTER TABLE regra_pontuacao ADD COLUMN {coluna} {tipo}"))
         
+        # Migra tabela bolao
+        columns_bolao = [col['name'] for col in inspector.get_columns('bolao')]
+        
+        if 'data_criacao' not in columns_bolao:
+            db.session.execute(text("ALTER TABLE bolao ADD COLUMN data_criacao TIMESTAMP"))
+        
+        
         db.session.commit()
         
         return jsonify({
