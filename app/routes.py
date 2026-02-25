@@ -1495,3 +1495,52 @@ def migrar_pontuacao_render():
     
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+@bp.route('/migrar_regra_pontuacao_render')
+def migrar_regra_pontuacao_render():
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('regra_pontuacao')]
+        
+        if 'modo' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN modo VARCHAR(20) DEFAULT 'acertos_parciais'"))
+        if 'pontos_gols_vencedor' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN pontos_gols_vencedor INTEGER DEFAULT 0"))
+        if 'pontos_gols_perdedor' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN pontos_gols_perdedor INTEGER DEFAULT 0"))
+        if 'pontos_diferenca_gols' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN pontos_diferenca_gols INTEGER DEFAULT 0"))
+        if 'limite_gols_bonus' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN limite_gols_bonus INTEGER DEFAULT 4"))
+        if 'pontos_por_gol_extra' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN pontos_por_gol_extra INTEGER DEFAULT 1"))
+        if 'data_criacao' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN data_criacao TIMESTAMP"))
+        
+        db.session.commit()
+        return jsonify({'sucesso': True, 'tabela': 'regra_pontuacao'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+
+@bp.route('/migrar_bolao_render')
+def migrar_bolao_render():
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('bolao')]
+        
+        if 'tipo_bolao' not in columns:
+            db.session.execute(text("ALTER TABLE bolao ADD COLUMN tipo_bolao VARCHAR(30) DEFAULT 'campeonato_completo'"))
+        if 'time_especifico_id' not in columns:
+            db.session.execute(text("ALTER TABLE bolao ADD COLUMN time_especifico_id INTEGER"))
+        if 'ano' not in columns:
+            db.session.execute(text("ALTER TABLE bolao ADD COLUMN ano INTEGER"))
+        if 'data_criacao' not in columns:
+            db.session.execute(text("ALTER TABLE bolao ADD COLUMN data_criacao TIMESTAMP"))
+        
+        db.session.commit()
+        return jsonify({'sucesso': True, 'tabela': 'bolao'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
