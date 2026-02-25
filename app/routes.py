@@ -1465,6 +1465,10 @@ def migrar_pontuacao_render():
             'ativar_bonus_gols': 'INTEGER DEFAULT 0',
             'limite_gols_bonus': 'INTEGER DEFAULT 4',
             'pontos_por_gol_extra': 'INTEGER DEFAULT 1',
+            'data_criacao': 'TIMESTAMP',
+            'tipo_bolao': "VARCHAR(30) DEFAULT 'campeonato_completo'",
+            'time_especifico_id': 'INTEGER',
+            'ano': 'INTEGER',
             'data_criacao': 'TIMESTAMP'
         }
         
