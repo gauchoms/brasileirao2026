@@ -1544,3 +1544,14 @@ def migrar_bolao_render():
         return jsonify({'sucesso': True, 'tabela': 'bolao'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+@bp.route('/migrar_competicao_nullable')
+def migrar_competicao_nullable():
+    from sqlalchemy import text
+    
+    try:
+        # PostgreSQL permite alterar restrição NOT NULL diretamente
+        db.session.execute(text("ALTER TABLE bolao ALTER COLUMN competicao_id DROP NOT NULL"))
+        db.session.commit()
+        return jsonify({'sucesso': True, 'mensagem': 'competicao_id agora aceita NULL'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
