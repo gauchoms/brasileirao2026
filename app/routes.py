@@ -1069,6 +1069,7 @@ def bolao_detalhes(bolao_id):
                          jogos=jogos,
                          palpites_usuario=palpites_usuario,
                          solicitacoes_pendentes=solicitacoes_pendentes,
+                         todos_palpites=todos_palpites,
                          agora=datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
 
 

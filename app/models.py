@@ -175,6 +175,9 @@ class Palpite(db.Model):
     gols_fora_palpite = db.Column(db.Integer, nullable=False)
     pontos_obtidos = db.Column(db.Integer, default=0)
     data_palpite = db.Column(db.DateTime, default=db.func.now())
+    # Relacionamentos
+    usuario = db.relationship('Usuario', backref='palpites')  # ADICIONA ESTA LINHA
+    jogo = db.relationship('Jogo', backref='palpites')        # E ESTA TAMBÉM
 
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)

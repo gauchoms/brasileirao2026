@@ -243,8 +243,6 @@
         </div>
     </div>
     <!-- Tab: Todos os Palpites -->
-    
-    <!-- Tab: Todos os Palpites -->
     <div id="content-todos-palpites" style="display: none;">
         <h2 style="margin-bottom: 1.5rem;">📋 Todos os Palpites</h2>
         
@@ -289,9 +287,10 @@
                     </div>
                     
                     <div style="text-align: right;">
-                        {% set num_palpites = todos_palpites|selectattr('jogo_id', 'equalto', jogo.id)|list|length %}
+                       
+                        {% set palpites_deste_jogo = todos_palpites|selectattr('jogo_id', 'equalto', jogo.id)|list %}
                         <div style="font-size: 0.9rem; color: var(--texto-fraco);">
-                            👥 {{ num_palpites }} palpite{{ 's' if num_palpites != 1 else '' }}
+                            👥 {{ palpites_deste_jogo|length }} palpite{{ 's' if palpites_deste_jogo|length != 1 else '' }}
                         </div>
                         <div style="font-size: 0.85rem; color: var(--verde); margin-top: 0.3rem;">
                             Ver detalhes →
@@ -300,7 +299,7 @@
                 </div>
                 
                 <!-- Detalhes (inicialmente oculto) -->
-                <div id="detalhes-jogo-{{ jogo.id }}" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cinza-medio);">
+                <div id="detalhes-jogo-{{ jogo.id }}" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cinza-medio);" onclick="event.stopPropagation()">
                     
                     {% set palpites_jogo = [] %}
                     {% for palp in todos_palpites %}
@@ -365,11 +364,6 @@
             {% endfor %}
         </div>
     </div>
-
-
-
-
-
     
     {% if eh_dono %}
     <div id="content-participantes" style="display: none;">
