@@ -1059,6 +1059,9 @@ def bolao_detalhes(bolao_id):
             bolao_id=bolao_id,
             status='pendente'
         ).all()
+    # Busca todos os palpites do bolão
+    from app.models import Palpite
+    todos_palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()    
     
     return render_template('bolao_detalhes.html', 
                          bolao=bolao, 

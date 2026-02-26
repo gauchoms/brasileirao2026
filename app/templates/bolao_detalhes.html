@@ -252,8 +252,9 @@
         
         {% for jogo in jogos %}
         {% set jogo_encerrado = jogo.gols_casa is not none %}
+       
         {% set jogo_iniciado = jogo.data and jogo.data < agora %}
-        
+
         {% if jogo_iniciado or jogo_encerrado %}
         <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
             <!-- Cabeçalho do Jogo -->
@@ -283,42 +284,40 @@
             
             <!-- Palpites de Todos -->
             <div style="display: grid; gap: 0.5rem;">
-                {% set palpites_jogo = namespace(lista=[]) %}
-                {% for part in bolao.participantes.all() %}
-                    {% for palp in part.usuario.palpites %}
-                        {% if palp.jogo_id == jogo.id and palp.bolao_id == bolao.id %}
-                            {% set _ = palpites_jogo.lista.append({'usuario': part.usuario, 'palpite': palp}) %}
-                        {% endif %}
-                    {% endfor %}
+                {% set palpites_jogo = [] %}
+                {% for palp in todos_palpites %}
+                    {% if palp.jogo_id == jogo.id %}
+                        {% set _ = palpites_jogo.append(palp) %}
+                    {% endif %}
                 {% endfor %}
                 
-                {% if palpites_jogo.lista|length > 0 %}
-                    {% for item in palpites_jogo.lista %}
+                {% if palpites_jogo|length > 0 %}
+                    {% for palp in palpites_jogo %}
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--cinza-medio); border-radius: 6px;">
                         <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1;">
                             <span style="font-size: 1.2rem;">
-                                {% if item.usuario.avatar_tipo == 'sugerido' and item.usuario.avatar_sugerido_id %}
-                                    {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][item.usuario.avatar_sugerido_id - 1] }}
+                                {% if palp.usuario.avatar_tipo == 'sugerido' and palp.usuario.avatar_sugerido_id %}
+                                    {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][palp.usuario.avatar_sugerido_id - 1] }}
                                 {% else %}
                                     👤
                                 {% endif %}
                             </span>
-                            <span style="font-weight: 600;">{{ item.usuario.nome_completo or item.usuario.username }}</span>
+                            <span style="font-weight: 600;">{{ palp.usuario.nome_completo or palp.usuario.username }}</span>
                         </div>
                         
                         <div style="text-align: center;">
                             <div style="font-size: 1.2rem; font-weight: 600;">
-                                {{ item.palpite.gols_casa_palpite }} x {{ item.palpite.gols_fora_palpite }}
+                                {{ palp.gols_casa_palpite }} x {{ palp.gols_fora_palpite }}
                             </div>
                         </div>
                         
                         {% if jogo_encerrado %}
                         <div style="text-align: right; min-width: 80px;">
                             <div style="font-size: 1.2rem; font-weight: 600; 
-                                {% if item.palpite.pontos_obtidos >= 5 %}color: var(--verde);
-                                {% elif item.palpite.pontos_obtidos > 0 %}color: var(--amarelo);
+                                {% if palp.pontos_obtidos >= 5 %}color: var(--verde);
+                                {% elif palp.pontos_obtidos > 0 %}color: var(--amarelo);
                                 {% else %}color: #e74c3c;{% endif %}">
-                                {{ item.palpite.pontos_obtidos }} pts
+                                {{ palp.pontos_obtidos }} pts
                             </div>
                         </div>
                         {% else %}
@@ -328,10 +327,6 @@
                         {% endif %}
                     </div>
                     {% endfor %}
-                {% else %}
-                <div style="text-align: center; padding: 1rem; color: var(--texto-fraco);">
-                    Nenhum palpite registrado para este jogo
-                </div>
                 {% endif %}
             </div>
         </div>
