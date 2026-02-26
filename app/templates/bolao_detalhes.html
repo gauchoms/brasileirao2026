@@ -243,96 +243,133 @@
         </div>
     </div>
     <!-- Tab: Todos os Palpites -->
+    
+    <!-- Tab: Todos os Palpites -->
     <div id="content-todos-palpites" style="display: none;">
         <h2 style="margin-bottom: 1.5rem;">📋 Todos os Palpites</h2>
         
         <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
-            Veja os palpites de todos os participantes após o jogo começar
+            Clique em um jogo para ver os palpites de todos os participantes
         </p>
         
-        {% for jogo in jogos %}
-        {% set jogo_encerrado = jogo.gols_casa is not none %}
-       
-        {% set jogo_iniciado = jogo.data and jogo.data < agora %}
-
-        {% if jogo_iniciado or jogo_encerrado %}
-        <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <!-- Cabeçalho do Jogo -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--cinza-medio);">
-                <div style="flex: 1; text-align: center;">
-                    <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_casa.nome }}</div>
-                </div>
-                <div style="text-align: center; padding: 0 2rem;">
-                    {% if jogo_encerrado %}
-                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--verde);">
-                            {{ jogo.gols_casa }} x {{ jogo.gols_fora }}
-                        </div>
-                        <div style="font-size: 0.8rem; color: var(--texto-fraco); margin-top: 0.3rem;">Encerrado</div>
-                    {% else %}
-                        <div style="font-size: 1rem; color: var(--amarelo);">VS</div>
-                        <div style="font-size: 0.8rem; color: var(--texto-fraco); margin-top: 0.3rem;">Em andamento</div>
-                    {% endif %}
-                </div>
-                <div style="flex: 1; text-align: center;">
-                    <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_fora.nome }}</div>
-                </div>
-            </div>
+        <!-- Lista de Jogos -->
+        <div style="display: grid; gap: 1rem;">
+            {% for jogo in jogos %}
+            {% set jogo_encerrado = jogo.gols_casa is not none %}
+            {% set jogo_iniciado = jogo.data and jogo.data < agora %}
             
-            <div style="font-size: 0.85rem; color: var(--texto-fraco); margin-bottom: 1rem; text-align: center;">
-                {{ jogo.competicao.nome }} • {{ jogo.rodada }}
-            </div>
-            
-            <!-- Palpites de Todos -->
-            <div style="display: grid; gap: 0.5rem;">
-                {% set palpites_jogo = [] %}
-                {% for palp in todos_palpites %}
-                    {% if palp.jogo_id == jogo.id %}
-                        {% set _ = palpites_jogo.append(palp) %}
-                    {% endif %}
-                {% endfor %}
+            {% if jogo_iniciado or jogo_encerrado %}
+            <div style="background: var(--cinza); padding: 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                 onclick="toggleDetalhesJogo({{ jogo.id }})"
+                 onmouseover="this.style.background='var(--cinza-medio)'"
+                 onmouseout="this.style.background='var(--cinza)'">
                 
-                {% if palpites_jogo|length > 0 %}
-                    {% for palp in palpites_jogo %}
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--cinza-medio); border-radius: 6px;">
-                        <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1;">
-                            <span style="font-size: 1.2rem;">
-                                {% if palp.usuario.avatar_tipo == 'sugerido' and palp.usuario.avatar_sugerido_id %}
-                                    {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][palp.usuario.avatar_sugerido_id - 1] }}
+                <!-- Resumo do Jogo -->
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600; font-size: 1.1rem;">
+                                {{ jogo.time_casa.nome }} 
+                                {% if jogo_encerrado %}
+                                    <span style="color: var(--verde);">{{ jogo.gols_casa }} x {{ jogo.gols_fora }}</span>
                                 {% else %}
-                                    👤
+                                    <span style="color: var(--amarelo);">vs</span>
                                 {% endif %}
+                                {{ jogo.time_fora.nome }}
                             </span>
-                            <span style="font-weight: 600;">{{ palp.usuario.nome_completo or palp.usuario.username }}</span>
                         </div>
-                        
-                        <div style="text-align: center;">
-                            <div style="font-size: 1.2rem; font-weight: 600;">
-                                {{ palp.gols_casa_palpite }} x {{ palp.gols_fora_palpite }}
-                            </div>
+                        <div style="font-size: 0.85rem; color: var(--texto-fraco);">
+                            {{ jogo.competicao.nome }} • {{ jogo.rodada }}
+                            {% if jogo_encerrado %}
+                                • <span style="color: var(--verde);">Encerrado</span>
+                            {% else %}
+                                • <span style="color: var(--amarelo);">Em andamento</span>
+                            {% endif %}
                         </div>
-                        
-                        {% if jogo_encerrado %}
-                        <div style="text-align: right; min-width: 80px;">
-                            <div style="font-size: 1.2rem; font-weight: 600; 
-                                {% if palp.pontos_obtidos >= 5 %}color: var(--verde);
-                                {% elif palp.pontos_obtidos > 0 %}color: var(--amarelo);
-                                {% else %}color: #e74c3c;{% endif %}">
-                                {{ palp.pontos_obtidos }} pts
-                            </div>
-                        </div>
-                        {% else %}
-                        <div style="text-align: right; min-width: 80px; color: var(--texto-fraco); font-size: 0.85rem;">
-                            Aguardando
-                        </div>
-                        {% endif %}
                     </div>
+                    
+                    <div style="text-align: right;">
+                        {% set num_palpites = todos_palpites|selectattr('jogo_id', 'equalto', jogo.id)|list|length %}
+                        <div style="font-size: 0.9rem; color: var(--texto-fraco);">
+                            👥 {{ num_palpites }} palpite{{ 's' if num_palpites != 1 else '' }}
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--verde); margin-top: 0.3rem;">
+                            Ver detalhes →
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Detalhes (inicialmente oculto) -->
+                <div id="detalhes-jogo-{{ jogo.id }}" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cinza-medio);">
+                    
+                    {% set palpites_jogo = [] %}
+                    {% for palp in todos_palpites %}
+                        {% if palp.jogo_id == jogo.id %}
+                            {% set _ = palpites_jogo.append(palp) %}
+                        {% endif %}
                     {% endfor %}
-                {% endif %}
+                    
+                    {% if palpites_jogo|length > 0 %}
+                        <!-- Ordena por pontos (se jogo encerrado) -->
+                        {% if jogo_encerrado %}
+                            {% set palpites_ordenados = palpites_jogo|sort(attribute='pontos_obtidos', reverse=True) %}
+                        {% else %}
+                            {% set palpites_ordenados = palpites_jogo %}
+                        {% endif %}
+                        
+                        <div style="display: grid; gap: 0.5rem;">
+                            {% for palp in palpites_ordenados %}
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--fundo); border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1;">
+                                    <span style="font-size: 1.2rem;">
+                                        {% if palp.usuario.avatar_tipo == 'sugerido' and palp.usuario.avatar_sugerido_id %}
+                                            {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][palp.usuario.avatar_sugerido_id - 1] }}
+                                        {% else %}
+                                            👤
+                                        {% endif %}
+                                    </span>
+                                    <span style="font-weight: 600;">{{ palp.usuario.nome_completo or palp.usuario.username }}</span>
+                                </div>
+                                
+                                <div style="text-align: center; min-width: 80px;">
+                                    <div style="font-size: 1.2rem; font-weight: 600;">
+                                        {{ palp.gols_casa_palpite }} x {{ palp.gols_fora_palpite }}
+                                    </div>
+                                </div>
+                                
+                                {% if jogo_encerrado %}
+                                <div style="text-align: right; min-width: 80px;">
+                                    <div style="font-size: 1.2rem; font-weight: 600; 
+                                        {% if palp.pontos_obtidos >= 5 %}color: var(--verde);
+                                        {% elif palp.pontos_obtidos > 0 %}color: var(--amarelo);
+                                        {% else %}color: #e74c3c;{% endif %}">
+                                        {{ palp.pontos_obtidos }} pts
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div style="text-align: right; min-width: 80px; color: var(--texto-fraco); font-size: 0.85rem;">
+                                    Aguardando
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                    <div style="text-align: center; padding: 1rem; color: var(--texto-fraco);">
+                        Nenhum palpite registrado
+                    </div>
+                    {% endif %}
+                </div>
             </div>
+            {% endif %}
+            {% endfor %}
         </div>
-        {% endif %}
-        {% endfor %}
     </div>
+
+
+
+
+
     
     {% if eh_dono %}
     <div id="content-participantes" style="display: none;">
@@ -539,7 +576,15 @@ function atualizarJogosBolao(bolaoId) {
     });
 }
 
-
+function toggleDetalhesJogo(jogoId) {
+    const detalhes = document.getElementById('detalhes-jogo-' + jogoId);
+    if (detalhes.style.display === 'none') {
+        detalhes.style.display = 'block';
+    } else {
+        detalhes.style.display = 'none';
+    }
+    event.stopPropagation();
+}
 </script>
 
 {% endblock %}
