@@ -47,6 +47,10 @@
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
             🎯 Meus Palpites
         </a>
+        <a href="#" onclick="mostrarTab('todos-palpites'); return false;" id="tab-todos-palpites"
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
+            📋 Todos os Palpites
+        </a>
         {% if eh_dono %}
         <a href="#" onclick="mostrarTab('participantes'); return false;" id="tab-participantes"
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
@@ -238,7 +242,102 @@
             {% endfor %}
         </div>
     </div>
-
+    <!-- Tab: Todos os Palpites -->
+    <div id="content-todos-palpites" style="display: none;">
+        <h2 style="margin-bottom: 1.5rem;">📋 Todos os Palpites</h2>
+        
+        <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
+            Veja os palpites de todos os participantes após o jogo começar
+        </p>
+        
+        {% for jogo in jogos %}
+        {% set jogo_encerrado = jogo.gols_casa is not none %}
+        {% set jogo_iniciado = jogo.data and jogo.data < agora %}
+        
+        {% if jogo_iniciado or jogo_encerrado %}
+        <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <!-- Cabeçalho do Jogo -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--cinza-medio);">
+                <div style="flex: 1; text-align: center;">
+                    <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_casa.nome }}</div>
+                </div>
+                <div style="text-align: center; padding: 0 2rem;">
+                    {% if jogo_encerrado %}
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--verde);">
+                            {{ jogo.gols_casa }} x {{ jogo.gols_fora }}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--texto-fraco); margin-top: 0.3rem;">Encerrado</div>
+                    {% else %}
+                        <div style="font-size: 1rem; color: var(--amarelo);">VS</div>
+                        <div style="font-size: 0.8rem; color: var(--texto-fraco); margin-top: 0.3rem;">Em andamento</div>
+                    {% endif %}
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_fora.nome }}</div>
+                </div>
+            </div>
+            
+            <div style="font-size: 0.85rem; color: var(--texto-fraco); margin-bottom: 1rem; text-align: center;">
+                {{ jogo.competicao.nome }} • {{ jogo.rodada }}
+            </div>
+            
+            <!-- Palpites de Todos -->
+            <div style="display: grid; gap: 0.5rem;">
+                {% set palpites_jogo = namespace(lista=[]) %}
+                {% for part in bolao.participantes.all() %}
+                    {% for palp in part.usuario.palpites %}
+                        {% if palp.jogo_id == jogo.id and palp.bolao_id == bolao.id %}
+                            {% set _ = palpites_jogo.lista.append({'usuario': part.usuario, 'palpite': palp}) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                
+                {% if palpites_jogo.lista|length > 0 %}
+                    {% for item in palpites_jogo.lista %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--cinza-medio); border-radius: 6px;">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1;">
+                            <span style="font-size: 1.2rem;">
+                                {% if item.usuario.avatar_tipo == 'sugerido' and item.usuario.avatar_sugerido_id %}
+                                    {{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][item.usuario.avatar_sugerido_id - 1] }}
+                                {% else %}
+                                    👤
+                                {% endif %}
+                            </span>
+                            <span style="font-weight: 600;">{{ item.usuario.nome_completo or item.usuario.username }}</span>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.2rem; font-weight: 600;">
+                                {{ item.palpite.gols_casa_palpite }} x {{ item.palpite.gols_fora_palpite }}
+                            </div>
+                        </div>
+                        
+                        {% if jogo_encerrado %}
+                        <div style="text-align: right; min-width: 80px;">
+                            <div style="font-size: 1.2rem; font-weight: 600; 
+                                {% if item.palpite.pontos_obtidos >= 5 %}color: var(--verde);
+                                {% elif item.palpite.pontos_obtidos > 0 %}color: var(--amarelo);
+                                {% else %}color: #e74c3c;{% endif %}">
+                                {{ item.palpite.pontos_obtidos }} pts
+                            </div>
+                        </div>
+                        {% else %}
+                        <div style="text-align: right; min-width: 80px; color: var(--texto-fraco); font-size: 0.85rem;">
+                            Aguardando
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="text-align: center; padding: 1rem; color: var(--texto-fraco);">
+                    Nenhum palpite registrado para este jogo
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
     
     {% if eh_dono %}
     <div id="content-participantes" style="display: none;">
@@ -310,10 +409,12 @@
 {% endblock %}
 {% block scripts %}
 <script>
+
 function mostrarTab(tab) {
     // Esconde todos
     document.getElementById('content-ranking').style.display = 'none';
     document.getElementById('content-palpites').style.display = 'none';
+    document.getElementById('content-todos-palpites').style.display = 'none';
     {% if eh_dono %}
     document.getElementById('content-participantes').style.display = 'none';
     {% endif %}
@@ -323,6 +424,8 @@ function mostrarTab(tab) {
     document.getElementById('tab-ranking').style.borderBottom = '3px solid transparent';
     document.getElementById('tab-palpites').style.color = 'var(--texto-fraco)';
     document.getElementById('tab-palpites').style.borderBottom = '3px solid transparent';
+    document.getElementById('tab-todos-palpites').style.color = 'var(--texto-fraco)';
+    document.getElementById('tab-todos-palpites').style.borderBottom = '3px solid transparent';
     {% if eh_dono %}
     document.getElementById('tab-participantes').style.color = 'var(--texto-fraco)';
     document.getElementById('tab-participantes').style.borderBottom = '3px solid transparent';
@@ -333,6 +436,7 @@ function mostrarTab(tab) {
     document.getElementById('tab-' + tab).style.color = 'var(--verde)';
     document.getElementById('tab-' + tab).style.borderBottom = '3px solid var(--verde)';
 }
+
 
 function salvarPalpite(jogoId, bolaoId) {
     const golsCasa = document.getElementById('casa-' + jogoId).value;

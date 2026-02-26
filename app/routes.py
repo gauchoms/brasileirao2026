@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, redirect
 from app import db
+from datetime import datetime
 from app.models import Time, Jogo, Projecao, Meta, Competicao, Bolao, ParticipanteBolao, RegraPontuacao,Palpite,SolicitacaoEntrada
 import os
 from flask_login import login_user, logout_user, login_required, current_user
@@ -1064,7 +1065,8 @@ def bolao_detalhes(bolao_id):
                          eh_dono=eh_dono,
                          jogos=jogos,
                          palpites_usuario=palpites_usuario,
-                         solicitacoes_pendentes=solicitacoes_pendentes)
+                         solicitacoes_pendentes=solicitacoes_pendentes,
+                         agora=datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
 
 
 @bp.route('/salvar_palpite', methods=['POST'])
