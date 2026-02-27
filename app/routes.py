@@ -719,7 +719,8 @@ def registro():
             tipo='participante'
         )
         novo_usuario.set_password(password)
-        
+        # Registra aceite dos termos
+        novo_usuario.termos_aceitos_em = db.func.now()
         db.session.add(novo_usuario)
         db.session.commit()
         
@@ -1076,7 +1077,9 @@ def bolao_detalhes(bolao_id):
 @bp.route('/salvar_palpite', methods=['POST'])
 @login_required
 def salvar_palpite():
-    from app.models import Palpite
+    from app.models import Palpite, Jogo
+    from app.comprovante import gerar_hash_palpite
+    import time
     
     data = request.get_json()
     bolao_id = data.get('bolao_id')
@@ -1084,10 +1087,25 @@ def salvar_palpite():
     gols_casa = data.get('gols_casa')
     gols_fora = data.get('gols_fora')
     
-    # Verifica se o jogo já aconteceu
-    jogo = Jogo.query.get(jogo_id)
-    if jogo.gols_casa is not None:
-        return jsonify({'erro': 'Jogo já aconteceu, não pode mais palpitar'}), 400
+    # Verifica se jogo ainda não começou
+    jogo = Jogo.query.get_or_404(jogo_id)
+    if jogo.data:
+        from datetime import datetime
+        data_jogo = datetime.strptime(jogo.data, '%Y-%m-%dT%H:%M:%S')
+        if datetime.now() >= data_jogo:
+            return jsonify({'erro': 'Jogo já começou! Palpites encerrados.'}), 400
+    
+    # Gera timestamp preciso (milissegundos)
+    timestamp_ms = int(time.time() * 1000)
+    
+    # Gera hash do palpite
+    hash_comprovante = gerar_hash_palpite(
+        current_user.id,
+        jogo_id,
+        gols_casa,
+        gols_fora,
+        timestamp_ms
+    )
     
     # Busca ou cria palpite
     palpite = Palpite.query.filter_by(
@@ -1097,22 +1115,31 @@ def salvar_palpite():
     ).first()
     
     if palpite:
+        # Atualiza palpite existente
         palpite.gols_casa_palpite = gols_casa
         palpite.gols_fora_palpite = gols_fora
+        palpite.hash_comprovante = hash_comprovante
+        palpite.timestamp_preciso = timestamp_ms
     else:
+        # Cria novo palpite
         palpite = Palpite(
             bolao_id=bolao_id,
             usuario_id=current_user.id,
             jogo_id=jogo_id,
             gols_casa_palpite=gols_casa,
-            gols_fora_palpite=gols_fora
+            gols_fora_palpite=gols_fora,
+            hash_comprovante=hash_comprovante,
+            timestamp_preciso=timestamp_ms
         )
         db.session.add(palpite)
     
     db.session.commit()
     
-    return jsonify({'sucesso': True})
-
+    return jsonify({
+        'sucesso': True,
+        'hash': hash_comprovante,
+        'timestamp': timestamp_ms
+    })
 
 @bp.route('/testar_api')
 def testar_api():
@@ -1605,5 +1632,138 @@ def migrar_dashboard_flag_render():
         
         db.session.commit()
         return jsonify({'sucesso': True, 'mensagem': 'Dashboard flag adicionado'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+    
+
+@bp.route('/termos')
+def termos():
+    from datetime import datetime
+    return render_template('termos.html', now=datetime.now)
+
+@bp.route('/privacidade')
+def privacidade():
+    from datetime import datetime
+    return render_template('privacidade.html', now=datetime.now)
+
+
+@bp.route('/comprovante/<int:palpite_id>')
+@login_required
+def gerar_comprovante_pdf(palpite_id):
+    from app.models import Palpite
+    from app.comprovante import gerar_qr_code
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.units import cm
+    from io import BytesIO
+    from datetime import datetime
+    
+    palpite = Palpite.query.get_or_404(palpite_id)
+    
+    # Verifica se é o dono do palpite
+    if palpite.usuario_id != current_user.id:
+        return "Acesso negado", 403
+    
+    # Cria PDF
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # Título
+    c.setFont("Helvetica-Bold", 20)
+    c.drawCentredString(width/2, height - 3*cm, "COMPROVANTE DE PALPITE")
+    
+    # Hash (selo de autenticidade)
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(width/2, height - 4*cm, f"Hash: {palpite.hash_comprovante}")
+    
+    # Dados do palpite
+    y = height - 6*cm
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(3*cm, y, "Dados do Palpite:")
+    
+    c.setFont("Helvetica", 12)
+    y -= 1*cm
+    c.drawString(3*cm, y, f"Participante: {palpite.usuario.nome_completo or palpite.usuario.username}")
+    
+    y -= 0.8*cm
+    c.drawString(3*cm, y, f"Jogo: {palpite.jogo.time_casa.nome} vs {palpite.jogo.time_fora.nome}")
+    
+    y -= 0.8*cm
+    c.drawString(3*cm, y, f"Palpite: {palpite.gols_casa_palpite} x {palpite.gols_fora_palpite}")
+    
+    y -= 0.8*cm
+    timestamp_dt = datetime.fromtimestamp(palpite.timestamp_preciso / 1000)
+    c.drawString(3*cm, y, f"Data/Hora: {timestamp_dt.strftime('%d/%m/%Y às %H:%M:%S.%f')[:-3]}")
+    
+    # QR Code
+    qr_img = gerar_qr_code(palpite.hash_comprovante)
+    from reportlab.lib.utils import ImageReader
+    import base64
+    
+    qr_data = base64.b64decode(qr_img)
+    qr_buffer = BytesIO(qr_data)
+    c.drawImage(ImageReader(qr_buffer), width/2 - 3*cm, height - 18*cm, width=6*cm, height=6*cm)
+    
+    # Instruções
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(width/2, height - 19*cm, "Escaneie o QR Code para verificar autenticidade")
+    
+    # Rodapé
+    c.setFont("Helvetica", 8)
+    c.drawCentredString(width/2, 2*cm, "Este comprovante é imutável e criptograficamente seguro")
+    c.drawCentredString(width/2, 1.5*cm, "Brasileirão 2026 - www.brasileirao2026.com")
+    
+    c.save()
+    
+    buffer.seek(0)
+    
+    from flask import send_file
+    return send_file(
+        buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f'comprovante_palpite_{palpite_id}.pdf'
+    )
+@bp.route('/verificar/<hash_comprovante>')
+def verificar_comprovante(hash_comprovante):
+    from app.models import Palpite
+    
+    palpite = Palpite.query.filter_by(hash_comprovante=hash_comprovante).first()
+    
+    return render_template('verificar.html', palpite=palpite)
+
+@bp.route('/migrar_termos_render')
+def migrar_termos_render():
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('usuario')]
+        
+        if 'termos_aceitos_em' not in columns:
+            db.session.execute(text("ALTER TABLE usuario ADD COLUMN termos_aceitos_em TIMESTAMP"))
+        
+        db.session.commit()
+        return jsonify({'sucesso': True})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+
+@bp.route('/migrar_comprovante_render')
+def migrar_comprovante_render():
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('palpite')]
+        
+        if 'hash_comprovante' not in columns:
+            db.session.execute(text("ALTER TABLE palpite ADD COLUMN hash_comprovante VARCHAR(64)"))
+        
+        if 'timestamp_preciso' not in columns:
+            db.session.execute(text("ALTER TABLE palpite ADD COLUMN timestamp_preciso BIGINT"))
+        
+        db.session.commit()
+        return jsonify({'sucesso': True})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500

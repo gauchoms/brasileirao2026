@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Política de Privacidade{% endblock %}
+{% block content %}
+<div style="max-width: 800px; margin: 3rem auto; padding: 0 1rem;">
+    <h1 style="margin-bottom: 2rem;">Política de Privacidade (LGPD)</h1>
+    
+    <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; line-height: 1.8;">
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">1. Dados Coletados</h2>
+        <p><strong>Coletamos:</strong><br>
+        • Nome completo<br>
+        • Email<br>
+        • Avatar (emoji ou foto enviada)<br>
+        • Time do coração<br>
+        • Palpites e pontuação<br>
+        • Data e hora de ações (login, palpites, pagamentos)</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">2. Uso dos Dados</h2>
+        <p><strong>Usamos seus dados para:</strong><br>
+        • Criar e gerenciar sua conta<br>
+        • Processar palpites e calcular pontuação<br>
+        • Enviar emails sobre solicitações e resultados<br>
+        • Processar pagamentos<br>
+        • Melhorar o serviço</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">3. Compartilhamento</h2>
+        <p><strong>Compartilhamos dados apenas:</strong><br>
+        • Com outros participantes do bolão (nome, avatar, pontuação)<br>
+        • Com Mercado Pago (para processar pagamentos)<br>
+        • Com SendGrid (para enviar emails transacionais)<br>
+        • NUNCA vendemos seus dados a terceiros</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">4. Armazenamento</h2>
+        <p>• Dados armazenados em servidor seguro (Render.com)<br>
+        • Backup diário<br>
+        • Criptografia em trânsito (HTTPS)<br>
+        • Senhas com hash bcrypt</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">5. Seus Direitos (LGPD)</h2>
+        <p>Você tem direito a:<br>
+        • <strong>Acesso:</strong> Ver todos os dados que temos sobre você<br>
+        • <strong>Correção:</strong> Corrigir dados incorretos<br>
+        • <strong>Exclusão:</strong> Solicitar remoção de seus dados<br>
+        • <strong>Portabilidade:</strong> Receber seus dados em formato estruturado<br>
+        • <strong>Revogação:</strong> Cancelar sua conta a qualquer momento</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">6. Cookies</h2>
+        <p>• Usamos cookies apenas para manter login<br>
+        • Não usamos cookies de rastreamento ou publicidade</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">7. Menores de Idade</h2>
+        <p>• Serviço destinado a maiores de 18 anos<br>
+        • Menores precisam de autorização dos pais</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">8. Alterações</h2>
+        <p>Mudanças nesta política serão comunicadas por email com 30 dias de antecedência.</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">9. Contato - DPO</h2>
+        <p>Para exercer seus direitos ou tirar dúvidas:<br>
+        Email: privacidade@brasileirao2026.com<br>
+        Resposta em até 15 dias úteis</p>
+        
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--cinza-medio); color: var(--texto-fraco); font-size: 0.9rem;">
+            Última atualização: {{ now().strftime('%d/%m/%Y') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

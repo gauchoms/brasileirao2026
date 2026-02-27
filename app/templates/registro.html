@@ -1,57 +1,123 @@
-{% extends "base.html" %}
-
-{% block title %}Criar Conta{% endblock %}
-
-{% block content %}
-<div style="max-width: 500px; margin: 4rem auto;">
-    <h1 style="text-align: center; margin-bottom: 2rem;">Criar Conta</h1>
-    
-    {% if erro %}
-    <div style="background: #e74c3c; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; text-align: center;">
-        {{ erro }}
-    </div>
-    {% endif %}
-    
-    <form method="POST" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
-        <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">NOME COMPLETO</label>
-            <input type="text" name="nome_completo" required 
-                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
-                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
-        </div>
-
-        <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">USUÁRIO</label>
-            <input type="text" name="username" required 
-                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
-                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
-        </div>
-
-        <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">E-MAIL</label>
-            <input type="email" name="email" required 
-                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
-                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
-        </div>
-        
-        <div style="margin-bottom: 2rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">SENHA</label>
-            <input type="password" name="password" required 
-                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
-                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
-        </div>
-        
-        <button type="submit" 
-            style="width: 100%; padding: 0.9rem; background: var(--verde); color: #000; border: none; 
-                   border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;"
-            onmouseover="this.style.opacity='0.85'" 
-            onmouseout="this.style.opacity='1'">
-            Criar Conta
-        </button>
-
-        <div style="text-align: center; margin-top: 1.5rem; color: var(--texto-fraco); font-size: 0.9rem;">
-            Já tem conta? <a href="/login" style="color: var(--verde); text-decoration: none;">Faça login</a>
-        </div>
-    </form>
-</div>
+{% extends "base.html" %}
+
+
+
+{% block title %}Criar Conta{% endblock %}
+
+
+
+{% block content %}
+
+<div style="max-width: 500px; margin: 4rem auto;">
+
+    <h1 style="text-align: center; margin-bottom: 2rem;">Criar Conta</h1>
+
+    
+
+    {% if erro %}
+
+    <div style="background: #e74c3c; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; text-align: center;">
+
+        {{ erro }}
+
+    </div>
+
+    {% endif %}
+
+    
+
+    <form method="POST" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+
+        <div style="margin-bottom: 1.5rem;">
+
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">NOME COMPLETO</label>
+
+            <input type="text" name="nome_completo" required 
+
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+
+        </div>
+
+
+
+        <div style="margin-bottom: 1.5rem;">
+
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">USUÁRIO</label>
+
+            <input type="text" name="username" required 
+
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+
+        </div>
+
+
+
+        <div style="margin-bottom: 1.5rem;">
+
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">E-MAIL</label>
+
+            <input type="email" name="email" required 
+
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+
+        </div>
+
+        
+
+        <div style="margin-bottom: 2rem;">
+
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">SENHA</label>
+
+            <input type="password" name="password" required 
+
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+
+        </div>
+        <!-- Aceite de Termos -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: start; gap: 0.8rem; cursor: pointer;">
+                <input type="checkbox" name="aceitar_termos" required
+                    style="margin-top: 0.3rem; width: 20px; height: 20px; cursor: pointer;">
+                <span style="font-size: 0.9rem; line-height: 1.6;">
+                    Li e aceito os <a href="/termos" target="_blank" style="color: var(--verde); text-decoration: underline;">Termos de Uso</a> 
+                    e a <a href="/privacidade" target="_blank" style="color: var(--verde); text-decoration: underline;">Política de Privacidade</a>
+                </span>
+            </label>
+        </div>
+        
+
+        <button type="submit" 
+
+            style="width: 100%; padding: 0.9rem; background: var(--verde); color: #000; border: none; 
+
+                   border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;"
+
+            onmouseover="this.style.opacity='0.85'" 
+
+            onmouseout="this.style.opacity='1'">
+
+            Criar Conta
+
+        </button>
+
+
+
+        <div style="text-align: center; margin-top: 1.5rem; color: var(--texto-fraco); font-size: 0.9rem;">
+
+            Já tem conta? <a href="/login" style="color: var(--verde); text-decoration: none;">Faça login</a>
+
+        </div>
+
+    </form>
+
+</div>
+
 {% endblock %}

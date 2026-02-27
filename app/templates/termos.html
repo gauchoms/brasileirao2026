@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Termos de Uso{% endblock %}
+{% block content %}
+<div style="max-width: 800px; margin: 3rem auto; padding: 0 1rem;">
+    <h1 style="margin-bottom: 2rem;">Termos de Uso</h1>
+    
+    <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; line-height: 1.8;">
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">1. Aceitação dos Termos</h2>
+        <p>Ao se cadastrar no Brasileirão 2026, você aceita integralmente estes Termos de Uso.</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">2. Descrição do Serviço</h2>
+        <p>O Brasileirão 2026 é uma plataforma de bolões esportivos online onde usuários podem criar competições, fazer palpites e competir com amigos.</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">3. Cadastro e Conta</h2>
+        <p>• Você deve fornecer informações verdadeiras e atualizadas<br>
+        • É proibido criar múltiplas contas<br>
+        • Você é responsável por manter a segurança da sua senha</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">4. Bolões e Pagamentos</h2>
+        <p>• Valor por bolão: R$ 15,00<br>
+        • Pagamentos via Mercado Pago<br>
+        • Sem reembolso após criação do bolão<br>
+        • Premiação definida pelo criador do bolão</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">5. Palpites</h2>
+        <p>• Palpites são registrados com hash criptográfico (impossível alterar)<br>
+        • Prazo: até o início da partida<br>
+        • Comprovante disponível para download</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">6. Pontuação</h2>
+        <p>• Calculada automaticamente conforme regras do bolão<br>
+        • 3 modos disponíveis (placar exato, acertos parciais, bônus)<br>
+        • Sistema auditável e transparente</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">7. Proibições</h2>
+        <p>É proibido:<br>
+        • Manipular resultados ou palpites<br>
+        • Usar bots ou automação<br>
+        • Compartilhar conta com terceiros<br>
+        • Criar bolões fraudulentos</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">8. Responsabilidades</h2>
+        <p>• O site não se responsabiliza por erros nos dados da API de futebol<br>
+        • Não garantimos disponibilidade 100% do serviço<br>
+        • Disputas entre participantes devem ser resolvidas entre eles</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">9. Modificações</h2>
+        <p>Reservamos o direito de modificar estes termos a qualquer momento. Mudanças serão comunicadas por email.</p>
+        
+        <h2 style="color: var(--amarelo); margin-top: 2rem;">10. Contato</h2>
+        <p>Dúvidas: contato@brasileirao2026.com</p>
+        
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--cinza-medio); color: var(--texto-fraco); font-size: 0.9rem;">
+            Última atualização: {{ now().strftime('%d/%m/%Y') }}
+        </div>
+    </div>
+</div>
+{% endblock %}
