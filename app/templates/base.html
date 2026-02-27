@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="google-adsense-account" content="ca-pub-8239762738099420">
     <title>{% block title %}Brasileirão 2026{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -76,21 +76,157 @@
             color: var(--verde);
             margin-bottom: 1rem;
         }
+/* Mobile Menu */
+        .nav-desktop {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            width: 100%;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        
+        .mobile-menu-btn span {
+            width: 25px;
+            height: 3px;
+            background: var(--texto);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        
+        /* Overlay escuro */
+        .mobile-menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 998;
+        }
+        
+        .mobile-menu-overlay.active {
+            display: block;
+        }
+        
+        /* Menu lateral */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            bottom: 0;
+            width: 80%;
+            max-width: 300px;
+            background: var(--cinza);
+            z-index: 999;
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            padding-top: 70px;
+        }
+        
+        .mobile-menu.active {
+            right: 0;
+        }
+        
+        .mobile-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--texto);
+            text-decoration: none;
+            border-bottom: 1px solid var(--cinza-medio);
+        }
+        
+        .mobile-menu a:hover {
+            background: var(--fundo);
+        }
+        
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem;
+            }
+            
+            .nav-desktop {
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: flex;
+            }
+            
+            .logo {
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body>
     <nav>
         <a href="/" class="logo">Brasileirão 2026</a>
-        <a href="/projecoes">Projeções</a>
-        <a href="/dashboard">Dashboard</a>
-        <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
-            {% if current_user.is_authenticated %}
-                <a href="/meus_boloes">🎯 Bolões</a>
+        
+        <!-- Menu Desktop -->
+        <div class="nav-desktop">
+            <a href="/projecoes">Projeções</a>
+            <a href="/dashboard">Dashboard</a>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
+                {% if current_user.is_authenticated %}
+                    <a href="/meus_boloes">🎯 Bolões</a>
                     {% if current_user.is_admin %}
                         <a href="/admin/competicoes">⚙️ Admin</a>
                     {% endif %}
-                <a href="/perfil">👤 Perfil</a>
-                <span style="display: flex; align-items: center; gap: 0.5rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                    <a href="/perfil">👤 Perfil</a>
+                    <span style="display: flex; align-items: center; gap: 0.5rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                        {% if current_user.avatar_tipo == 'sugerido' and current_user.avatar_sugerido_id %}
+                            <span style="font-size: 1.5rem;">{{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][current_user.avatar_sugerido_id - 1] }}</span>
+                        {% elif current_user.avatar_tipo == 'upload' and current_user.avatar_custom_url %}
+                            <img src="{{ current_user.avatar_custom_url }}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                        {% else %}
+                            <span style="font-size: 1.5rem;">👤</span>
+                        {% endif %}
+                        {{ current_user.username }}
+                        {% if current_user.is_admin %}
+                            <span style="color: var(--amarelo);">(Admin)</span>
+                        {% endif %}
+                    </span>
+                    <a href="/logout" style="color: #e74c3c;">Sair</a>
+                {% else %}
+                    <a href="/login">Login</a>
+                    <a href="/registro">Criar Conta</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Botão Hamburguer Mobile -->
+        <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </nav>
+    
+    
+     <!-- Overlay Mobile -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+    <!-- Menu Mobile -->
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="/projecoes">Projeções</a>
+        <a href="/dashboard">Dashboard</a>
+        {% if current_user.is_authenticated %}
+            <a href="/meus_boloes">🎯 Bolões</a>
+            {% if current_user.is_admin %}
+                <a href="/admin/competicoes">⚙️ Admin</a>
+            {% endif %}
+            <a href="/perfil">👤 Perfil</a>
+            <div style="padding: 1rem; border-top: 1px solid var(--cinza-medio); margin-top: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
                     {% if current_user.avatar_tipo == 'sugerido' and current_user.avatar_sugerido_id %}
                         <span style="font-size: 1.5rem;">{{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][current_user.avatar_sugerido_id - 1] }}</span>
                     {% elif current_user.avatar_tipo == 'upload' and current_user.avatar_custom_url %}
@@ -98,23 +234,41 @@
                     {% else %}
                         <span style="font-size: 1.5rem;">👤</span>
                     {% endif %}
-                    {{ current_user.username }}
-                    {% if current_user.is_admin %}
-                        <span style="color: var(--amarelo);">(Admin)</span>
-                    {% endif %}
-                </span>
-                <a href="/logout" style="color: #e74c3c;">Sair</a>
-            {% else %}
-                <a href="/login">Login</a>
-                <a href="/registro">Criar Conta</a>
-            {% endif %}
-        </div>
-
-    </nav>
+                    <span>{{ current_user.username }}</span>
+                </div>
+                <a href="/logout" style="color: #e74c3c; display: block; text-align: center; padding: 0.8rem; background: var(--cinza); border-radius: 6px;">Sair</a>
+            </div>
+        {% else %}
+            <a href="/login">Login</a>
+            <a href="/registro">Criar Conta</a>
+        {% endif %}
+    </div>
+    
     <div class="container">
         {% block content %}{% endblock %}
     </div>
-    {% block scripts %}{% endblock %}
+    <script>
+    function toggleMobileMenu() {
+        const menu = document.getElementById('mobile-menu');
+        const overlay = document.getElementById('mobile-menu-overlay');
+        const btn = document.getElementById('mobile-menu-btn');
+        
+        menu.classList.toggle('active');
+        overlay.classList.toggle('active');
+        btn.classList.toggle('active');
+    }
+
+    // Fecha menu ao clicar em um link
+    document.querySelectorAll('.mobile-menu a').forEach(link => {
+        link.addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.remove('active');
+            document.getElementById('mobile-menu-overlay').classList.remove('active');
+        });
+    });
+    </script>
+    {% block scripts %}
+    
+    {% endblock %}
     <footer style="background: var(--cinza); padding: 2rem; margin-top: 4rem; text-align: center; border-top: 1px solid var(--cinza-medio);">
         <div style="color: var(--texto-fraco); font-size: 0.85rem;">
             <a href="/termos" style="color: var(--texto-fraco); text-decoration: none; margin: 0 1rem;">Termos de Uso</a>
@@ -124,6 +278,7 @@
             <span>© 2026 Brasileirão 2026</span>
         </div>
     </footer>
+    
 
 </body>
 </html>

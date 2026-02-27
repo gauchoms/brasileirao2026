@@ -21,6 +21,7 @@
 
 <!-- Tabela Geral -->
 <div style="background: var(--cinza); border-radius: 8px; overflow: hidden; margin-bottom: 2rem;">
+    <div class="tabela-responsiva">
     <table style="width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="border-bottom: 2px solid var(--verde);">
@@ -31,10 +32,10 @@
                 <th style="text-align: center; padding: 0.7rem 1rem; color: var(--amarelo); cursor: pointer;" onclick="window.location.href='/dashboard?ordenar=titulo&competicao_id={{ competicao_selecionada }}'">
                     🏆 TÍTULO {% if ordenar_por == 'titulo' %}▼{% endif %}
                 </th>
-                <th style="text-align: center; padding: 0.7rem 1rem; color: var(--verde); cursor: pointer;" onclick="window.location.href='/dashboard?ordenar=libertadores&competicao_id={{ competicao_selecionada }}'">
+                <th  style="text-align: center; padding: 0.7rem 1rem; color: var(--verde); cursor: pointer;" onclick="window.location.href='/dashboard?ordenar=libertadores&competicao_id={{ competicao_selecionada }}'">
                     🌎 LIBERTADORES {% if ordenar_por == 'libertadores' %}▼{% endif %}
                 </th>
-                <th style="text-align: center; padding: 0.7rem 1rem; color: #e74c3c; cursor: pointer;" onclick="window.location.href='/dashboard?ordenar=rebaixamento&competicao_id={{ competicao_selecionada }}'">
+                <th  style="text-align: center; padding: 0.7rem 1rem; color: #e74c3c; cursor: pointer;" onclick="window.location.href='/dashboard?ordenar=rebaixamento&competicao_id={{ competicao_selecionada }}'">
                     ⬇️ REBAIXAMENTO {% if ordenar_por == 'rebaixamento' %}▼{% endif %}
                 </th>
             </tr>
@@ -49,7 +50,7 @@
                 <td style="padding: 0.8rem 1rem; text-align: center; font-weight: 600;">{{ item.pontos_reais }}</td>
                 
                 {% for tipo in ['titulo', 'libertadores', 'rebaixamento'] %}
-                <td style="padding: 0.8rem 1rem; text-align: center;">
+                <td  style="padding: 0.8rem 1rem; text-align: center;">
                     <div style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.9rem;
                                 background: {% if item.cenarios[tipo].pct >= 100 %}var(--verde){% elif item.cenarios[tipo].pct >= 80 %}var(--amarelo){% else %}#e74c3c{% endif %}; color: #000;">
                         {{ item.cenarios[tipo].pct }}%
@@ -59,7 +60,8 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
+        </table>
+    </div>
 </div>
 
 <!-- Detalhe por Time -->
@@ -145,5 +147,56 @@ new Chart(ctx, {
 });
 </script>
 {% endif %}
-
+<style>
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Container com scroll horizontal */
+    .tabela-responsiva {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem; /* Expande até as bordas */
+        padding: 0 1rem;
+    }
+    
+    /* Tabela com largura mínima */
+    .tabela-responsiva table {
+        min-width: 700px; /* Garante que não esmaga */
+        font-size: 0.8rem;
+    }
+    
+    /* Compacta paddings */
+    .tabela-responsiva th {
+        padding: 0.5rem 0.3rem !important;
+        font-size: 0.7rem;
+    }
+    
+    .tabela-responsiva td {
+        padding: 0.6rem 0.3rem !important;
+    }
+    
+    /* Compacta textos */
+    .tabela-responsiva th span {
+        font-size: 0.6rem !important;
+    }
+    
+    /* Reduz tamanho das medalhas/percentuais */
+    .tabela-responsiva .badge-percentual {
+        font-size: 0.7rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+    
+    /* Indicador de scroll */
+    .tabela-responsiva::after {
+        content: '← Arraste para ver mais →';
+        display: block;
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--texto-fraco);
+    }
+}
+</style>
 {% endblock %}

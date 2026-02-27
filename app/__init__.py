@@ -21,6 +21,17 @@ def create_app():
 
     from app import routes
     app.register_blueprint(routes.bp)
+    
+    # Importa a função de conversão de timezone
+    from app.utils import converter_utc_brasilia
+    
+    # Registra filtro Jinja2
+    @app.template_filter('brasilia')
+    def brasilia_filter(data):
+        if not data:
+            return ''
+        data_br = converter_utc_brasilia(data)
+        return data_br.strftime('%d/%m/%Y às %H:%M:%S')
 
     return app
 

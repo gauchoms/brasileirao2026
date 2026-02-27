@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Verificar Comprovante{% endblock %}
+{% block content %}
+<div style="max-width: 600px; margin: 3rem auto; padding: 0 1rem;">
+    <h1 style="text-align: center; margin-bottom: 2rem;">Verificar Comprovante</h1>
+    
+    <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; text-align: center;">
+        
+        {% if palpite %}
+        <!-- Comprovante válido -->
+        <div style="font-size: 4rem; color: var(--verde);">✓</div>
+        <h2 style="color: var(--verde); margin: 1rem 0;">Comprovante Autêntico!</h2>
+        
+        <div style="background: var(--cinza-medio); padding: 1.5rem; border-radius: 6px; margin-top: 2rem; text-align: left;">
+            <div style="margin-bottom: 0.8rem;">
+                <strong>Participante:</strong> {{ palpite.usuario.nome_completo or palpite.usuario.username }}
+            </div>
+            <div style="margin-bottom: 0.8rem;">
+                <strong>Jogo:</strong> {{ palpite.jogo.time_casa.nome }} vs {{ palpite.jogo.time_fora.nome }}
+            </div>
+            <div style="margin-bottom: 0.8rem;">
+                <strong>Palpite:</strong> {{ palpite.gols_casa_palpite }} x {{ palpite.gols_fora_palpite }}
+            </div>
+            <div style="margin-bottom: 0.8rem;">
+                <strong>Data/Hora:</strong> {{ palpite.data_palpite|brasilia }}
+            </div>
+            <div style="word-break: break-all; font-family: monospace; font-size: 0.75rem; color: var(--texto-fraco); margin-top: 1rem;">
+                <strong>Hash:</strong><br>{{ palpite.hash_comprovante }}
+            </div>
+        </div>
+        
+        {% else %}
+        <!-- Comprovante inválido -->
+        <div style="font-size: 4rem; color: #e74c3c;">✗</div>
+        <h2 style="color: #e74c3c; margin: 1rem 0;">Comprovante Inválido</h2>
+        <p style="color: var(--texto-fraco);">Este hash não corresponde a nenhum palpite registrado.</p>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}

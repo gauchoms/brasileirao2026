@@ -7,7 +7,7 @@
     
     <!-- Cabeçalho -->
     <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div class="bolao-header" style="display: flex; justify-content: space-between; align-items: start;">
             <div>
                 <h1 style="margin-bottom: 0.5rem;">{{ bolao.nome }}</h1>
                 <div style="color: var(--texto-fraco); font-size: 0.95rem;">
@@ -21,6 +21,20 @@
                         {{ bolao.codigo_convite }}
                     </div>
                 </div>
+                
+                <!-- Botões de Compartilhamento -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button onclick="copiarLink()" style="background: var(--cinza-medio); color: var(--texto); border: none; 
+                           padding: 0.5rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
+                        🔗 Copiar Link
+                    </button>
+                    <button onclick="compartilharWhatsApp()" style="background: #25D366; color: white; border: none; 
+                           padding: 0.5rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
+                        📱 WhatsApp
+                    </button>
+                </div>
+                
+                <div id="msg-compartilhar" style="margin-top: 0.5rem; font-size: 0.75rem; text-align: center; display: none; color: var(--verde);"></div>
                 <div style="font-size: 0.8rem; color: var(--texto-fraco);">
                     Compartilhe com seus amigos
                 </div>
@@ -66,6 +80,7 @@
         
         {% if bolao.participantes.count() > 0 %}
         <div style="background: var(--cinza); border-radius: 8px; overflow: hidden;">
+            <div class="ranking-table">
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="border-bottom: 2px solid var(--verde);">
@@ -119,7 +134,7 @@
                     
                     {% endfor %}
                 </tbody>
-            </table>
+            </table></div>
         </div>
         {% else %}
         <div style="text-align: center; padding: 3rem; color: var(--texto-fraco);">
@@ -135,7 +150,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2>Meus Palpites</h2>
             
-            <div style="display: flex; gap: 1rem;">
+            <div class="filtros-container" style="display: flex; gap: 1rem;" >
                 <!-- Filtro Status -->
                 <select id="filtro-status" onchange="filtrarJogos()" 
                     style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
@@ -157,7 +172,7 @@
                             {% set _ = rodadas.append(rodada_num) %}
                         {% endif %}
                     {% endfor %}
-                    {% for rodada in rodadas|sort %}
+                    {% for rodada in rodadas|map('int')|sort %}
                         <option value="{{ rodada }}">Rodada {{ rodada }}</option>
                     {% endfor %}
                 </select>
@@ -166,7 +181,7 @@
         
         <div style="display: grid; gap: 1rem;" id="lista-jogos">
             {% for jogo in jogos %}
-            <div class="jogo-item" 
+            <div class="jogo-card jogo-item" 
                  data-status="{% if jogo.gols_casa is none %}aberto{% else %}encerrado{% endif %}"
                  data-rodada="{{ jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') }}"
                  style="background: var(--cinza); padding: 1.5rem; border-radius: 8px;">
@@ -393,7 +408,7 @@
                         </span>
                         <div>
                             <div style="font-weight: 600;">{{ sol.usuario.nome_completo or sol.usuario.username }}</div>
-                            <div style="font-size: 0.85rem; opacity: 0.8;">Solicitou em {{ sol.data_solicitacao.strftime('%d/%m/%Y às %H:%M') }}</div>
+                            <div style="font-size: 0.85rem; opacity: 0.8;">Solicitou em {{ sol.data_solicitacao|brasilia }}</div>
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
@@ -429,7 +444,7 @@
                     <div style="font-size: 0.85rem; color: var(--texto-fraco);">{{ part.pontos_totais }} pontos</div>
                 </div>
                 <div style="font-size: 0.8rem; color: var(--texto-fraco);">
-                    Entrou em {{ part.data_entrada.strftime('%d/%m/%Y') }}
+                    Entrou em {{ part.data_entrada|brasilia }}
                 </div>
             </div>
             {% endfor %}
@@ -585,6 +600,97 @@ function toggleDetalhesJogo(jogoId) {
     }
     event.stopPropagation();
 }
+function copiarLink() {
+    const link = window.location.origin + '/entrar_bolao?codigo={{ bolao.codigo_convite }}';
+    navigator.clipboard.writeText(link).then(() => {
+        const msg = document.getElementById('msg-compartilhar');
+        msg.textContent = '✅ Link copiado!';
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 3000);
+    });
+}
+
+function compartilharWhatsApp() {
+    const texto = encodeURIComponent('🎯 Entre no meu bolão "{{ bolao.nome }}"!\n\nCódigo: {{ bolao.codigo_convite }}\n\nLink: ' + window.location.origin + '/entrar_bolao?codigo={{ bolao.codigo_convite }}');
+    window.open('https://wa.me/?text=' + texto, '_blank');
+}
 </script>
+<style>
+@media (max-width: 768px) {
+    /* Cabeçalho do bolão */
+    .bolao-header {
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+    
+    .bolao-header > div {
+        width: 100% !important;
+        text-align: left !important;
+    }
+    
+    h1 {
+        font-size: 1.3rem !important;
+    }
+    
+    /* Tabs */
+    nav a, .tab-link {
+        padding: 0.8rem 0.8rem !important;
+        font-size: 0.85rem !important;
+    }
+    
+    /* Tabela de ranking */
+    .ranking-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .ranking-table table {
+        min-width: 100%;
+        font-size: 0.85rem;
+    }
+    
+    .ranking-table td, 
+    .ranking-table th {
+        padding: 0.6rem 0.4rem !important;
+    }
+    
+    /* Cards de jogos para palpitar */
+    .jogo-card {
+        padding: 1rem !important;
+    }
+    
+    .jogo-card > div {
+        grid-template-columns: 1fr auto 1fr !important;
+        gap: 0.5rem !important;
+    }
+    
+    .jogo-card input[type="number"] {
+        width: 50px !important;
+        padding: 0.4rem !important;
+        font-size: 1rem !important;
+    }
+    
+    .jogo-card button {
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.8rem !important;
+    }
+    
+    /* Filtros */
+    .filtros-container {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+    
+    .filtros-container select {
+        width: 100% !important;
+    }
+    
+    /* Botão atualizar jogos */
+    #btn-atualizar-jogos {
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.8rem !important;
+    }
+}
+</style>
 
 {% endblock %}
