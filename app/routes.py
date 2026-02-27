@@ -1091,7 +1091,8 @@ def salvar_palpite():
     jogo = Jogo.query.get_or_404(jogo_id)
     if jogo.data:
         from datetime import datetime
-        data_jogo = datetime.strptime(jogo.data, '%Y-%m-%dT%H:%M:%S')
+        data_str = jogo.data.replace('+00:00', '').replace('Z', '')
+        data_jogo = datetime.strptime(data_str, '%Y-%m-%dT%H:%M:%S')
         if datetime.now() >= data_jogo:
             return jsonify({'erro': 'Jogo já começou! Palpites encerrados.'}), 400
     
@@ -1691,7 +1692,12 @@ def gerar_comprovante_pdf(palpite_id):
     
     y -= 0.8*cm
     c.drawString(3*cm, y, f"Palpite: {palpite.gols_casa_palpite} x {palpite.gols_fora_palpite}")
-    
+    # Se não tem timestamp preciso, usa data_palpite
+    if palpite.timestamp_preciso:
+        timestamp_dt = datetime.fromtimestamp(palpite.timestamp_preciso / 1000)
+    else:
+        timestamp_dt = palpite.data_palpite
+
     y -= 0.8*cm
     timestamp_dt = datetime.fromtimestamp(palpite.timestamp_preciso / 1000)
     c.drawString(3*cm, y, f"Data/Hora: {timestamp_dt.strftime('%d/%m/%Y às %H:%M:%S.%f')[:-3]}")
