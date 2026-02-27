@@ -1647,23 +1647,37 @@ def privacidade():
     from datetime import datetime
     return render_template('privacidade.html', now=datetime.now)
 
-
 @bp.route('/comprovante/<int:palpite_id>')
 @login_required
 def gerar_comprovante_pdf(palpite_id):
     from app.models import Palpite
-    from app.comprovante import gerar_qr_code
-    from reportlab.lib.pagesizes import letter, A4
+    from app.comprovante import gerar_qr_code, gerar_hash_palpite
+    from reportlab.lib.pagesizes import A4
     from reportlab.pdfgen import canvas
     from reportlab.lib.units import cm
     from io import BytesIO
     from datetime import datetime
+    import time
     
     palpite = Palpite.query.get_or_404(palpite_id)
     
     # Verifica se é o dono do palpite
     if palpite.usuario_id != current_user.id:
         return "Acesso negado", 403
+    
+    # Se palpite antigo não tem hash, gera agora
+    if not palpite.hash_comprovante or not palpite.timestamp_preciso:
+        timestamp_ms = int(palpite.data_palpite.timestamp() * 1000)
+        hash_comprovante = gerar_hash_palpite(
+            palpite.usuario_id,
+            palpite.jogo_id,
+            palpite.gols_casa_palpite,
+            palpite.gols_fora_palpite,
+            timestamp_ms
+        )
+        palpite.hash_comprovante = hash_comprovante
+        palpite.timestamp_preciso = timestamp_ms
+        db.session.commit()
     
     # Cria PDF
     buffer = BytesIO()
@@ -1692,15 +1706,10 @@ def gerar_comprovante_pdf(palpite_id):
     
     y -= 0.8*cm
     c.drawString(3*cm, y, f"Palpite: {palpite.gols_casa_palpite} x {palpite.gols_fora_palpite}")
-    # Se não tem timestamp preciso, usa data_palpite
-    if palpite.timestamp_preciso:
-        timestamp_dt = datetime.fromtimestamp(palpite.timestamp_preciso / 1000)
-    else:
-        timestamp_dt = palpite.data_palpite
-
+    
     y -= 0.8*cm
     timestamp_dt = datetime.fromtimestamp(palpite.timestamp_preciso / 1000)
-    c.drawString(3*cm, y, f"Data/Hora: {timestamp_dt.strftime('%d/%m/%Y às %H:%M:%S.%f')[:-3]}")
+    c.drawString(3*cm, y, f"Data/Hora: {timestamp_dt.strftime('%d/%m/%Y as %H:%M:%S')}")
     
     # QR Code
     qr_img = gerar_qr_code(palpite.hash_comprovante)
@@ -1717,8 +1726,8 @@ def gerar_comprovante_pdf(palpite_id):
     
     # Rodapé
     c.setFont("Helvetica", 8)
-    c.drawCentredString(width/2, 2*cm, "Este comprovante é imutável e criptograficamente seguro")
-    c.drawCentredString(width/2, 1.5*cm, "Brasileirão 2026 - www.brasileirao2026.com")
+    c.drawCentredString(width/2, 2*cm, "Este comprovante e imutavel e criptograficamente seguro")
+    c.drawCentredString(width/2, 1.5*cm, "Brasileirao 2026 - www.brasileirao2026.com")
     
     c.save()
     
@@ -1731,6 +1740,9 @@ def gerar_comprovante_pdf(palpite_id):
         as_attachment=True,
         download_name=f'comprovante_palpite_{palpite_id}.pdf'
     )
+
+
+
 @bp.route('/verificar/<hash_comprovante>')
 def verificar_comprovante(hash_comprovante):
     from app.models import Palpite
