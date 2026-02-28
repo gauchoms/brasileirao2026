@@ -89,21 +89,27 @@ class RegraPontuacao(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     criador_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
     
-    # Modo de pontuação: 'placar_exato', 'acertos_parciais', 'com_bonus'
-    modo = db.Column(db.String(20), default='acertos_parciais')
+    # Modo removido - agora é tudo acumulativo
     
-    # Pontuação
-    pontos_placar_exato = db.Column(db.Integer, default=10)
+    # Pontuação acumulativa
+    pontos_resultado = db.Column(db.Integer, default=5)  # NOVO: Base - acertar vencedor/empate
     pontos_gols_vencedor = db.Column(db.Integer, default=3)
-    pontos_gols_perdedor = db.Column(db.Integer, default=1)
-    pontos_diferenca_gols = db.Column(db.Integer, default=2)
+    pontos_gols_perdedor = db.Column(db.Integer, default=2)
+    pontos_diferenca_gols = db.Column(db.Integer, default=1)
     
-    # Bônus por jogos elásticos (só se modo = 'com_bonus')
+    # Regra crítica
+    requer_resultado_correto = db.Column(db.Boolean, default=True)  # NOVO: Checkbox
+    
+    # Bônus por jogos elásticos
+    ativar_bonus_gols = db.Column(db.Boolean, default=False)
     limite_gols_bonus = db.Column(db.Integer, default=4)
     pontos_por_gol_extra = db.Column(db.Integer, default=1)
     
     publica = db.Column(db.Boolean, default=False)
     data_criacao = db.Column(db.DateTime)
+    
+
+
 
 class Bolao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -125,6 +131,7 @@ class Bolao(db.Model):
     status = db.Column(db.String(20), default='ativo')  # ativo, encerrado
     data_criacao = db.Column(db.DateTime, default=db.func.now())
     # Relacionamentos
+    
     competicao = db.relationship('Competicao', backref='boloes')
     dono = db.relationship('Usuario', foreign_keys=[dono_id], backref='boloes_criados')
     regra = db.relationship('RegraPontuacao', backref='boloes')

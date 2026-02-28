@@ -95,145 +95,113 @@
         <div style="background: var(--cinza-medio); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
             <h3 style="margin-bottom: 1rem; color: var(--amarelo);">⚙️ Sistema de Pontuação</h3>
             
-            <!-- Escolha do Modo -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Escolha o Modo:</label>
+            <p style="color: var(--texto-fraco); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                Configure quantos pontos cada acerto vale. A pontuação é <strong>acumulativa</strong> - quanto mais acertos, mais pontos!
+            </p>
+            
+            <!-- Pontos Base -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                        ✅ Acertar Resultado (vitória/empate)
+                    </label>
+                    <input type="number" name="pts_resultado" id="pts-resultado" value="5" min="0" required
+                        onchange="atualizarSimulador()"
+                        style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
+                               border-radius: 6px; color: var(--texto);">
+                </div>
                 
-                <label style="display: flex; align-items: start; gap: 0.8rem; padding: 1rem; background: var(--cinza); border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer;">
-                    <input type="radio" name="modo_pontuacao" value="placar_exato" onchange="atualizarCamposPontuacao()" 
-                        style="margin-top: 0.2rem; width: 20px; height: 20px;">
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">🎯 Modo A: Só Placar Exato</div>
-                        <div style="font-size: 0.85rem; color: var(--texto-fraco);">Pontua apenas se acertar o placar exato. Tudo ou nada!</div>
-                    </div>
-                </label>
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                        🎯 + Acertar Gols do Vencedor
+                    </label>
+                    <input type="number" name="pts_gols_vencedor" id="pts-gols-vencedor" value="3" min="0" required
+                        onchange="atualizarSimulador()"
+                        style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
+                               border-radius: 6px; color: var(--texto);">
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                        ❌ + Acertar Gols do Perdedor
+                    </label>
+                    <input type="number" name="pts_gols_perdedor" id="pts-gols-perdedor" value="2" min="0" required
+                        onchange="atualizarSimulador()"
+                        style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
+                               border-radius: 6px; color: var(--texto);">
+                </div>
                 
-                <label style="display: flex; align-items: start; gap: 0.8rem; padding: 1rem; background: var(--cinza); border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer;">
-                    <input type="radio" name="modo_pontuacao" value="acertos_parciais" onchange="atualizarCamposPontuacao()" checked
-                        style="margin-top: 0.2rem; width: 20px; height: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                        ➕➖ + Acertar Diferença de Gols
+                    </label>
+                    <input type="number" name="pts_diferenca_gols" id="pts-diferenca" value="1" min="0" required
+                        onchange="atualizarSimulador()"
+                        style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
+                               border-radius: 6px; color: var(--texto);">
+                </div>
+            </div>
+            
+            <!-- Checkbox Crítico -->
+            <div style="background: rgba(255, 215, 0, 0.1); padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; border-left: 3px solid var(--amarelo);">
+                <label style="display: flex; align-items: start; gap: 0.8rem; cursor: pointer;">
+                    <input type="checkbox" name="requer_resultado" id="requer-resultado" checked
+                        onchange="atualizarSimulador()"
+                        style="margin-top: 0.3rem; width: 20px; height: 20px; cursor: pointer;">
                     <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">📊 Modo B: Acertos Parciais</div>
-                        <div style="font-size: 0.85rem; color: var(--texto-fraco);">Pontua por placar exato, gols do vencedor, perdedor e diferença de gols</div>
-                    </div>
-                </label>
-                
-                <label style="display: flex; align-items: start; gap: 0.8rem; padding: 1rem; background: var(--cinza); border-radius: 6px; cursor: pointer;">
-                    <input type="radio" name="modo_pontuacao" value="com_bonus" onchange="atualizarCamposPontuacao()"
-                        style="margin-top: 0.2rem; width: 20px; height: 20px;">
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">🔥 Modo C: Com Bônus de Jogos Elásticos</div>
-                        <div style="font-size: 0.85rem; color: var(--texto-fraco);">Acertos parciais + bônus extra para jogos com muitos gols</div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">⚠️ Acertos parciais só valem se acertar o resultado</div>
+                        <div style="font-size: 0.85rem; color: var(--texto-fraco);">
+                            Se <strong>marcado</strong>: Quem erra o resultado ganha 0 pontos, mesmo acertando gols/diferença.<br>
+                            Se <strong>desmarcado</strong>: Pontua mesmo errando o resultado (pode gerar situações estranhas).
+                        </div>
                     </div>
                 </label>
             </div>
             
-            <!-- Configuração de Pontos -->
-            <div id="config-pontos">
+            <!-- Bônus Elástico -->
+            <div style="border-top: 1px solid var(--cinza); padding-top: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; cursor: pointer;">
+                    <input type="checkbox" name="ativar_bonus_gols" id="checkbox-bonus" onchange="toggleBonusGols(); atualizarSimulador();"
+                        style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="font-weight: 600;">🔥 Bônus por Jogos Elásticos</span>
+                </label>
                 
-                <!-- Modo A: Só Placar Exato -->
-                <div id="campos-modo-a" style="display: none;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">Pontos por Placar Exato</label>
-                        <input type="number" name="pts_placar_exato_a" value="10" min="1"
-                            style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                   border-radius: 6px; color: var(--texto);">
-                    </div>
-                </div>
-                
-                <!-- Modo B: Acertos Parciais -->
-                <div id="campos-modo-b">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">🎯 Placar Exato</label>
-                            <input type="number" name="pts_placar_exato_b" value="10" min="0"
-                                style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                       border-radius: 6px; color: var(--texto);">
-                        </div>
-                        
-                        <div>
-                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">🏆 Gols do Vencedor</label>
-                            <input type="number" name="pts_gols_vencedor_b" value="3" min="0"
-                                style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                       border-radius: 6px; color: var(--texto);">
-                        </div>
-                    </div>
-                    
+                <div id="campos-bonus" style="display: none;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">❌ Gols do Perdedor</label>
-                            <input type="number" name="pts_gols_perdedor_b" value="1" min="0"
+                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                                Mínimo de Gols no Jogo
+                            </label>
+                            <input type="number" name="limite_gols_bonus" id="limite-bonus" value="4" min="1"
+                                onchange="atualizarSimulador()"
                                 style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
                                        border-radius: 6px; color: var(--texto);">
                         </div>
                         
                         <div>
-                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">➕➖ Diferença de Gols</label>
-                            <input type="number" name="pts_diferenca_gols_b" value="2" min="0"
+                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">
+                                Pontos por Gol Extra
+                            </label>
+                            <input type="number" name="pts_por_gol_extra" id="pts-bonus" value="1" min="1"
+                                onchange="atualizarSimulador()"
                                 style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
                                        border-radius: 6px; color: var(--texto);">
                         </div>
                     </div>
                 </div>
-                
-                <!-- Modo C: Com Bônus -->
-                <div id="campos-modo-c" style="display: none;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">🎯 Placar Exato</label>
-                            <input type="number" name="pts_placar_exato_c" value="10" min="0"
-                                style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                       border-radius: 6px; color: var(--texto);">
-                        </div>
-                        
-                        <div>
-                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">🏆 Gols do Vencedor</label>
-                            <input type="number" name="pts_gols_vencedor_c" value="3" min="0"
-                                style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                       border-radius: 6px; color: var(--texto);">
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">❌ Gols do Perdedor</label>
-                            <input type="number" name="pts_gols_perdedor_c" value="1" min="0"
-                                style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                       border-radius: 6px; color: var(--texto);">
-                        </div>
-                        
-                        <div>
-                            <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">➕➖ Diferença de Gols</label>
-                            <input type="number" name="pts_diferenca_gols_c" value="2" min="0"
-                                style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                       border-radius: 6px; color: var(--texto);">
-                        </div>
-                    </div>
-                    
-                    <div style="border-top: 1px solid var(--cinza); padding-top: 1rem;">
-                        <div style="font-weight: 600; margin-bottom: 1rem;">🔥 Bônus por Jogos Elásticos</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                            <div>
-                                <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">Mínimo de Gols Totais</label>
-                                <input type="number" name="limite_gols_bonus" value="4" min="1"
-                                    style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                           border-radius: 6px; color: var(--texto);">
-                            </div>
-                            
-                            <div>
-                                <label style="display: block; margin-bottom: 0.3rem; color: var(--texto-fraco); font-size: 0.85rem;">Pontos por Gol Extra</label>
-                                <input type="number" name="pts_por_gol_extra" value="1" min="1"
-                                    style="width: 100%; padding: 0.6rem; background: var(--cinza); border: 1px solid var(--cinza); 
-                                           border-radius: 6px; color: var(--texto);">
-                            </div>
-                        </div>
-                        <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,215,0,0.1); border-radius: 4px; font-size: 0.8rem; color: var(--texto-fraco);">
-                            💡 Exemplo: Se configurar mínimo 4 gols e 1 ponto por gol extra, um jogo 3x2 (5 gols) dará 1 ponto extra
-                        </div>
-                    </div>
+            </div>
+            
+            <!-- Simulador em Tempo Real -->
+            <div id="simulador" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cinza);">
+                <h4 style="margin-bottom: 1rem; color: var(--verde);">📊 Simulação (Jogo termina 3x1):</h4>
+                <div id="exemplos-pontuacao" style="font-family: monospace; font-size: 0.9rem; line-height: 1.8;">
+                    <!-- Será preenchido pelo JavaScript -->
                 </div>
-                
             </div>
         </div>
+
 
         <div style="margin-bottom: 1.5rem;">
             <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIPO DE ACESSO</label>
@@ -335,7 +303,96 @@ function atualizarCamposPontuacao() {
         document.getElementById('campos-modo-c').style.display = 'block';
     }
 }
+function toggleBonusGols() {
+    const checkbox = document.getElementById('checkbox-bonus');
+    const campos = document.getElementById('campos-bonus');
+    campos.style.display = checkbox.checked ? 'block' : 'none';
+}
 
+function atualizarSimulador() {
+    const ptsResultado = parseInt(document.getElementById('pts-resultado').value) || 0;
+    const ptsGolsVenc = parseInt(document.getElementById('pts-gols-vencedor').value) || 0;
+    const ptsGolsPerd = parseInt(document.getElementById('pts-gols-perdedor').value) || 0;
+    const ptsDiferenca = parseInt(document.getElementById('pts-diferenca').value) || 0;
+    const requerResultado = document.getElementById('requer-resultado').checked;
+    const bonusAtivo = document.getElementById('checkbox-bonus').checked;
+    const limiteBonus = parseInt(document.getElementById('limite-bonus')?.value) || 4;
+    const ptsBonus = parseInt(document.getElementById('pts-bonus')?.value) || 1;
+    
+    // Jogo exemplo: 3x1 (4 gols totais)
+    const exemplos = [
+        
+        {palpite: '3x1', resultado: true, golsVenc: true, golsPerd: true, diferenca: true},   // Tudo certo
+        {palpite: '2x1', resultado: true, golsVenc: false, golsPerd: true, diferenca: false}, // Só resultado e gols perd
+        {palpite: '3x0', resultado: true, golsVenc: true, golsPerd: false, diferenca: false}, // Só resultado e gols venc
+        {palpite: '2x0', resultado: true, golsVenc: false, golsPerd: false, diferenca: false}, // Só resultado
+        {palpite: '4x2', resultado: true, golsVenc: false, golsPerd: false, diferenca: true}, // Só resultado e diferença
+        {palpite: '1x3', resultado: false, golsVenc: false, golsPerd: false, diferenca: false}, // Errou tudo
+    ];
+
+    
+    let html = '';
+    
+    exemplos.forEach(ex => {
+        let pts = 0;
+        let detalhes = [];
+        
+        if (ex.resultado) {
+            pts += ptsResultado;
+            detalhes.push(`resultado=${ptsResultado}`);
+            
+            if (ex.golsVenc) {
+                pts += ptsGolsVenc;
+                detalhes.push(`gols venc=${ptsGolsVenc}`);
+            }
+            if (ex.golsPerd) {
+                pts += ptsGolsPerd;
+                detalhes.push(`gols perd=${ptsGolsPerd}`);
+            }
+            if (ex.diferenca) {
+                pts += ptsDiferenca;
+                detalhes.push(`diferença=${ptsDiferenca}`);
+            }
+        } else {
+            // Errou resultado
+            if (requerResultado) {
+                pts = 0;
+                detalhes.push('errou resultado = 0');
+            } else {
+                if (ex.golsVenc) {
+                    pts += ptsGolsVenc;
+                    detalhes.push(`gols venc=${ptsGolsVenc}`);
+                }
+                if (ex.golsPerd) {
+                    pts += ptsGolsPerd;
+                    detalhes.push(`gols perd=${ptsGolsPerd}`);
+                }
+                if (ex.diferenca) {
+                    pts += ptsDiferenca;
+                    detalhes.push(`diferença=${ptsDiferenca}`);
+                }
+            }
+        }
+        
+        // Bônus elástico (só se acertou placar exato no exemplo 3x1)
+        if (bonusAtivo && ex.palpite === '3x1' && 4 > limiteBonus) {
+            const golsExtras = 4 - limiteBonus;
+            const bonusPts = golsExtras * ptsBonus;
+            pts += bonusPts;
+            detalhes.push(`bônus=${bonusPts}`);
+        }
+        
+        const cor = pts >= ptsResultado + ptsGolsVenc + ptsGolsPerd + ptsDiferenca ? 'var(--verde)' : 
+                    pts >= ptsResultado ? 'var(--amarelo)' : '#e74c3c';
+        
+        html += `<div>Palpite <strong>${ex.palpite}</strong> → <span style="color: ${cor}; font-weight: 600;">${pts} pts</span> <span style="color: var(--texto-fraco); font-size: 0.85rem;">(${detalhes.join(' + ')})</span></div>`;
+    });
+    
+    document.getElementById('exemplos-pontuacao').innerHTML = html;
+}
+
+// Atualiza simulador ao carregar página
+document.addEventListener('DOMContentLoaded', atualizarSimulador);
 </script>
 <style>
 @media (max-width: 768px) {

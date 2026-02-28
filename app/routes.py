@@ -25,74 +25,97 @@ METAS = {
     'libertadores': 70,
     'rebaixamento': 45
 }
+
+
 def calcular_pontos_palpite(palpite, jogo, regra):
     """
     Calcula os pontos obtidos em um palpite baseado na regra de pontuação.
+    Sistema acumulativo: soma todos os acertos.
     """
     pontos = 0
     
-    # Placar exato
-    placar_exato = (palpite.gols_casa_palpite == jogo.gols_casa and 
-                    palpite.gols_fora_palpite == jogo.gols_fora)
+    # Determina resultado real
+    if jogo.gols_casa > jogo.gols_fora:
+        resultado_real = 'casa'
+        gols_vencedor_real = jogo.gols_casa
+        gols_perdedor_real = jogo.gols_fora
+    elif jogo.gols_fora > jogo.gols_casa:
+        resultado_real = 'fora'
+        gols_vencedor_real = jogo.gols_fora
+        gols_perdedor_real = jogo.gols_casa
+    else:
+        resultado_real = 'empate'
+        gols_vencedor_real = None
+        gols_perdedor_real = None
     
-    if placar_exato:
-        pontos += regra.pontos_placar_exato
+    # Determina resultado do palpite
+    if palpite.gols_casa_palpite > palpite.gols_fora_palpite:
+        resultado_palpite = 'casa'
+        gols_vencedor_palpite = palpite.gols_casa_palpite
+        gols_perdedor_palpite = palpite.gols_fora_palpite
+    elif palpite.gols_fora_palpite > palpite.gols_casa_palpite:
+        resultado_palpite = 'fora'
+        gols_vencedor_palpite = palpite.gols_fora_palpite
+        gols_perdedor_palpite = palpite.gols_casa_palpite
+    else:
+        resultado_palpite = 'empate'
+        gols_vencedor_palpite = None
+        gols_perdedor_palpite = None
+    
+    # Acertou o resultado?
+    acertou_resultado = (resultado_real == resultado_palpite)
+    
+    if acertou_resultado:
+        # Ganha pontos por acertar o resultado
+        pontos += regra.pontos_resultado
         
-        # Se modo A (só placar exato), retorna aqui
-        if regra.modo == 'placar_exato':
-            return pontos
-    
-    # Se modo A e não acertou placar exato, retorna 0
-    if regra.modo == 'placar_exato' and not placar_exato:
-        return 0
-    
-    # Se acertou placar exato no modo B ou C, não soma acertos parciais
-    if placar_exato:
-        # Mas se for modo C, ainda pode ganhar bônus de gols
-        if regra.modo == 'com_bonus':
-            total_gols = jogo.gols_casa + jogo.gols_fora
-            if total_gols > regra.limite_gols_bonus:
-                gols_extras = total_gols - regra.limite_gols_bonus
-                pontos += gols_extras * regra.pontos_por_gol_extra
-        return pontos
-    
-    # Acertos parciais (modo B e C)
-    
-    # Determina vencedor/perdedor/empate
-    resultado_real = 'empate' if jogo.gols_casa == jogo.gols_fora else ('casa' if jogo.gols_casa > jogo.gols_fora else 'fora')
-    resultado_palpite = 'empate' if palpite.gols_casa_palpite == palpite.gols_fora_palpite else ('casa' if palpite.gols_casa_palpite > palpite.gols_fora_palpite else 'fora')
-    
-    # Acertou gols do vencedor
-    if resultado_real != 'empate' and resultado_palpite == resultado_real:
-        gols_vencedor_real = jogo.gols_casa if resultado_real == 'casa' else jogo.gols_fora
-        gols_vencedor_palpite = palpite.gols_casa_palpite if resultado_palpite == 'casa' else palpite.gols_fora_palpite
+        # Acertos adicionais (só para vitórias, não para empates)
+        if resultado_real != 'empate':
+            # Acertou gols do vencedor?
+            if gols_vencedor_real == gols_vencedor_palpite:
+                pontos += regra.pontos_gols_vencedor
+            
+            # Acertou gols do perdedor?
+            if gols_perdedor_real == gols_perdedor_palpite:
+                pontos += regra.pontos_gols_perdedor
         
-        if gols_vencedor_real == gols_vencedor_palpite:
-            pontos += regra.pontos_gols_vencedor
+        # Acertou diferença de gols?
+        diferenca_real = abs(jogo.gols_casa - jogo.gols_fora)
+        diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
+        if diferenca_real == diferenca_palpite:
+            pontos += regra.pontos_diferenca_gols
     
-    # Acertou gols do perdedor
-    if resultado_real != 'empate' and resultado_palpite == resultado_real:
-        gols_perdedor_real = jogo.gols_fora if resultado_real == 'casa' else jogo.gols_casa
-        gols_perdedor_palpite = palpite.gols_fora_palpite if resultado_palpite == 'casa' else palpite.gols_casa_palpite
+    else:
+        # Errou o resultado
+        if not regra.requer_resultado_correto:
+            # Checkbox desmarcado: pontua mesmo errando resultado
+            if resultado_real != 'empate' and resultado_palpite != 'empate':
+                # Ambos preveram vitória (mas de times diferentes)
+                # Verifica se acertou os números mesmo invertidos
+                if gols_vencedor_real == gols_vencedor_palpite:
+                    pontos += regra.pontos_gols_vencedor
+                
+                if gols_perdedor_real == gols_perdedor_palpite:
+                    pontos += regra.pontos_gols_perdedor
+            
+            # Diferença de gols
+            diferenca_real = abs(jogo.gols_casa - jogo.gols_fora)
+            diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
+            if diferenca_real == diferenca_palpite:
+                pontos += regra.pontos_diferenca_gols
         
-        if gols_perdedor_real == gols_perdedor_palpite:
-            pontos += regra.pontos_gols_perdedor
+        # Se checkbox marcado: pontos = 0 (já está zerado)
     
-    # Acertou diferença de gols
-    diferenca_real = abs(jogo.gols_casa - jogo.gols_fora)
-    diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
-    
-    if diferenca_real == diferenca_palpite:
-        pontos += regra.pontos_diferenca_gols
-    
-    # Bônus por jogos elásticos (só modo C)
-    if regra.modo == 'com_bonus':
+    # Bônus por jogos elásticos
+    if regra.ativar_bonus_gols:
         total_gols = jogo.gols_casa + jogo.gols_fora
         if total_gols > regra.limite_gols_bonus:
             gols_extras = total_gols - regra.limite_gols_bonus
             pontos += gols_extras * regra.pontos_por_gol_extra
     
     return pontos
+
+
 
 @bp.route('/')
 def index():
@@ -250,7 +273,7 @@ def atualizar_resultados():
                 palpites = Palpite.query.filter_by(jogo_id=jogo.id).all()
                 for palpite in palpites:
                     bolao = Bolao.query.get(palpite.bolao_id)
-                    regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
+                    regra = RegraPontuacao.query.get(bola.regra_id)
                     
                     # Calcula pontos
                     pontos = calcular_pontos_palpite(palpite, jogo, regra)
@@ -877,39 +900,21 @@ def criar_bolao():
             time_especifico_id = request.form.get('time_id_ano', type=int)
             ano = request.form.get('ano', type=int)
         
-        # Cria a regra de pontuação conforme o modo
-        if modo_pontuacao == 'placar_exato':
-            regra = RegraPontuacao(
-                nome=f"Regra de {nome}",
-                criador_id=current_user.id,
-                modo='placar_exato',
-                pontos_placar_exato=request.form.get('pts_placar_exato_a', 10, type=int),
-                pontos_gols_vencedor=0,
-                pontos_gols_perdedor=0,
-                pontos_diferenca_gols=0
-            )
-        elif modo_pontuacao == 'acertos_parciais':
-            regra = RegraPontuacao(
-                nome=f"Regra de {nome}",
-                criador_id=current_user.id,
-                modo='acertos_parciais',
-                pontos_placar_exato=request.form.get('pts_placar_exato_b', 10, type=int),
-                pontos_gols_vencedor=request.form.get('pts_gols_vencedor_b', 3, type=int),
-                pontos_gols_perdedor=request.form.get('pts_gols_perdedor_b', 1, type=int),
-                pontos_diferenca_gols=request.form.get('pts_diferenca_gols_b', 2, type=int)
-            )
-        else:  # com_bonus
-            regra = RegraPontuacao(
-                nome=f"Regra de {nome}",
-                criador_id=current_user.id,
-                modo='com_bonus',
-                pontos_placar_exato=request.form.get('pts_placar_exato_c', 10, type=int),
-                pontos_gols_vencedor=request.form.get('pts_gols_vencedor_c', 3, type=int),
-                pontos_gols_perdedor=request.form.get('pts_gols_perdedor_c', 1, type=int),
-                pontos_diferenca_gols=request.form.get('pts_diferenca_gols_c', 2, type=int),
-                limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int),
-                pontos_por_gol_extra=request.form.get('pts_por_gol_extra', 1, type=int)
-            )
+        # Cria a regra de pontuação com nova estrutura
+        regra = RegraPontuacao(
+            nome=f"Regra de {nome}",
+            criador_id=current_user.id,
+            pontos_resultado=request.form.get('pts_resultado', 5, type=int),
+            pontos_gols_vencedor=request.form.get('pts_gols_vencedor', 3, type=int),
+            pontos_gols_perdedor=request.form.get('pts_gols_perdedor', 2, type=int),
+            pontos_diferenca_gols=request.form.get('pts_diferenca_gols', 1, type=int),
+            requer_resultado_correto=request.form.get('requer_resultado') == 'on',
+            ativar_bonus_gols=request.form.get('ativar_bonus_gols') == 'on',
+            limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int),
+            pontos_por_gol_extra=request.form.get('pts_por_gol_extra', 1, type=int)
+        )
+
+
         
         db.session.add(regra)
         db.session.flush()  # Garante que a regra tem um ID

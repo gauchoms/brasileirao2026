@@ -65,6 +65,11 @@
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
             📋 Todos os Palpites
         </a>
+        <a href="#" onclick="mostrarTab('regras'); return false;" id="tab-regras"
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
+            📋 Regras
+        </a>
+        
         {% if eh_dono %}
         <a href="#" onclick="mostrarTab('participantes'); return false;" id="tab-participantes"
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
@@ -385,7 +390,84 @@
             {% endfor %}
         </div>
     </div>
-    
+    <!-- Tab: Regras -->
+    <div id="content-regras" style="display: none;">
+        <h2 style="margin-bottom: 1.5rem;">📋 Regras de Pontuação</h2>
+        
+        <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; line-height: 1.8;">
+            
+            <h3 style="color: var(--amarelo); margin-bottom: 1rem;">Sistema de Pontos:</h3>
+            
+            <ul style="list-style: none; padding: 0; margin-bottom: 2rem;">
+                <li style="padding: 0.5rem 0;">✅ Acertar o resultado (vitória/empate): <strong style="color: var(--verde);">{{ bolao.regra.pontos_resultado }} pontos</strong></li>
+                {% if bolao.regra.pontos_gols_vencedor > 0 %}
+                <li style="padding: 0.5rem 0;">🎯 Acertar gols do time vencedor: <strong style="color: var(--verde);">+{{ bolao.regra.pontos_gols_vencedor }} pontos</strong></li>
+                {% endif %}
+                {% if bolao.regra.pontos_gols_perdedor > 0 %}
+                <li style="padding: 0.5rem 0;">❌ Acertar gols do time perdedor: <strong style="color: var(--verde);">+{{ bolao.regra.pontos_gols_perdedor }} pontos</strong></li>
+                {% endif %}
+                {% if bolao.regra.pontos_diferenca_gols > 0 %}
+                <li style="padding: 0.5rem 0;">➕➖ Acertar diferença de gols: <strong style="color: var(--verde);">+{{ bolao.regra.pontos_diferenca_gols }} pontos</strong></li>
+                {% endif %}
+            </ul>
+            
+            {% if bolao.regra.requer_resultado_correto %}
+            <div style="background: rgba(255, 215, 0, 0.1); padding: 1rem; border-radius: 6px; margin-bottom: 2rem; border-left: 3px solid var(--amarelo);">
+                <strong>⚠️ Regra Importante:</strong> Acertos parciais (gols do vencedor, perdedor e diferença) só contam se você acertar o resultado do jogo!
+            </div>
+            {% else %}
+            <div style="background: rgba(52, 152, 219, 0.1); padding: 1rem; border-radius: 6px; margin-bottom: 2rem; border-left: 3px solid #3498db;">
+                <strong>ℹ️ Regra:</strong> Você pode ganhar pontos parciais mesmo errando o resultado do jogo.
+            </div>
+            {% endif %}
+            
+            {% if bolao.regra.ativar_bonus_gols %}
+            <div style="background: rgba(231, 76, 60, 0.1); padding: 1rem; border-radius: 6px; margin-bottom: 2rem; border-left: 3px solid #e74c3c;">
+                <strong>🔥 Bônus Elástico:</strong> Jogos com mais de {{ bolao.regra.limite_gols_bonus }} gols ganham +{{ bolao.regra.pontos_por_gol_extra }} ponto por gol extra!
+            </div>
+            {% endif %}
+            
+            <h3 style="color: var(--amarelo); margin-top: 2rem; margin-bottom: 1rem;">💡 Exemplos (jogo termina 3x1):</h3>
+            
+            {% set pts_max = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_vencedor + bolao.regra.pontos_gols_perdedor + bolao.regra.pontos_diferenca_gols %}
+            
+            <div style="font-family: monospace; font-size: 0.95rem; background: var(--cinza-medio); padding: 1.5rem; border-radius: 6px;">
+                <div style="margin-bottom: 0.8rem;">
+                    Seu palpite <strong>3x1</strong> → 
+                    <span style="color: var(--verde); font-weight: 600;">{{ pts_max }} pontos</span> ✨
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(placar exato - todos os acertos)</span>
+                </div>
+                
+                {% set pts_2x1 = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_perdedor %}
+                <div style="margin-bottom: 0.8rem;">
+                    Seu palpite <strong>2x1</strong> → 
+                    <span style="color: var(--amarelo); font-weight: 600;">{{ pts_2x1 }} pontos</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(resultado + gols do perdedor)</span>
+                </div>
+                
+                {% set pts_3x0 = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_vencedor %}
+                <div style="margin-bottom: 0.8rem;">
+                    Seu palpite <strong>3x0</strong> → 
+                    <span style="color: var(--amarelo); font-weight: 600;">{{ pts_3x0 }} pontos</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(resultado + gols do vencedor)</span>
+                </div>
+                
+                <div style="margin-bottom: 0.8rem;">
+                    Seu palpite <strong>2x0</strong> → 
+                    <span style="color: var(--amarelo); font-weight: 600;">{{ bolao.regra.pontos_resultado }} pontos</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(apenas resultado)</span>
+                </div>
+                
+                <div>
+                    Seu palpite <strong>1x3</strong> → 
+                    <span style="color: #e74c3c; font-weight: 600;">0 pontos</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(errou o resultado)</span>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
     {% if eh_dono %}
     <div id="content-participantes" style="display: none;">
         <h2 style="margin-bottom: 1.5rem;">Participantes</h2>
@@ -462,6 +544,7 @@ function mostrarTab(tab) {
     document.getElementById('content-ranking').style.display = 'none';
     document.getElementById('content-palpites').style.display = 'none';
     document.getElementById('content-todos-palpites').style.display = 'none';
+    document.getElementById('content-regras').style.display = 'none';
     {% if eh_dono %}
     document.getElementById('content-participantes').style.display = 'none';
     {% endif %}
@@ -469,6 +552,8 @@ function mostrarTab(tab) {
     // Remove destaque
     document.getElementById('tab-ranking').style.color = 'var(--texto-fraco)';
     document.getElementById('tab-ranking').style.borderBottom = '3px solid transparent';
+    document.getElementById('tab-regras').style.color = 'var(--texto-fraco)';
+    document.getElementById('tab-regras').style.borderBottom = '3px solid transparent';
     document.getElementById('tab-palpites').style.color = 'var(--texto-fraco)';
     document.getElementById('tab-palpites').style.borderBottom = '3px solid transparent';
     document.getElementById('tab-todos-palpites').style.color = 'var(--texto-fraco)';
