@@ -1824,3 +1824,24 @@ def migrar_comprovante_render():
         return jsonify({'sucesso': True})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+    
+@bp.route('/migrar_boolean_para_integer_render')
+def migrar_boolean_para_integer_render():
+    from sqlalchemy import text
+    
+    try:
+        # Altera colunas boolean para integer no PostgreSQL
+        db.session.execute(text("""
+            ALTER TABLE regra_pontuacao 
+            ALTER COLUMN ativar_bonus_gols TYPE BOOLEAN USING ativar_bonus_gols::boolean
+        """))
+        
+        db.session.execute(text("""
+            ALTER TABLE regra_pontuacao 
+            ALTER COLUMN requer_resultado_correto TYPE BOOLEAN USING requer_resultado_correto::boolean
+        """))
+        
+        db.session.commit()
+        return jsonify({'sucesso': True, 'mensagem': 'Colunas convertidas para BOOLEAN!'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
