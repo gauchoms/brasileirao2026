@@ -912,6 +912,8 @@ def criar_bolao():
             ativar_bonus_gols=request.form.get('ativar_bonus_gols') == 'on',
             limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int),
             pontos_por_gol_extra=request.form.get('pts_por_gol_extra', 1, type=int)
+            data_criacao=db.func.now()  # ADICIONA ESTA LINHA
+
         )
 
 
