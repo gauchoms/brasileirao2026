@@ -1772,6 +1772,38 @@ def migrar_termos_render():
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
 
+@bp.route('/migrar_pontuacao_acumulativa_render')
+def migrar_pontuacao_acumulativa_render():
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('regra_pontuacao')]
+        
+        # Adiciona nova coluna pontos_resultado
+        if 'pontos_resultado' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN pontos_resultado INTEGER DEFAULT 5"))
+        
+        # Adiciona checkbox de regra
+        if 'requer_resultado_correto' not in columns:
+            db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN requer_resultado_correto BOOLEAN DEFAULT TRUE"))
+        
+        # Atualiza valores padrão para regras antigas
+        db.session.execute(text("""
+            UPDATE regra_pontuacao 
+            SET pontos_resultado = 5,
+                pontos_gols_vencedor = COALESCE(pontos_gols_vencedor, 3),
+                pontos_gols_perdedor = COALESCE(pontos_gols_perdedor, 2),
+                pontos_diferenca_gols = COALESCE(pontos_diferenca_gols, 1),
+                requer_resultado_correto = COALESCE(requer_resultado_correto, TRUE)
+            WHERE pontos_resultado IS NULL
+        """))
+        
+        db.session.commit()
+        return jsonify({'sucesso': True, 'mensagem': 'Migração concluída!'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+
 @bp.route('/migrar_comprovante_render')
 def migrar_comprovante_render():
     from sqlalchemy import text, inspect
