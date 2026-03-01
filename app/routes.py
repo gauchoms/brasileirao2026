@@ -1244,7 +1244,6 @@ def corrigir_jogos_brasileirao():
         'total_jogos_serie_a': jogos_serie_a
     })
 
-
 @bp.route('/entrar_bolao', methods=['GET', 'POST'])
 @login_required
 def entrar_bolao():
@@ -1281,15 +1280,9 @@ def entrar_bolao():
             )
             db.session.add(participante)
             db.session.commit()
-    
-            # Envia email para o usuário
-            if solicitacao.usuario.email:
-                from app.email import email_solicitacao_respondida
-                email_solicitacao_respondida(solicitacao, acao == 'aprovar')
             
-            return jsonify({'sucesso': True})
-            
-            
+            return render_template('entrar_bolao.html', 
+                sucesso=f'Você entrou no bolão "{bolao.nome}" com sucesso!')
         
         # PRIVADO: Cria solicitação
         else:
@@ -1317,6 +1310,7 @@ def entrar_bolao():
                 sucesso=f'Solicitação enviada para o bolão "{bolao.nome}"! Aguarde aprovação.')
     
     return render_template('entrar_bolao.html')
+
 
 
 @bp.route('/admin/gerenciar')
