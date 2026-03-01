@@ -1830,18 +1830,19 @@ def migrar_boolean_para_integer_render():
     from sqlalchemy import text
     
     try:
-        # Altera colunas boolean para integer no PostgreSQL
-        db.session.execute(text("""
-            ALTER TABLE regra_pontuacao 
-            ALTER COLUMN ativar_bonus_gols TYPE BOOLEAN USING ativar_bonus_gols::boolean
-        """))
+        # Remove default
+        db.session.execute(text("ALTER TABLE regra_pontuacao ALTER COLUMN ativar_bonus_gols DROP DEFAULT"))
+        db.session.execute(text("ALTER TABLE regra_pontuacao ALTER COLUMN requer_resultado_correto DROP DEFAULT"))
         
-        db.session.execute(text("""
-            ALTER TABLE regra_pontuacao 
-            ALTER COLUMN requer_resultado_correto TYPE BOOLEAN USING requer_resultado_correto::boolean
-        """))
+        # Converte para boolean
+        db.session.execute(text("ALTER TABLE regra_pontuacao ALTER COLUMN ativar_bonus_gols TYPE BOOLEAN USING ativar_bonus_gols::boolean"))
+        db.session.execute(text("ALTER TABLE regra_pontuacao ALTER COLUMN requer_resultado_correto TYPE BOOLEAN USING requer_resultado_correto::boolean"))
+        
+        # Recoloca default
+        db.session.execute(text("ALTER TABLE regra_pontuacao ALTER COLUMN ativar_bonus_gols SET DEFAULT FALSE"))
+        db.session.execute(text("ALTER TABLE regra_pontuacao ALTER COLUMN requer_resultado_correto SET DEFAULT TRUE"))
         
         db.session.commit()
-        return jsonify({'sucesso': True, 'mensagem': 'Colunas convertidas para BOOLEAN!'})
+        return jsonify({'sucesso': True, 'mensagem': 'Conversão completa!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
