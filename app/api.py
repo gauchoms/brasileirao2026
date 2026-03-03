@@ -34,12 +34,19 @@ def processar_jogos(data):
         }
         jogos.append(jogo)
     return jogos
-def get_resultados_brasileirao():
+def get_resultados_brasileirao(league_id=71, season=2026):
+    """
+    Busca resultados finalizados de uma competição.
+    
+    Args:
+        league_id: ID da liga na API Football (default: 71 = Brasileirão Série A)
+        season: Temporada/ano (default: 2026)
+    """
     url = f"{BASE_URL}/fixtures"
     params = {
-        "league": 71,
-        "season": 2026,
-        "status": "FT"  # FT = Full Time, jogos já encerrados
+        "league": league_id,
+        "season": season,
+        "status": "FT"
     }
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
