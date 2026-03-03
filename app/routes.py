@@ -244,60 +244,70 @@ def salvar_projecao():
 @admin_required
 def atualizar_resultados():
     from app.api import get_resultados_brasileirao
-    from app.models import Palpite, Bolao, ParticipanteBolao
+    from app.models import Palpite, Bolao, ParticipanteBolao, Competicao
 
-    data = get_resultados_brasileirao()
-    jogos = data.get('response', [])
+    # Busca TODAS as competições cadastradas
+    competicoes = Competicao.query.all()
     
     novos_atualizados = 0
     ja_tinham_placar = 0
     palpites_calculados = 0
 
-    for fixture in jogos:
-        api_id = fixture['fixture']['id']
-        gols_casa = fixture['goals']['home']
-        gols_fora = fixture['goals']['away']
-
-        jogo = Jogo.query.filter_by(api_id=api_id).first()
-        
-        if jogo and gols_casa is not None and gols_fora is not None:
-            tinha_placar = jogo.gols_casa is not None and jogo.gols_fora is not None
+    for comp in competicoes:
+        try:
+            # Busca resultados de cada competição
+            data = get_resultados_brasileirao(league_id=comp.api_league_id, season=comp.ano)
+            jogos = data.get('response', [])
             
-            if not tinha_placar:
-                # Jogo NOVO com resultado
-                jogo.gols_casa = gols_casa
-                jogo.gols_fora = gols_fora
-                novos_atualizados += 1
+            for fixture in jogos:
+                api_id = fixture['fixture']['id']
+                gols_casa = fixture['goals']['home']
+                gols_fora = fixture['goals']['away']
+
+                jogo = Jogo.query.filter_by(api_id=api_id).first()
                 
-                # CALCULA PONTOS de todos os palpites deste jogo
-                palpites = Palpite.query.filter_by(jogo_id=jogo.id).all()
-                for palpite in palpites:
-                    bolao = Bolao.query.get(palpite.bolao_id)
-                    regra = RegraPontuacao.query.get(bola.regra_id)
+                if jogo and gols_casa is not None and gols_fora is not None:
+                    tinha_placar = jogo.gols_casa is not None and jogo.gols_fora is not None
                     
-                    # Calcula pontos
-                    pontos = calcular_pontos_palpite(palpite, jogo, regra)
-                    palpite.pontos_obtidos = pontos
-                    palpites_calculados += 1
-                    
-                    # Atualiza pontos totais do participante
-                    participante = ParticipanteBolao.query.filter_by(
-                        bolao_id=palpite.bolao_id,
-                        usuario_id=palpite.usuario_id
-                    ).first()
-                    if participante:
-                        # Recalcula total somando todos os palpites
-                        total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
-                            bolao_id=palpite.bolao_id,
-                            usuario_id=palpite.usuario_id
-                        ).scalar() or 0
-                        participante.pontos_totais = total
-                
-            elif jogo.gols_casa != gols_casa or jogo.gols_fora != gols_fora:
-                # Placar mudou (raro)
-                jogo.gols_casa = gols_casa
-                jogo.gols_fora = gols_fora
-                ja_tinham_placar += 1
+                    if not tinha_placar:
+                        # Jogo NOVO com resultado
+                        jogo.gols_casa = gols_casa
+                        jogo.gols_fora = gols_fora
+                        novos_atualizados += 1
+                        
+                        # CALCULA PONTOS de todos os palpites deste jogo
+                        palpites = Palpite.query.filter_by(jogo_id=jogo.id).all()
+                        for palpite in palpites:
+                            bolao = Bolao.query.get(palpite.bolao_id)
+                            regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
+                            
+                            # Calcula pontos
+                            pontos = calcular_pontos_palpite(palpite, jogo, regra)
+                            palpite.pontos_obtidos = pontos
+                            palpites_calculados += 1
+                            
+                            # Atualiza pontos totais do participante
+                            participante = ParticipanteBolao.query.filter_by(
+                                bolao_id=palpite.bolao_id,
+                                usuario_id=palpite.usuario_id
+                            ).first()
+                            if participante:
+                                # Recalcula total somando todos os palpites
+                                total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
+                                    bolao_id=palpite.bolao_id,
+                                    usuario_id=palpite.usuario_id
+                                ).scalar() or 0
+                                participante.pontos_totais = total
+                        
+                    elif jogo.gols_casa != gols_casa or jogo.gols_fora != gols_fora:
+                        # Placar mudou (raro)
+                        jogo.gols_casa = gols_casa
+                        jogo.gols_fora = gols_fora
+                        ja_tinham_placar += 1
+        
+        except Exception as e:
+            print(f"Erro ao buscar resultados da liga {comp.nome}: {e}")
+            continue
 
     db.session.commit()
     
@@ -307,8 +317,6 @@ def atualizar_resultados():
         'atualizados': ja_tinham_placar,
         'palpites_calculados': palpites_calculados
     })
-
-
 
 @bp.route('/dashboard')
 def dashboard():
