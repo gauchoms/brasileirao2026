@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, jsonify, redirect
+
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from app import db
 from datetime import datetime
 from app.models import Time, Jogo, Projecao, Meta, Competicao, Bolao, ParticipanteBolao, RegraPontuacao,Palpite,SolicitacaoEntrada
@@ -84,6 +85,13 @@ def calcular_pontos_palpite(palpite, jogo, regra):
         diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
         if diferenca_real == diferenca_palpite:
             pontos += regra.pontos_diferenca_gols
+            # Bônus por jogos elásticos
+        if regra.ativar_bonus_gols:
+            total_gols = jogo.gols_casa + jogo.gols_fora
+            if total_gols > regra.limite_gols_bonus:
+                gols_extras = total_gols - regra.limite_gols_bonus
+                pontos += gols_extras * regra.pontos_por_gol_extra
+
     
     else:
         # Errou o resultado
@@ -103,15 +111,10 @@ def calcular_pontos_palpite(palpite, jogo, regra):
             diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
             if diferenca_real == diferenca_palpite:
                 pontos += regra.pontos_diferenca_gols
+            
         
         # Se checkbox marcado: pontos = 0 (já está zerado)
     
-    # Bônus por jogos elásticos
-    if regra.ativar_bonus_gols:
-        total_gols = jogo.gols_casa + jogo.gols_fora
-        if total_gols > regra.limite_gols_bonus:
-            gols_extras = total_gols - regra.limite_gols_bonus
-            pontos += gols_extras * regra.pontos_por_gol_extra
     
     return pontos
 
@@ -1840,7 +1843,68 @@ def migrar_boolean_para_integer_render():
         return jsonify({'sucesso': True, 'mensagem': 'Conversão completa!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+
+@bp.route('/editar_bolao/<int:bolao_id>', methods=['GET', 'POST'])
+@admin_required
+def editar_bolao(bolao_id):
+    """
+    Edita regras do bolão e recalcula pontos (ADMIN ONLY)
+    """
+    from app.models import Bolao, RegraPontuacao, Palpite, ParticipanteBolao
     
+    bolao = Bolao.query.get_or_404(bolao_id)
+    regra = bolao.regra
+    
+    if request.method == 'POST':
+        # Captura modo escolhido
+        modo = request.form.get('modo_pontuacao', 'acumulativo')
+        
+        if modo == 'simples':
+            # MODO SIMPLES: só placar exato
+            pontos_exato = int(request.form.get('pontos_placar_exato_simples', 1))
+            regra.pontos_resultado = pontos_exato
+            regra.pontos_gols_vencedor = 0
+            regra.pontos_gols_perdedor = 0
+            regra.pontos_diferenca_gols = 0
+        else:
+            # MODO ACUMULATIVO: todos os campos
+            regra.pontos_resultado = int(request.form.get('pontos_resultado', 5))
+            regra.pontos_gols_vencedor = int(request.form.get('pontos_gols_vencedor', 3))
+            regra.pontos_gols_perdedor = int(request.form.get('pontos_gols_perdedor', 2))
+            regra.pontos_diferenca_gols = int(request.form.get('pontos_diferenca_gols', 1))
+        
+        # Bônus Elástico
+        regra.ativar_bonus_gols = 'ativar_bonus_gols' in request.form
+        if regra.ativar_bonus_gols:
+            regra.limite_gols_bonus = int(request.form.get('limite_gols_bonus', 5))
+            regra.pontos_por_gol_extra = int(request.form.get('pontos_por_gol_extra', 2))
+        
+        db.session.commit()
+        
+        # RECALCULA TODOS OS PALPITES DO BOLÃO
+        palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()
+        for palpite in palpites:
+            jogo = palpite.jogo
+            if jogo.gols_casa is not None and jogo.gols_fora is not None:
+                pontos = calcular_pontos_palpite(palpite, jogo, regra)
+                palpite.pontos_obtidos = pontos
+        
+        # ATUALIZA RANKING
+        participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
+        for participante in participantes:
+            total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
+                bolao_id=bolao_id,
+                usuario_id=participante.usuario_id
+            ).scalar() or 0
+            participante.pontos_totais = total
+        
+        db.session.commit()
+        
+        flash(f'✅ Regras atualizadas e {len(palpites)} palpites recalculados!', 'success')
+        return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
+    
+    # GET: Mostra formulário
+    return render_template('editar_bolao.html', bolao=bolao, regra=regra)
 
 @bp.route('/recalcular_bolao/<int:bolao_id>')
 @admin_required
