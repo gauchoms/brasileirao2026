@@ -1840,3 +1840,54 @@ def migrar_boolean_para_integer_render():
         return jsonify({'sucesso': True, 'mensagem': 'Conversão completa!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+    
+    @bp.route('/recalcular_bolao/<int:bolao_id>')
+@admin_required
+def recalcular_bolao(bolao_id):
+    """
+    Recalcula palpites com regra: PLACAR EXATO = 1 ponto
+    """
+    from app.models import Bolao, Palpite, ParticipanteBolao, RegraPontuacao
+    
+    bolao = Bolao.query.get_or_404(bolao_id)
+    regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
+    
+    # CORRIGE A REGRA
+    regra.pontos_resultado = 1
+    regra.pontos_gols_vencedor = 0
+    regra.pontos_gols_perdedor = 0
+    regra.pontos_diferenca_gols = 0
+    regra.requer_resultado_correto = True
+    regra.ativar_bonus_gols = False
+    
+    # RECALCULA TODOS OS PALPITES
+    palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()
+    recalculados = 0
+    
+    for palpite in palpites:
+        jogo = palpite.jogo
+        if jogo.gols_casa is not None and jogo.gols_fora is not None:
+            acertou_exato = (
+                palpite.gols_casa_palpite == jogo.gols_casa and 
+                palpite.gols_fora_palpite == jogo.gols_fora
+            )
+            palpite.pontos_obtidos = 1 if acertou_exato else 0
+            recalculados += 1
+    
+    # ATUALIZA RANKING
+    participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
+    for participante in participantes:
+        total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
+            bolao_id=bolao_id,
+            usuario_id=participante.usuario_id
+        ).scalar() or 0
+        participante.pontos_totais = total
+    
+    db.session.commit()
+    
+    return jsonify({
+        'sucesso': True,
+        'bolao': bolao.nome,
+        'palpites_recalculados': recalculados,
+        'regra': 'Placar exato = 1 ponto (corrigido)'
+    })
