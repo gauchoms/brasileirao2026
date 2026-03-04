@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Bolões - Admin{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 2rem auto;">
+    
+    <h1 style="margin-bottom: 0.5rem;">⚙️ Gerenciar Bolões (Admin)</h1>
+    <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
+        Todos os bolões do sistema
+    </p>
+    
+    <div style="background: var(--cinza); border-radius: 8px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--verde); background: var(--cinza-escuro);">
+                    <th style="text-align: left; padding: 1rem; color: var(--texto-fraco);">NOME</th>
+                    <th style="text-align: center; padding: 1rem; color: var(--texto-fraco);">CRIADOR</th>
+                    <th style="text-align: center; padding: 1rem; color: var(--texto-fraco);">PARTICIPANTES</th>
+                    <th style="text-align: center; padding: 1rem; color: var(--texto-fraco);">CÓDIGO</th>
+                    <th style="text-align: center; padding: 1rem; color: var(--texto-fraco);">AÇÕES</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bolao in boloes %}
+                <tr style="border-bottom: 1px solid var(--cinza-medio);">
+                    <td style="padding: 1rem;">
+                        <div style="font-weight: 600;">{{ bolao.nome }}</div>
+                        <div style="font-size: 0.85rem; color: var(--texto-fraco);">
+                            {{ bolao.competicao.nome if bolao.competicao else 'Múltiplas' }}
+                        </div>
+                    </td>
+                    <td style="text-align: center; padding: 1rem;">
+                        {{ bolao.dono.username }}
+                    </td>
+                    <td style="text-align: center; padding: 1rem;">
+                        {{ bolao.participantes.count() }}
+                    </td>
+                    <td style="text-align: center; padding: 1rem;">
+                        <code style="background: var(--cinza-medio); padding: 0.3rem 0.6rem; border-radius: 4px; font-family: monospace;">
+                            {{ bolao.codigo_convite }}
+                        </code>
+                    </td>
+                    <td style="text-align: center; padding: 1rem;">
+                        <a href="{{ url_for('main.bolao_detalhes', bolao_id=bolao.id) }}"
+                           style="display: inline-block; padding: 0.5rem 1rem; background: var(--verde); color: #000; 
+                                  text-decoration: none; border-radius: 4px; font-weight: 600; margin-right: 0.5rem;">
+                            👁️ Ver
+                        </a>
+                        <a href="{{ url_for('main.editar_bolao', bolao_id=bolao.id) }}"
+                           style="display: inline-block; padding: 0.5rem 1rem; background: #ff9500; color: white; 
+                                  text-decoration: none; border-radius: 4px; font-weight: 600;">
+                            ⚙️ Editar
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+{% endblock %}

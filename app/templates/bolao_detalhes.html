@@ -391,7 +391,18 @@
         </div>
     </div>
     <!-- Tab: Regras -->
-    <div id="content-regras" style="display: none;">
+<div id="content-regras" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="margin: 0;">📋 Regras de Pontuação</h2>
+        
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('main.editar_bolao', bolao_id=bolao.id) }}" 
+           style="display: inline-block; padding: 0.8rem 1.5rem; background: #ff9500; color: white; 
+                  text-decoration: none; border-radius: 6px; font-weight: 600;">
+            ⚙️ Editar Regras (Admin)
+        </a>
+        {% endif %}
+    </div>
         <h2 style="margin-bottom: 1.5rem;">📋 Regras de Pontuação</h2>
         
         <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; line-height: 1.8;">

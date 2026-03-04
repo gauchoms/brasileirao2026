@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Bolão - {{ bolao.nome }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 2rem auto;">
+    
+    <div style="margin-bottom: 2rem;">
+        <a href="{{ url_for('main.bolao_detalhes', bolao_id=bolao.id) }}" 
+           style="color: var(--texto-fraco); text-decoration: none;">
+            ← Voltar para o bolão
+        </a>
+    </div>
+    
+    <h1 style="margin-bottom: 0.5rem;">⚙️ Editar Regras</h1>
+    <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
+        Bolão: <strong>{{ bolao.nome }}</strong>
+    </p>
+    
+    <div style="background: rgba(255, 152, 0, 0.1); padding: 1rem; border-radius: 6px; margin-bottom: 2rem; border-left: 4px solid #ff9800;">
+        <strong>⚠️ ATENÇÃO:</strong> Ao salvar, TODOS os palpites já feitos serão recalculados com as novas regras!
+    </div>
+    
+    <form method="POST">
+    
+    <!-- SISTEMA DE PONTUAÇÃO -->
+    <div style="background: var(--cinza-escuro); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">⚙️</span> Sistema de Pontuação
+        </h3>
+        
+        <!-- ESCOLHA DO MODO -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Modo de Pontuação:</label>
+            
+            {% set modo_atual = 'simples' if (regra.pontos_gols_vencedor == 0 and regra.pontos_gols_perdedor == 0 and regra.pontos_diferenca_gols == 0) else 'acumulativo' %}
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- MODO SIMPLES -->
+                <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 1rem; background: var(--cinza-medio); border-radius: 6px; cursor: pointer;" id="label-simples">
+                    <input type="radio" name="modo_pontuacao" value="simples" {% if modo_atual == 'simples' %}checked{% endif %} style="margin-top: 0.2rem;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">🎯 SIMPLES - Apenas Placar Exato</div>
+                        <div style="font-size: 0.9rem; color: var(--texto-claro);">
+                            Acertou o placar exato = pontos | Errou = 0 pontos
+                        </div>
+                        
+                        <div id="campos-simples" style="margin-top: 1rem; display: none;">
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Pontos por acerto exato:</label>
+                            <input type="number" name="pontos_placar_exato_simples" min="1" value="{{ regra.pontos_resultado if modo_atual == 'simples' else 1 }}" 
+                                   style="width: 100px; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                        </div>
+                    </div>
+                </label>
+                
+                <!-- MODO ACUMULATIVO -->
+                <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 1rem; background: var(--cinza-medio); border-radius: 6px; cursor: pointer;" id="label-acumulativo">
+                    <input type="radio" name="modo_pontuacao" value="acumulativo" {% if modo_atual == 'acumulativo' %}checked{% endif %} style="margin-top: 0.2rem;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">📊 ACUMULATIVO - Acertos Diversos</div>
+                        <div style="font-size: 0.9rem; color: var(--texto-claro); margin-bottom: 1rem;">
+                            Pontua por cada acerto independente. Quanto mais acertos, mais pontos!
+                        </div>
+                        
+                        <div id="campos-acumulativo" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div>
+                                <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">✅ Acertar Resultado:</label>
+                                <input type="number" name="pontos_resultado" min="0" value="{{ regra.pontos_resultado }}"
+                                       style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">🎯 Acertar Gols Vencedor:</label>
+                                <input type="number" name="pontos_gols_vencedor" min="0" value="{{ regra.pontos_gols_vencedor }}"
+                                       style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">❌ Acertar Gols Perdedor:</label>
+                                <input type="number" name="pontos_gols_perdedor" min="0" value="{{ regra.pontos_gols_perdedor }}"
+                                       style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">➕➖ Acertar Diferença:</label>
+                                <input type="number" name="pontos_diferenca_gols" min="0" value="{{ regra.pontos_diferenca_gols }}"
+                                       style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- BÔNUS ELÁSTICO -->
+        <div style="padding: 1rem; background: var(--cinza-medio); border-radius: 6px; border-left: 4px solid #ff6b35;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 1rem;">
+                <input type="checkbox" name="ativar_bonus_gols" id="bonus-checkbox" {% if regra.ativar_bonus_gols %}checked{% endif %} style="width: 20px; height: 20px;">
+                <span style="font-weight: 600;">🔥 Bônus Elástico (Jogos com Muitos Gols)</span>
+            </label>
+            
+            <div id="campos-bonus" style="display: {% if regra.ativar_bonus_gols %}block{% else %}none{% endif %};">
+                <p style="font-size: 0.9rem; color: var(--texto-claro); margin-bottom: 1rem;">
+                    Recompensa palpites arriscados! Se o jogo tiver muitos gols, cada gol adicional dá pontos extras.
+                </p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Limite de gols totais:</label>
+                        <input type="number" name="limite_gols_bonus" min="3" value="{{ regra.limite_gols_bonus }}"
+                               style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                        <small style="color: var(--texto-claro); font-size: 0.8rem;">Ex: Se > 5 gols no jogo</small>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Pontos por gol adicional:</label>
+                        <input type="number" name="pontos_por_gol_extra" min="1" value="{{ regra.pontos_por_gol_extra }}"
+                               style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                        <small style="color: var(--texto-claro); font-size: 0.8rem;">Pontos por cada gol extra</small>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1rem; padding: 0.8rem; background: var(--cinza-escuro); border-radius: 4px; font-size: 0.9rem;">
+                    <strong>Exemplo:</strong> Jogo termina 5×3 (8 gols). Se limite é 5 → 3 gols extras × 2 pts = <strong>6 pontos de bônus!</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" 
+                style="flex: 1; background: var(--verde); color: #000; border: none; padding: 1rem; 
+                       border-radius: 6px; font-size: 1.1rem; font-weight: 600; cursor: pointer;">
+            💾 Salvar e Recalcular Pontos
+        </button>
+        
+        <a href="{{ url_for('main.bolao_detalhes', bolao_id=bolao.id) }}"
+           style="flex: 1; background: var(--cinza-medio); color: var(--texto); text-decoration: none; 
+                  border: none; padding: 1rem; border-radius: 6px; font-size: 1.1rem; font-weight: 600; 
+                  text-align: center; display: flex; align-items: center; justify-content: center;">
+            ❌ Cancelar
+        </a>
+    </div>
+</form>
+
+<script>
+// Mostrar/esconder campos baseado no modo selecionado
+document.querySelectorAll('input[name="modo_pontuacao"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const camposSimples = document.getElementById('campos-simples');
+        const camposAcumulativo = document.getElementById('campos-acumulativo');
+        const labelSimples = document.getElementById('label-simples');
+        const labelAcumulativo = document.getElementById('label-acumulativo');
+        
+        if (this.value === 'simples') {
+            camposSimples.style.display = 'block';
+            camposAcumulativo.style.display = 'none';
+            labelSimples.style.borderLeft = '4px solid var(--verde)';
+            labelAcumulativo.style.borderLeft = 'none';
+            
+            document.querySelector('input[name="pontos_resultado"]').value = 
+                document.querySelector('input[name="pontos_placar_exato_simples"]').value || 1;
+            document.querySelector('input[name="pontos_gols_vencedor"]').value = 0;
+            document.querySelector('input[name="pontos_gols_perdedor"]').value = 0;
+            document.querySelector('input[name="pontos_diferenca_gols"]').value = 0;
+        } else {
+            camposSimples.style.display = 'none';
+            camposAcumulativo.style.display = 'grid';
+            labelAcumulativo.style.borderLeft = '4px solid var(--verde)';
+            labelSimples.style.borderLeft = 'none';
+        }
+    });
+});
+
+// Sincroniza campo simples com pontos_resultado
+document.querySelector('input[name="pontos_placar_exato_simples"]').addEventListener('input', function() {
+    document.querySelector('input[name="pontos_resultado"]').value = this.value;
+});
+
+// Inicializa com modo atual
+window.addEventListener('DOMContentLoaded', function() {
+    const modoAtual = document.querySelector('input[name="modo_pontuacao"]:checked');
+    if (modoAtual) {
+        modoAtual.dispatchEvent(new Event('change'));
+    }
+});
+
+// Mostrar/esconder campos de bônus
+document.getElementById('bonus-checkbox').addEventListener('change', function() {
+    const camposBonus = document.getElementById('campos-bonus');
+    camposBonus.style.display = this.checked ? 'block' : 'none';
+});
+</script>
+    
+</div>
+{% endblock %}

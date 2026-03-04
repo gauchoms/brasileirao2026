@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, jsonify, redirect
+
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from app import db
 from datetime import datetime
 from app.models import Time, Jogo, Projecao, Meta, Competicao, Bolao, ParticipanteBolao, RegraPontuacao,Palpite,SolicitacaoEntrada
@@ -84,6 +85,13 @@ def calcular_pontos_palpite(palpite, jogo, regra):
         diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
         if diferenca_real == diferenca_palpite:
             pontos += regra.pontos_diferenca_gols
+            # Bônus por jogos elásticos
+        if regra.ativar_bonus_gols:
+            total_gols = jogo.gols_casa + jogo.gols_fora
+            if total_gols > regra.limite_gols_bonus:
+                gols_extras = total_gols - regra.limite_gols_bonus
+                pontos += gols_extras * regra.pontos_por_gol_extra
+
     
     else:
         # Errou o resultado
@@ -103,19 +111,24 @@ def calcular_pontos_palpite(palpite, jogo, regra):
             diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
             if diferenca_real == diferenca_palpite:
                 pontos += regra.pontos_diferenca_gols
+            
         
         # Se checkbox marcado: pontos = 0 (já está zerado)
     
-    # Bônus por jogos elásticos
-    if regra.ativar_bonus_gols:
-        total_gols = jogo.gols_casa + jogo.gols_fora
-        if total_gols > regra.limite_gols_bonus:
-            gols_extras = total_gols - regra.limite_gols_bonus
-            pontos += gols_extras * regra.pontos_por_gol_extra
     
     return pontos
 
-
+@bp.route('/admin/boloes')
+@admin_required
+def admin_boloes():
+    """
+    Lista TODOS os bolões do sistema (ADMIN ONLY)
+    """
+    from app.models import Bolao
+    
+    boloes = Bolao.query.order_by(Bolao.data_criacao.desc()).all()
+    
+    return render_template('admin_boloes.html', boloes=boloes)
 
 @bp.route('/')
 def index():
@@ -239,14 +252,16 @@ def salvar_projecao():
     return jsonify({'sucesso': True, 'total_pontos': total})
 
 
-
 @bp.route('/atualizar_resultados', methods=['POST'])
 @admin_required
 def atualizar_resultados():
     from app.api import get_resultados_brasileirao
     from app.models import Palpite, Bolao, ParticipanteBolao, Competicao
 
+<<<<<<< HEAD
     # Busca TODAS as competições cadastradas
+=======
+>>>>>>> main
     competicoes = Competicao.query.all()
     
     novos_atualizados = 0
@@ -255,7 +270,10 @@ def atualizar_resultados():
 
     for comp in competicoes:
         try:
+<<<<<<< HEAD
             # Busca resultados de cada competição
+=======
+>>>>>>> main
             data = get_resultados_brasileirao(league_id=comp.api_league_id, season=comp.ano)
             jogos = data.get('response', [])
             
@@ -270,29 +288,44 @@ def atualizar_resultados():
                     tinha_placar = jogo.gols_casa is not None and jogo.gols_fora is not None
                     
                     if not tinha_placar:
+<<<<<<< HEAD
                         # Jogo NOVO com resultado
+=======
+>>>>>>> main
                         jogo.gols_casa = gols_casa
                         jogo.gols_fora = gols_fora
                         novos_atualizados += 1
                         
+<<<<<<< HEAD
                         # CALCULA PONTOS de todos os palpites deste jogo
+=======
+>>>>>>> main
                         palpites = Palpite.query.filter_by(jogo_id=jogo.id).all()
                         for palpite in palpites:
                             bolao = Bolao.query.get(palpite.bolao_id)
                             regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
                             
+<<<<<<< HEAD
                             # Calcula pontos
+=======
+>>>>>>> main
                             pontos = calcular_pontos_palpite(palpite, jogo, regra)
                             palpite.pontos_obtidos = pontos
                             palpites_calculados += 1
                             
+<<<<<<< HEAD
                             # Atualiza pontos totais do participante
+=======
+>>>>>>> main
                             participante = ParticipanteBolao.query.filter_by(
                                 bolao_id=palpite.bolao_id,
                                 usuario_id=palpite.usuario_id
                             ).first()
                             if participante:
+<<<<<<< HEAD
                                 # Recalcula total somando todos os palpites
+=======
+>>>>>>> main
                                 total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
                                     bolao_id=palpite.bolao_id,
                                     usuario_id=palpite.usuario_id
@@ -300,7 +333,10 @@ def atualizar_resultados():
                                 participante.pontos_totais = total
                         
                     elif jogo.gols_casa != gols_casa or jogo.gols_fora != gols_fora:
+<<<<<<< HEAD
                         # Placar mudou (raro)
+=======
+>>>>>>> main
                         jogo.gols_casa = gols_casa
                         jogo.gols_fora = gols_fora
                         ja_tinham_placar += 1
@@ -318,6 +354,10 @@ def atualizar_resultados():
         'palpites_calculados': palpites_calculados
     })
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
 @bp.route('/dashboard')
 def dashboard():
     # Busca competições disponíveis para projeção
@@ -1848,3 +1888,116 @@ def migrar_boolean_para_integer_render():
         return jsonify({'sucesso': True, 'mensagem': 'Conversão completa!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+
+@bp.route('/editar_bolao/<int:bolao_id>', methods=['GET', 'POST'])
+@admin_required
+def editar_bolao(bolao_id):
+    """
+    Edita regras do bolão e recalcula pontos (ADMIN ONLY)
+    """
+    from app.models import Bolao, RegraPontuacao, Palpite, ParticipanteBolao
+    
+    bolao = Bolao.query.get_or_404(bolao_id)
+    regra = bolao.regra
+    
+    if request.method == 'POST':
+        # Captura modo escolhido
+        modo = request.form.get('modo_pontuacao', 'acumulativo')
+        
+        if modo == 'simples':
+            # MODO SIMPLES: só placar exato
+            pontos_exato = int(request.form.get('pontos_placar_exato_simples', 1))
+            regra.pontos_resultado = pontos_exato
+            regra.pontos_gols_vencedor = 0
+            regra.pontos_gols_perdedor = 0
+            regra.pontos_diferenca_gols = 0
+        else:
+            # MODO ACUMULATIVO: todos os campos
+            regra.pontos_resultado = int(request.form.get('pontos_resultado', 5))
+            regra.pontos_gols_vencedor = int(request.form.get('pontos_gols_vencedor', 3))
+            regra.pontos_gols_perdedor = int(request.form.get('pontos_gols_perdedor', 2))
+            regra.pontos_diferenca_gols = int(request.form.get('pontos_diferenca_gols', 1))
+        
+        # Bônus Elástico
+        regra.ativar_bonus_gols = 'ativar_bonus_gols' in request.form
+        if regra.ativar_bonus_gols:
+            regra.limite_gols_bonus = int(request.form.get('limite_gols_bonus', 5))
+            regra.pontos_por_gol_extra = int(request.form.get('pontos_por_gol_extra', 2))
+        
+        db.session.commit()
+        
+        # RECALCULA TODOS OS PALPITES DO BOLÃO
+        palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()
+        for palpite in palpites:
+            jogo = palpite.jogo
+            if jogo.gols_casa is not None and jogo.gols_fora is not None:
+                pontos = calcular_pontos_palpite(palpite, jogo, regra)
+                palpite.pontos_obtidos = pontos
+        
+        # ATUALIZA RANKING
+        participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
+        for participante in participantes:
+            total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
+                bolao_id=bolao_id,
+                usuario_id=participante.usuario_id
+            ).scalar() or 0
+            participante.pontos_totais = total
+        
+        db.session.commit()
+        
+        flash(f'✅ Regras atualizadas e {len(palpites)} palpites recalculados!', 'success')
+        return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
+    
+    # GET: Mostra formulário
+    return render_template('editar_bolao.html', bolao=bolao, regra=regra)
+
+@bp.route('/recalcular_bolao/<int:bolao_id>')
+@admin_required
+def recalcular_bolao(bolao_id):
+    """
+    Recalcula palpites com regra: PLACAR EXATO = 1 ponto
+    """
+    from app.models import Bolao, Palpite, ParticipanteBolao, RegraPontuacao
+    
+    bolao = Bolao.query.get_or_404(bolao_id)
+    regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
+    
+    # CORRIGE A REGRA
+    regra.pontos_resultado = 1
+    regra.pontos_gols_vencedor = 0
+    regra.pontos_gols_perdedor = 0
+    regra.pontos_diferenca_gols = 0
+    regra.requer_resultado_correto = True
+    regra.ativar_bonus_gols = False
+    
+    # RECALCULA TODOS OS PALPITES
+    palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()
+    recalculados = 0
+    
+    for palpite in palpites:
+        jogo = palpite.jogo
+        if jogo.gols_casa is not None and jogo.gols_fora is not None:
+            acertou_exato = (
+                palpite.gols_casa_palpite == jogo.gols_casa and 
+                palpite.gols_fora_palpite == jogo.gols_fora
+            )
+            palpite.pontos_obtidos = 1 if acertou_exato else 0
+            recalculados += 1
+    
+    # ATUALIZA RANKING
+    participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
+    for participante in participantes:
+        total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
+            bolao_id=bolao_id,
+            usuario_id=participante.usuario_id
+        ).scalar() or 0
+        participante.pontos_totais = total
+    
+    db.session.commit()
+    
+    return jsonify({
+        'sucesso': True,
+        'bolao': bolao.nome,
+        'palpites_recalculados': recalculados,
+        'regra': 'Placar exato = 1 ponto (corrigido)'
+    })
