@@ -1841,7 +1841,8 @@ def migrar_boolean_para_integer_render():
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
     
-    @bp.route('/recalcular_bolao/<int:bolao_id>')
+
+@bp.route('/recalcular_bolao/<int:bolao_id>')
 @admin_required
 def recalcular_bolao(bolao_id):
     """
