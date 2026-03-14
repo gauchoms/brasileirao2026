@@ -251,17 +251,13 @@ def salvar_projecao():
 
     return jsonify({'sucesso': True, 'total_pontos': total})
 
-
 @bp.route('/atualizar_resultados', methods=['POST'])
 @admin_required
 def atualizar_resultados():
     from app.api import get_resultados_brasileirao
     from app.models import Palpite, Bolao, ParticipanteBolao, Competicao
 
-<<<<<<< HEAD
     # Busca TODAS as competições cadastradas
-=======
->>>>>>> main
     competicoes = Competicao.query.all()
     
     novos_atualizados = 0
@@ -270,10 +266,7 @@ def atualizar_resultados():
 
     for comp in competicoes:
         try:
-<<<<<<< HEAD
             # Busca resultados de cada competição
-=======
->>>>>>> main
             data = get_resultados_brasileirao(league_id=comp.api_league_id, season=comp.ano)
             jogos = data.get('response', [])
             
@@ -288,44 +281,29 @@ def atualizar_resultados():
                     tinha_placar = jogo.gols_casa is not None and jogo.gols_fora is not None
                     
                     if not tinha_placar:
-<<<<<<< HEAD
                         # Jogo NOVO com resultado
-=======
->>>>>>> main
                         jogo.gols_casa = gols_casa
                         jogo.gols_fora = gols_fora
                         novos_atualizados += 1
                         
-<<<<<<< HEAD
                         # CALCULA PONTOS de todos os palpites deste jogo
-=======
->>>>>>> main
                         palpites = Palpite.query.filter_by(jogo_id=jogo.id).all()
                         for palpite in palpites:
                             bolao = Bolao.query.get(palpite.bolao_id)
                             regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
                             
-<<<<<<< HEAD
                             # Calcula pontos
-=======
->>>>>>> main
                             pontos = calcular_pontos_palpite(palpite, jogo, regra)
                             palpite.pontos_obtidos = pontos
                             palpites_calculados += 1
                             
-<<<<<<< HEAD
                             # Atualiza pontos totais do participante
-=======
->>>>>>> main
                             participante = ParticipanteBolao.query.filter_by(
                                 bolao_id=palpite.bolao_id,
                                 usuario_id=palpite.usuario_id
                             ).first()
                             if participante:
-<<<<<<< HEAD
                                 # Recalcula total somando todos os palpites
-=======
->>>>>>> main
                                 total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
                                     bolao_id=palpite.bolao_id,
                                     usuario_id=palpite.usuario_id
@@ -333,10 +311,7 @@ def atualizar_resultados():
                                 participante.pontos_totais = total
                         
                     elif jogo.gols_casa != gols_casa or jogo.gols_fora != gols_fora:
-<<<<<<< HEAD
                         # Placar mudou (raro)
-=======
->>>>>>> main
                         jogo.gols_casa = gols_casa
                         jogo.gols_fora = gols_fora
                         ja_tinham_placar += 1
@@ -354,10 +329,8 @@ def atualizar_resultados():
         'palpites_calculados': palpites_calculados
     })
 
-<<<<<<< HEAD
-=======
 
->>>>>>> main
+
 @bp.route('/dashboard')
 def dashboard():
     # Busca competições disponíveis para projeção
@@ -948,22 +921,44 @@ def criar_bolao():
             time_especifico_id = request.form.get('time_id_ano', type=int)
             ano = request.form.get('ano', type=int)
         
+           
+       
+       
+        # Captura modo escolhido
+        modo = request.form.get('modo_pontuacao', 'acumulativo')
+
         # Cria a regra de pontuação com nova estrutura
-        regra = RegraPontuacao(
-            nome=f"Regra de {nome}",
-            criador_id=current_user.id,
-            pontos_resultado=request.form.get('pts_resultado', 5, type=int),
-            pontos_gols_vencedor=request.form.get('pts_gols_vencedor', 3, type=int),
-            pontos_gols_perdedor=request.form.get('pts_gols_perdedor', 2, type=int),
-            pontos_diferenca_gols=request.form.get('pts_diferenca_gols', 1, type=int),
-            requer_resultado_correto=request.form.get('requer_resultado') == 'on',
-            ativar_bonus_gols=request.form.get('ativar_bonus_gols') == 'on',
-            limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int),
-            pontos_por_gol_extra=request.form.get('pts_por_gol_extra', 1, type=int),
-            data_criacao=db.func.now()  # ADICIONA ESTA LINHA
-
-        )
-
+        if modo == 'simples':
+            # MODO SIMPLES: só placar exato
+            pontos_exato = int(request.form.get('pontos_placar_exato_simples', 1))
+            regra = RegraPontuacao(
+                nome=f"Regra de {nome}",
+                criador_id=current_user.id,
+                pontos_resultado=pontos_exato,
+                pontos_gols_vencedor=0,
+                pontos_gols_perdedor=0,
+                pontos_diferenca_gols=0,
+                requer_resultado_correto=False,
+                ativar_bonus_gols=False,
+                limite_gols_bonus=5,
+                pontos_por_gol_extra=1,
+                data_criacao=db.func.now()
+            )
+        else:
+            # MODO ACUMULATIVO: todos os campos
+            regra = RegraPontuacao(
+                nome=f"Regra de {nome}",
+                criador_id=current_user.id,
+                pontos_resultado=int(request.form.get('pontos_resultado', 5)),
+                pontos_gols_vencedor=int(request.form.get('pontos_gols_vencedor', 3)),
+                pontos_gols_perdedor=int(request.form.get('pontos_gols_perdedor', 2)),
+                pontos_diferenca_gols=int(request.form.get('pontos_diferenca_gols', 1)),
+                requer_resultado_correto=False,
+                ativar_bonus_gols=bonus_ativo,
+                limite_gols_bonus=int(request.form.get('limite_gols_bonus', 5)) if bonus_ativo else 0,
+                pontos_por_gol_extra=int(request.form.get('pontos_por_gol_extra', 2)) if bonus_ativo else 0,
+                data_criacao=db.func.now()
+            )
 
         
         db.session.add(regra)

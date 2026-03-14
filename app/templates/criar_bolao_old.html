@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block title %}Criar Bolão{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 2rem auto;">
+    <h1 style="margin-bottom: 2rem;">Criar Novo Bolão</h1>
+
+    {% if erro %}
+    <div style="background: #e74c3c; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+        {{ erro }}
+    </div>
+    {% endif %}
+
+    <form method="POST" id="form-criar-bolao" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">NOME DO BOLÃO</label>
+            <input type="text" name="nome" required placeholder="Ex: Bolão da Copa 2026"
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIPO DE BOLÃO</label>
+            <select name="tipo_bolao" id="tipo-bolao" onchange="mostrarCampos()" required
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                <option value="campeonato_completo">Campeonato Completo</option>
+                <option value="time_campeonato">Time em um Campeonato</option>
+                <option value="time_ano_completo">Time em Todas as Competições do Ano</option>
+            </select>
+        </div>
+
+        <div id="campos-campeonato-completo" style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">COMPETIÇÃO</label>
+            <select name="competicao_id" required id="select-competicao"
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                <option value="">Selecione uma competição</option>
+                {% for comp in competicoes %}
+                <option value="{{ comp.id }}">{{ comp.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="campos-time-campeonato" style="display: none;">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">COMPETIÇÃO</label>
+                <select name="competicao_id_time" id="select-competicao-time" onchange="carregarTimesCampeonato()"
+                    style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                           border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                    <option value="">Selecione uma competição</option>
+                    {% for comp in competicoes %}
+                    <option value="{{ comp.id }}">{{ comp.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIME</label>
+                <select name="time_id_campeonato" id="select-time-campeonato"
+                    style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                           border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                    <option value="">Escolha a competição primeiro</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="campos-time-ano" style="display: none;">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIME</label>
+                <select name="time_id_ano" id="select-time-ano"
+                    style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                           border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                    <option value="">Selecione um time</option>
+                    {% for time in times %}
+                    <option value="{{ time.id }}">{{ time.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">ANO</label>
+                <select name="ano"
+                    style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                           border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- SISTEMA DE PONTUAÇÃO -->
+<div style="background: var(--cinza-escuro); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+    <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.5rem;">⚙️</span> Sistema de Pontuação
+    </h3>
+    
+    <!-- ESCOLHA DO MODO -->
+    <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Modo de Pontuação:</label>
+        
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- MODO SIMPLES -->
+            <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 1rem; background: var(--cinza-medio); border-radius: 6px; cursor: pointer;" id="label-simples">
+                <input type="radio" name="modo_pontuacao" value="simples" style="margin-top: 0.2rem;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; margin-bottom: 0.3rem;">🎯 SIMPLES - Apenas Placar Exato</div>
+                    <div style="font-size: 0.9rem; color: var(--texto-claro);">
+                        Acertou o placar exato = pontos | Errou = 0 pontos
+                    </div>
+                    
+                    <div id="campos-simples" style="margin-top: 1rem; display: none;">
+                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Pontos por acerto exato:</label>
+                        <input type="number" name="pontos_placar_exato_simples" min="1" value="1" 
+                               style="width: 100px; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                    </div>
+                </div>
+            </label>
+            
+            <!-- MODO ACUMULATIVO -->
+            <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 1rem; background: var(--cinza-medio); border-radius: 6px; cursor: pointer;" id="label-acumulativo">
+                <input type="radio" name="modo_pontuacao" value="acumulativo" checked style="margin-top: 0.2rem;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; margin-bottom: 0.3rem;">📊 ACUMULATIVO - Acertos Diversos</div>
+                    <div style="font-size: 0.9rem; color: var(--texto-claro); margin-bottom: 1rem;">
+                        Pontua por cada acerto independente. Quanto mais acertos, mais pontos!
+                    </div>
+                    
+                    <div id="campos-acumulativo" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">✅ Acertar Resultado:</label>
+                            <input type="number" name="pontos_resultado" min="0" value="5"
+                                   style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">🎯 Acertar Gols Vencedor:</label>
+                            <input type="number" name="pontos_gols_vencedor" min="0" value="3"
+                                   style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">❌ Acertar Gols Perdedor:</label>
+                            <input type="number" name="pontos_gols_perdedor" min="0" value="2"
+                                   style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">➕➖ Acertar Diferença:</label>
+                            <input type="number" name="pontos_diferenca_gols" min="0" value="1"
+                                   style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+    </div>
+    
+    <!-- BÔNUS ELÁSTICO -->
+    <div style="padding: 1rem; background: var(--cinza-medio); border-radius: 6px; border-left: 4px solid #ff6b35;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 1rem;">
+            <input type="checkbox" name="ativar_bonus_gols" id="bonus-checkbox" style="width: 20px; height: 20px;">
+            <span style="font-weight: 600;">🔥 Bônus Elástico (Jogos com Muitos Gols)</span>
+        </label>
+        
+        <div id="campos-bonus" style="display: none;">
+            <p style="font-size: 0.9rem; color: var(--texto-claro); margin-bottom: 1rem;">
+                Recompensa palpites arriscados! Se o jogo tiver muitos gols, cada gol adicional dá pontos extras.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Limite de gols totais:</label>
+                    <input type="number" name="limite_gols_bonus" min="3" value="5"
+                           style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                    <small style="color: var(--texto-claro); font-size: 0.8rem;">Ex: Se jogo tiver mais de 5 gols</small>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Pontos por gol adicional:</label>
+                    <input type="number" name="pontos_por_gol_extra" min="1" value="2"
+                           style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
+                    <small style="color: var(--texto-claro); font-size: 0.8rem;">Pontos por cada gol extra</small>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1rem; padding: 0.8rem; background: var(--cinza-escuro); border-radius: 4px; font-size: 0.9rem;">
+                <strong>Exemplo:</strong> Jogo termina 5×3 (8 gols). Se limite é 5 → 3 gols extras × 2 pts = <strong>6 pontos de bônus!</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Mostrar/esconder campos baseado no modo selecionado
+document.querySelectorAll('input[name="modo_pontuacao"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const camposSimples = document.getElementById('campos-simples');
+        const camposAcumulativo = document.getElementById('campos-acumulativo');
+        const labelSimples = document.getElementById('label-simples');
+        const labelAcumulativo = document.getElementById('label-acumulativo');
+        
+        if (this.value === 'simples') {
+            // Mostra campos simples
+            camposSimples.style.display = 'block';
+            camposAcumulativo.style.display = 'none';
+            
+            // Visual feedback
+            labelSimples.style.borderLeft = '4px solid var(--verde)';
+            labelAcumulativo.style.borderLeft = 'none';
+            
+            // Define valores: só pontos_resultado, resto = 0
+            document.querySelector('input[name="pontos_resultado"]').value = 
+                document.querySelector('input[name="pontos_placar_exato_simples"]').value || 1;
+            document.querySelector('input[name="pontos_gols_vencedor"]').value = 0;
+            document.querySelector('input[name="pontos_gols_perdedor"]').value = 0;
+            document.querySelector('input[name="pontos_diferenca_gols"]').value = 0;
+        } else {
+            // Mostra campos acumulativos
+            camposSimples.style.display = 'none';
+            camposAcumulativo.style.display = 'grid';
+            
+            // Visual feedback
+            labelAcumulativo.style.borderLeft = '4px solid var(--verde)';
+            labelSimples.style.borderLeft = 'none';
+            
+            // Restaura valores padrão se estavam zerados
+            if (document.querySelector('input[name="pontos_resultado"]').value == 0) {
+                document.querySelector('input[name="pontos_resultado"]').value = 5;
+            }
+            if (document.querySelector('input[name="pontos_gols_vencedor"]').value == 0) {
+                document.querySelector('input[name="pontos_gols_vencedor"]').value = 3;
+            }
+            if (document.querySelector('input[name="pontos_gols_perdedor"]').value == 0) {
+                document.querySelector('input[name="pontos_gols_perdedor"]').value = 2;
+            }
+            if (document.querySelector('input[name="pontos_diferenca_gols"]').value == 0) {
+                document.querySelector('input[name="pontos_diferenca_gols"]').value = 1;
+            }
+        }
+    });
+});
+
+// Sincroniza campo simples com pontos_resultado
+document.querySelector('input[name="pontos_placar_exato_simples"]').addEventListener('input', function() {
+    document.querySelector('input[name="pontos_resultado"]').value = this.value;
+});
+
+// Inicializa quando a página carrega
+window.addEventListener('DOMContentLoaded', function() {
+    // Dispara o evento para mostrar campos acumulativos
+    document.querySelector('input[value="acumulativo"]').dispatchEvent(new Event('change'));
+    
+    // Garante que campos acumulativos estão visíveis
+    document.getElementById('campos-acumulativo').style.display = 'grid';
+    document.getElementById('label-acumulativo').style.borderLeft = '4px solid var(--verde)';
+});
+// Mostrar/esconder campos de bônus
+document.getElementById('bonus-checkbox').addEventListener('change', function() {
+    const camposBonus = document.getElementById('campos-bonus');
+    camposBonus.style.display = this.checked ? 'block' : 'none';
+});
+</script>
+
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIPO DE ACESSO</label>
+            <select name="tipo_acesso"
+                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
+                <option value="publico">Público (qualquer um pode entrar com o código)</option>
+                <option value="privado">Privado (você precisa aprovar cada participante)</option>
+            </select>
+        </div>
+
+        <div style="background: var(--cinza-medio); padding: 1rem; border-radius: 6px; margin-bottom: 2rem;">
+            <div style="color: var(--texto-fraco); font-size: 0.9rem; margin-bottom: 0.5rem;">VALOR</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: var(--amarelo);">R$ 15,00</div>
+            <div style="color: var(--texto-fraco); font-size: 0.8rem; margin-top: 0.5rem;">
+                Pagamento via Mercado Pago após criar o bolão
+            </div>
+        </div>
+
+        <button type="submit" 
+            style="width: 100%; padding: 1rem; background: var(--verde); color: #000; border: none; 
+                   border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;"
+            onmouseover="this.style.opacity='0.85'" 
+            onmouseout="this.style.opacity='1'">
+            Criar Bolão e Pagar R$ 15,00
+        </button>
+
+        <div style="text-align: center; margin-top: 1rem;">
+            <a href="/meus_boloes" style="color: var(--texto-fraco); text-decoration: none; font-size: 0.9rem;">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function mostrarCampos() {
+    const tipo = document.getElementById('tipo-bolao').value;
+    
+    document.getElementById('campos-campeonato-completo').style.display = 'none';
+    document.getElementById('campos-time-campeonato').style.display = 'none';
+    document.getElementById('campos-time-ano').style.display = 'none';
+    
+    document.getElementById('select-competicao').removeAttribute('required');
+    document.getElementById('select-time-campeonato').removeAttribute('required');
+    document.getElementById('select-time-ano').removeAttribute('required');
+    
+    if (tipo === 'campeonato_completo') {
+        document.getElementById('campos-campeonato-completo').style.display = 'block';
+        document.getElementById('select-competicao').setAttribute('required', 'required');
+    } else if (tipo === 'time_campeonato') {
+        document.getElementById('campos-time-campeonato').style.display = 'block';
+        document.getElementById('select-competicao-time').setAttribute('required', 'required');
+        document.getElementById('select-time-campeonato').setAttribute('required', 'required');
+    } else if (tipo === 'time_ano_completo') {
+        document.getElementById('campos-time-ano').style.display = 'block';
+        document.getElementById('select-time-ano').setAttribute('required', 'required');
+    }
+}
+
+function carregarTimesCampeonato() {
+    const competicaoId = document.getElementById('select-competicao-time').value;
+    const selectTime = document.getElementById('select-time-campeonato');
+    
+    if (!competicaoId) {
+        selectTime.innerHTML = '<option value="">Escolha a competição primeiro</option>';
+        return;
+    }
+    
+    fetch(`/api/times_por_competicao/${competicaoId}`)
+        .then(res => res.json())
+        .then(data => {
+            selectTime.innerHTML = '<option value="">Selecione um time</option>';
+            data.times.forEach(time => {
+                selectTime.innerHTML += `<option value="${time.id}">${time.nome}</option>`;
+            });
+        });
+}
+
+function toggleBonusGols() {
+    const checkbox = document.getElementById('checkbox-bonus');
+    const campos = document.getElementById('campos-bonus');
+    campos.style.display = checkbox.checked ? 'block' : 'none';
+
+}
+
+function atualizarCamposPontuacao() {
+    const modo = document.querySelector('input[name="modo_pontuacao"]:checked').value;
+    
+    document.getElementById('campos-modo-a').style.display = 'none';
+    document.getElementById('campos-modo-b').style.display = 'none';
+    document.getElementById('campos-modo-c').style.display = 'none';
+    
+    if (modo === 'placar_exato') {
+        document.getElementById('campos-modo-a').style.display = 'block';
+    } else if (modo === 'acertos_parciais') {
+        document.getElementById('campos-modo-b').style.display = 'block';
+    } else if (modo === 'com_bonus') {
+        document.getElementById('campos-modo-c').style.display = 'block';
+    }
+}
+function toggleBonusGols() {
+    const checkbox = document.getElementById('checkbox-bonus');
+    const campos = document.getElementById('campos-bonus');
+    campos.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function atualizarSimulador() {
+    const ptsResultado = parseInt(document.getElementById('pts-resultado').value) || 0;
+    const ptsGolsVenc = parseInt(document.getElementById('pts-gols-vencedor').value) || 0;
+    const ptsGolsPerd = parseInt(document.getElementById('pts-gols-perdedor').value) || 0;
+    const ptsDiferenca = parseInt(document.getElementById('pts-diferenca').value) || 0;
+    const requerResultado = document.getElementById('requer-resultado').checked;
+    const bonusAtivo = document.getElementById('checkbox-bonus').checked;
+    const limiteBonus = parseInt(document.getElementById('limite-bonus')?.value) || 4;
+    const ptsBonus = parseInt(document.getElementById('pts-bonus')?.value) || 1;
+    
+    // Jogo exemplo: 3x1 (4 gols totais)
+    const exemplos = [
+        
+        {palpite: '3x1', resultado: true, golsVenc: true, golsPerd: true, diferenca: true},   // Tudo certo
+        {palpite: '2x1', resultado: true, golsVenc: false, golsPerd: true, diferenca: false}, // Só resultado e gols perd
+        {palpite: '3x0', resultado: true, golsVenc: true, golsPerd: false, diferenca: false}, // Só resultado e gols venc
+        {palpite: '2x0', resultado: true, golsVenc: false, golsPerd: false, diferenca: false}, // Só resultado
+        {palpite: '4x2', resultado: true, golsVenc: false, golsPerd: false, diferenca: true}, // Só resultado e diferença
+        {palpite: '1x3', resultado: false, golsVenc: false, golsPerd: false, diferenca: false}, // Errou tudo
+    ];
+
+    
+    let html = '';
+    
+    exemplos.forEach(ex => {
+        let pts = 0;
+        let detalhes = [];
+        
+        if (ex.resultado) {
+            pts += ptsResultado;
+            detalhes.push(`resultado=${ptsResultado}`);
+            
+            if (ex.golsVenc) {
+                pts += ptsGolsVenc;
+                detalhes.push(`gols venc=${ptsGolsVenc}`);
+            }
+            if (ex.golsPerd) {
+                pts += ptsGolsPerd;
+                detalhes.push(`gols perd=${ptsGolsPerd}`);
+            }
+            if (ex.diferenca) {
+                pts += ptsDiferenca;
+                detalhes.push(`diferença=${ptsDiferenca}`);
+            }
+        } else {
+            // Errou resultado
+            if (requerResultado) {
+                pts = 0;
+                detalhes.push('errou resultado = 0');
+            } else {
+                if (ex.golsVenc) {
+                    pts += ptsGolsVenc;
+                    detalhes.push(`gols venc=${ptsGolsVenc}`);
+                }
+                if (ex.golsPerd) {
+                    pts += ptsGolsPerd;
+                    detalhes.push(`gols perd=${ptsGolsPerd}`);
+                }
+                if (ex.diferenca) {
+                    pts += ptsDiferenca;
+                    detalhes.push(`diferença=${ptsDiferenca}`);
+                }
+            }
+        }
+        
+        // Bônus elástico (só se acertou placar exato no exemplo 3x1)
+        if (bonusAtivo && ex.palpite === '3x1' && 4 > limiteBonus) {
+            const golsExtras = 4 - limiteBonus;
+            const bonusPts = golsExtras * ptsBonus;
+            pts += bonusPts;
+            detalhes.push(`bônus=${bonusPts}`);
+        }
+        
+        const cor = pts >= ptsResultado + ptsGolsVenc + ptsGolsPerd + ptsDiferenca ? 'var(--verde)' : 
+                    pts >= ptsResultado ? 'var(--amarelo)' : '#e74c3c';
+        
+        html += `<div>Palpite <strong>${ex.palpite}</strong> → <span style="color: ${cor}; font-weight: 600;">${pts} pts</span> <span style="color: var(--texto-fraco); font-size: 0.85rem;">(${detalhes.join(' + ')})</span></div>`;
+    });
+    
+    document.getElementById('exemplos-pontuacao').innerHTML = html;
+}
+
+// Atualiza simulador ao carregar página
+document.addEventListener('DOMContentLoaded', atualizarSimulador);
+</script>
+<style>
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Form responsivo */
+    form > div {
+        margin-bottom: 1rem !important;
+    }
+    
+    label {
+        font-size: 0.85rem !important;
+    }
+    
+    input, select, textarea {
+        font-size: 1rem !important;
+        padding: 0.7rem !important;
+    }
+    
+    /* Grid de pontuação em mobile */
+    div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    
+    /* Botão submit */
+    button[type="submit"] {
+        padding: 1rem !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Cards de configuração */
+    div[style*="background: var(--cinza-medio)"] {
+        padding: 1rem !important;
+    }
+}
+</style>
+{% endblock %}
