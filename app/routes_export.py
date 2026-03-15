@@ -537,7 +537,7 @@ def bolao_video_ranking(bolao_id):
             df=df,
             filename=temp_path,
             orientation='h',
-            sort='asc',
+            sort='desc',
             n_bars=min(10, len(usuarios_nomes)),
             fixed_order=False,
             fixed_max=True,
