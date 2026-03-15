@@ -1048,9 +1048,10 @@ def bolao_detalhes(bolao_id):
         usuario_id=current_user.id
     ).first() is not None
     
-    # Se não é dono e não participa, redireciona
-    if not eh_dono and not participa:
+    # Se não é dono, não participa E não é admin, redireciona
+    if not eh_dono and not participa and not current_user.is_admin:
         return redirect('/meus_boloes')
+
     
 
 # Busca jogos conforme o tipo de bolão
