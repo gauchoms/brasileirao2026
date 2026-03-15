@@ -7,7 +7,7 @@ import os
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from functools import wraps
-from app.models import Time, Jogo, Projecao, Meta, Competicao
+
 
 def admin_required(f):
     @wraps(f)
@@ -258,10 +258,7 @@ def atualizar_resultados():
     from app.api import get_resultados_brasileirao
     from app.models import Palpite, Bolao, ParticipanteBolao, Competicao
 
-<<<<<<< HEAD
     # Busca TODAS as competições cadastradas
-=======
->>>>>>> main
     competicoes = Competicao.query.all()
     
     novos_atualizados = 0
@@ -270,10 +267,7 @@ def atualizar_resultados():
 
     for comp in competicoes:
         try:
-<<<<<<< HEAD
             # Busca resultados de cada competição
-=======
->>>>>>> main
             data = get_resultados_brasileirao(league_id=comp.api_league_id, season=comp.ano)
             jogos = data.get('response', [])
             
@@ -288,44 +282,29 @@ def atualizar_resultados():
                     tinha_placar = jogo.gols_casa is not None and jogo.gols_fora is not None
                     
                     if not tinha_placar:
-<<<<<<< HEAD
                         # Jogo NOVO com resultado
-=======
->>>>>>> main
                         jogo.gols_casa = gols_casa
                         jogo.gols_fora = gols_fora
                         novos_atualizados += 1
                         
-<<<<<<< HEAD
                         # CALCULA PONTOS de todos os palpites deste jogo
-=======
->>>>>>> main
                         palpites = Palpite.query.filter_by(jogo_id=jogo.id).all()
                         for palpite in palpites:
                             bolao = Bolao.query.get(palpite.bolao_id)
                             regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
                             
-<<<<<<< HEAD
                             # Calcula pontos
-=======
->>>>>>> main
                             pontos = calcular_pontos_palpite(palpite, jogo, regra)
                             palpite.pontos_obtidos = pontos
                             palpites_calculados += 1
                             
-<<<<<<< HEAD
                             # Atualiza pontos totais do participante
-=======
->>>>>>> main
                             participante = ParticipanteBolao.query.filter_by(
                                 bolao_id=palpite.bolao_id,
                                 usuario_id=palpite.usuario_id
                             ).first()
                             if participante:
-<<<<<<< HEAD
                                 # Recalcula total somando todos os palpites
-=======
->>>>>>> main
                                 total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
                                     bolao_id=palpite.bolao_id,
                                     usuario_id=palpite.usuario_id
@@ -333,10 +312,7 @@ def atualizar_resultados():
                                 participante.pontos_totais = total
                         
                     elif jogo.gols_casa != gols_casa or jogo.gols_fora != gols_fora:
-<<<<<<< HEAD
                         # Placar mudou (raro)
-=======
->>>>>>> main
                         jogo.gols_casa = gols_casa
                         jogo.gols_fora = gols_fora
                         ja_tinham_placar += 1
@@ -354,10 +330,8 @@ def atualizar_resultados():
         'palpites_calculados': palpites_calculados
     })
 
-<<<<<<< HEAD
-=======
 
->>>>>>> main
+
 @bp.route('/dashboard')
 def dashboard():
     # Busca competições disponíveis para projeção
@@ -1951,42 +1925,56 @@ def editar_bolao(bolao_id):
     # GET: Mostra formulário
     return render_template('editar_bolao.html', bolao=bolao, regra=regra)
 
-@bp.route('/recalcular_bolao/<int:bolao_id>')
+@bp.route('/recalcular_bolao/<int:bolao_id>', methods=['POST'])
 @admin_required
 def recalcular_bolao(bolao_id):
     """
-    Recalcula palpites com regra: PLACAR EXATO = 1 ponto
+    Recalcula TODOS os pontos de um bolão
+    Cria backup automático antes (snapshot)
     """
-    from app.models import Bolao, Palpite, ParticipanteBolao, RegraPontuacao
+    from app.models import Bolao, Palpite, ParticipanteBolao, RegraPontuacao, SnapshotPontuacao
+    import json
     
     bolao = Bolao.query.get_or_404(bolao_id)
-    regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
+    regra = bolao.regra
     
-    # CORRIGE A REGRA
-    regra.pontos_resultado = 1
-    regra.pontos_gols_vencedor = 0
-    regra.pontos_gols_perdedor = 0
-    regra.pontos_diferenca_gols = 0
-    regra.requer_resultado_correto = True
-    regra.ativar_bonus_gols = False
+    # 1. CRIAR SNAPSHOT (BACKUP) ANTES DE RECALCULAR
+    palpites_atuais = Palpite.query.filter_by(bolao_id=bolao_id).all()
+    participantes_atuais = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
     
-    # RECALCULA TODOS OS PALPITES
-    palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()
-    recalculados = 0
+    dados_backup = {
+        'palpites': [
+            {'id': p.id, 'pontos_obtidos': p.pontos_obtidos}
+            for p in palpites_atuais
+        ],
+        'participantes': [
+            {'id': p.id, 'usuario_id': p.usuario_id, 'pontos_totais': p.pontos_totais}
+            for p in participantes_atuais
+        ]
+    }
     
-    for palpite in palpites:
+    snapshot = SnapshotPontuacao(
+        bolao_id=bolao_id,
+        motivo='Recálculo manual via admin',
+        usuario_id=current_user.id,
+        dados_json=json.dumps(dados_backup)
+    )
+    db.session.add(snapshot)
+    db.session.flush()
+    
+    # 2. RECALCULAR PONTOS
+    palpites_recalculados = 0
+    
+    for palpite in palpites_atuais:
         jogo = palpite.jogo
+        
         if jogo.gols_casa is not None and jogo.gols_fora is not None:
-            acertou_exato = (
-                palpite.gols_casa_palpite == jogo.gols_casa and 
-                palpite.gols_fora_palpite == jogo.gols_fora
-            )
-            palpite.pontos_obtidos = 1 if acertou_exato else 0
-            recalculados += 1
+            pontos = calcular_pontos_palpite(palpite, jogo, regra)
+            palpite.pontos_obtidos = pontos
+            palpites_recalculados += 1
     
-    # ATUALIZA RANKING
-    participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
-    for participante in participantes:
+    # 3. ATUALIZAR RANKING
+    for participante in participantes_atuais:
         total = db.session.query(db.func.sum(Palpite.pontos_obtidos)).filter_by(
             bolao_id=bolao_id,
             usuario_id=participante.usuario_id
@@ -1995,9 +1983,52 @@ def recalcular_bolao(bolao_id):
     
     db.session.commit()
     
-    return jsonify({
-        'sucesso': True,
-        'bolao': bolao.nome,
-        'palpites_recalculados': recalculados,
-        'regra': 'Placar exato = 1 ponto (corrigido)'
-    })
+    flash(f'✅ Recálculo concluído! {palpites_recalculados} palpites recalculados. Backup #{snapshot.id} criado.', 'success')
+    return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
+
+
+@bp.route('/restaurar_snapshot/<int:snapshot_id>', methods=['POST'])
+@admin_required
+def restaurar_snapshot(snapshot_id):
+    """
+    ROLLBACK - Restaura pontos de um snapshot (backup)
+    """
+    from app.models import SnapshotPontuacao, Palpite, ParticipanteBolao
+    import json
+    
+    snapshot = SnapshotPontuacao.query.get_or_404(snapshot_id)
+    dados = json.loads(snapshot.dados_json)
+    
+    # Restaurar pontos dos palpites
+    for p_data in dados['palpites']:
+        palpite = Palpite.query.get(p_data['id'])
+        if palpite:
+            palpite.pontos_obtidos = p_data['pontos_obtidos']
+    
+    # Restaurar pontos totais dos participantes
+    for part_data in dados['participantes']:
+        participante = ParticipanteBolao.query.get(part_data['id'])
+        if participante:
+            participante.pontos_totais = part_data['pontos_totais']
+    
+    db.session.commit()
+    
+    flash(f'✅ Pontos restaurados do backup #{snapshot_id} de {snapshot.data_snapshot.strftime("%d/%m/%Y %H:%M")}', 'success')
+    return redirect(url_for('main.bolao_detalhes', bolao_id=snapshot.bolao_id))
+
+
+@bp.route('/snapshots/<int:bolao_id>')
+@admin_required
+def listar_snapshots(bolao_id):
+    """
+    Lista todos os snapshots (backups) de um bolão
+    """
+    from app.models import Bolao, SnapshotPontuacao
+    
+    bolao = Bolao.query.get_or_404(bolao_id)
+    snapshots = SnapshotPontuacao.query.filter_by(bolao_id=bolao_id).order_by(
+        SnapshotPontuacao.data_snapshot.desc()
+    ).all()
+    
+    return render_template('snapshots_bolao.html', bolao=bolao, snapshots=snapshots)
+
