@@ -181,6 +181,7 @@
                     <a href="/meus_boloes">🎯 Bolões</a>
                     {% if current_user.is_admin %}
                         <a href="/admin/competicoes">⚙️ Admin</a>
+                        <a href="{{ url_for('main.admin_boloes') }}">⚙️ Admin: Bolões</a>
                     {% endif %}
                     <a href="/perfil">👤 Perfil</a>
                     <span style="display: flex; align-items: center; gap: 0.5rem; color: var(--texto-fraco); font-size: 0.85rem;">
@@ -200,12 +201,6 @@
                 {% else %}
                     <a href="/login">Login</a>
                     <a href="/registro">Criar Conta</a>
-                    {% if current_user.is_authenticated and current_user.is_admin %}
-                    <a href="{{ url_for('main.admin_boloes') }}" 
-                    style="color: var(--texto); text-decoration: none; padding: 0.5rem 1rem;">
-                        ⚙️ Admin: Bolões
-                    </a>
-{% endif %}
                 {% endif %}
             </div>
         </div>
@@ -229,6 +224,7 @@
             <a href="/meus_boloes">🎯 Bolões</a>
             {% if current_user.is_admin %}
                 <a href="/admin/competicoes">⚙️ Admin</a>
+                <a href="{{ url_for('main.admin_boloes') }}">⚙️ Admin: Bolões</a>
             {% endif %}
             <a href="/perfil">👤 Perfil</a>
             <div style="padding: 1rem; border-top: 1px solid var(--cinza-medio); margin-top: 0.5rem;">
@@ -247,12 +243,6 @@
         {% else %}
             <a href="/login">Login</a>
             <a href="/registro">Criar Conta</a>
-            {% if current_user.is_authenticated and current_user.is_admin %}
-            <a href="{{ url_for('main.admin_boloes') }}" 
-            style="color: var(--texto); text-decoration: none; padding: 0.5rem 1rem;">
-                ⚙️ Admin: Bolões
-            </a>
-{% endif %}
         {% endif %}
     </div>
     
