@@ -22,6 +22,10 @@ def create_app():
     from app import routes
     app.register_blueprint(routes.bp)
     
+    # ADICIONAR ESTAS 2 LINHAS:
+    from app import routes_export
+    app.register_blueprint(routes_export.bp_export)
+    
     # Importa a função de conversão de timezone
     from app.utils import converter_utc_brasilia
     

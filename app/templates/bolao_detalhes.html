@@ -420,6 +420,64 @@
             📦 Ver Backups
         </a>
         {% endif %}
+
+        <!-- BOTÃO DONO (dono OU admin) -->
+        {% if eh_dono or current_user.is_admin %}
+        {% set rodadas_finalizadas = namespace(count=0) %}
+        {% for jogo in jogos %}
+            {% if jogo.gols_casa is not none %}
+                {% set rodada_num = jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') %}
+                {% if rodada_num not in [] %}
+                    {% set rodadas_finalizadas.count = rodadas_finalizadas.count + 1 %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cinza-medio);">
+            <h3 style="color: var(--amarelo); margin-bottom: 1rem;">📹 Compartilhar nas Redes</h3>
+            
+            {% if rodadas_finalizadas.count >= 2 %}
+                <!-- HABILITADO -->
+                <a href="{{ url_for('export.bolao_video_ranking', bolao_id=bolao.id) }}"
+                   style="display: inline-block; padding: 0.8rem 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                          color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin-right: 0.5rem;"
+                   download>
+                    🎬 Gerar Vídeo do Ranking
+                </a>
+                
+                <a href="{{ url_for('export.bolao_ranking_evolucao', bolao_id=bolao.id) }}"
+                   style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--cinza-medio); color: var(--texto); 
+                          text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                    📊 Baixar CSV (avançado)
+                </a>
+                
+                <p style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.5rem;">
+                    Compartilhe a evolução do ranking nos Stories/TikTok! 🚀
+                </p>
+            {% else %}
+                <!-- DESABILITADO -->
+                <button disabled
+                        style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--cinza-medio); 
+                               color: var(--texto-fraco); border: none; border-radius: 6px; font-weight: 600; 
+                               margin-right: 0.5rem; cursor: not-allowed; opacity: 0.5;">
+                    🎬 Gerar Vídeo do Ranking
+                </button>
+                
+                <button disabled
+                        style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--cinza-medio); 
+                               color: var(--texto-fraco); border: none; border-radius: 6px; font-weight: 600; 
+                               font-size: 0.85rem; cursor: not-allowed; opacity: 0.5;">
+                    📊 Baixar CSV (avançado)
+                </button>
+                
+                <p style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.5rem;">
+                    ⏳ Aguardando pelo menos 2 rodadas finalizadas para gerar vídeo...
+                </p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+
     </div>
         <h2 style="margin-bottom: 1.5rem;">📋 Regras de Pontuação</h2>
         
