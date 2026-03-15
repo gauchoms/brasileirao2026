@@ -319,50 +319,69 @@ def projecoes_competicao(competicao_id):
 @bp_export.route('/bolao_ranking/<int:bolao_id>')
 def bolao_ranking_evolucao(bolao_id):
     """
-    Exporta evolução do ranking de um bolão rodada por rodada
+    Exporta evolução do ranking de um bolão jogo por jogo
     Perfeito para Bar Chart Race dos participantes!
     
     Formato CSV:
-    rodada, participante, pontos_rodada, pontos_acumulados, posicao
+    jogo, participante, pontos_acumulados, posicao, avatar
     """
-    from app.models import Bolao, ParticipanteBolao, Palpite
+    from app.models import Bolao, Palpite, Usuario, Jogo
     
     bolao = Bolao.query.get_or_404(bolao_id)
     
-    # Buscar todos os palpites do bolão
-    palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()
+    # Buscar todos os palpites de jogos finalizados, ordenados por data
+    palpites = Palpite.query.filter_by(bolao_id=bolao_id)\
+        .join(Jogo)\
+        .filter(Jogo.gols_casa.isnot(None))\
+        .order_by(Jogo.data)\
+        .all()
     
-    # Estrutura: {rodada: {usuario_id: pontos}}
+    if not palpites:
+        # Retornar CSV vazio se não houver dados
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['jogo', 'participante', 'pontos_acumulados', 'posicao', 'avatar'])
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=ranking_{bolao.nome.replace(" ", "_")}.csv'
+            }
+        )
+    
+    # Estrutura: {nr_jogo: {usuario_id: pontos}}
     evolucao = {}
+    usuarios_nomes = {}
+    jogos_processados = set()
+    contador_jogo = 0
     
     for palpite in palpites:
         jogo = palpite.jogo
         
-        # Só processar jogos finalizados
-        if jogo.gols_casa is None:
-            continue
-        
-        # Extrair rodada
-        rodada_str = jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '')
-        try:
-            rodada = int(rodada_str)
-        except:
-            continue
-        
-  
-        # Inicializar rodada
-        if rodada not in evolucao:
-            # Copiar pontos da rodada anterior (deep copy!)
-            if rodada > 1 and (rodada - 1) in evolucao:
-                evolucao[rodada] = {k: v for k, v in evolucao[rodada - 1].items()}  # ✅ CORRETO!
+        # Se esse jogo ainda não foi processado, incrementa contador
+        if jogo.id not in jogos_processados:
+            contador_jogo += 1
+            jogos_processados.add(jogo.id)
+            
+            # Copiar pontos do jogo anterior (deep copy!)
+            if contador_jogo > 1 and (contador_jogo - 1) in evolucao:
+                evolucao[contador_jogo] = {k: v for k, v in evolucao[contador_jogo - 1].items()}
             else:
-                evolucao[rodada] = {}
-                # Inicializar participante
-                if palpite.usuario_id not in evolucao[rodada]:
-                    evolucao[rodada][palpite.usuario_id] = 0
-                
-        # Adicionar pontos desta rodada
-        evolucao[rodada][palpite.usuario_id] += palpite.pontos_obtidos
+                evolucao[contador_jogo] = {}
+        
+        # Guardar nome do usuário
+        if palpite.usuario_id not in usuarios_nomes:
+            usuario = Usuario.query.get(palpite.usuario_id)
+            if usuario:
+                usuarios_nomes[palpite.usuario_id] = usuario.username
+        
+        # Garantir que usuário existe antes de adicionar pontos
+        if palpite.usuario_id not in evolucao[contador_jogo]:
+            evolucao[contador_jogo][palpite.usuario_id] = 0
+        
+        # Adicionar pontos deste jogo
+        evolucao[contador_jogo][palpite.usuario_id] += palpite.pontos_obtidos
     
     # Gerar CSV
     output = io.StringIO()
@@ -370,21 +389,20 @@ def bolao_ranking_evolucao(bolao_id):
     
     # Header
     writer.writerow([
-        'rodada', 'participante', 'pontos_acumulados', 'posicao', 'avatar'
+        'jogo', 'participante', 'pontos_acumulados', 'posicao', 'avatar'
     ])
     
     # Dados
-    for rodada in sorted(evolucao.keys()):
+    for nr_jogo in sorted(evolucao.keys()):
         # Ordenar participantes por pontos
         participantes_ordenados = sorted(
-            evolucao[rodada].items(),
+            evolucao[nr_jogo].items(),
             key=lambda x: x[1],
             reverse=True
         )
         
         for posicao, (usuario_id, pontos) in enumerate(participantes_ordenados, 1):
             # Buscar dados do usuário
-            from app.models import Usuario
             usuario = Usuario.query.get(usuario_id)
             
             if not usuario:
@@ -398,7 +416,7 @@ def bolao_ranking_evolucao(bolao_id):
                 avatar = '👤'
             
             writer.writerow([
-                rodada,
+                nr_jogo,
                 usuario.username,
                 pontos,
                 posicao,
@@ -414,7 +432,6 @@ def bolao_ranking_evolucao(bolao_id):
             'Content-Disposition': f'attachment; filename=ranking_{bolao.nome.replace(" ", "_")}.csv'
         }
     )
-
 
 @bp_export.route('/bolao_video/<int:bolao_id>')
 def bolao_video_ranking(bolao_id):
