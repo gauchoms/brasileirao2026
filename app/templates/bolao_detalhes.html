@@ -396,10 +396,26 @@
         <h2 style="margin: 0;">📋 Regras de Pontuação</h2>
         
         {% if current_user.is_admin %}
-        <a href="{{ url_for('main.editar_bolao', bolao_id=bolao.id) }}" 
-           style="display: inline-block; padding: 0.8rem 1.5rem; background: #ff9500; color: white; 
-                  text-decoration: none; border-radius: 6px; font-weight: 600;">
-            ⚙️ Editar Regras (Admin)
+        <a href="{{ url_for('main.editar_bolao', bolao_id=bolao.id) }}"
+        style="display: inline-block; padding: 0.8rem 1.5rem; background: #ff9500; color: white; 
+                text-decoration: none; border-radius: 6px; font-weight: 600; margin-right: 0.5rem;">
+            ⚙️ Editar Regras
+        </a>
+
+        <form method="POST" action="{{ url_for('main.recalcular_bolao', bolao_id=bolao.id) }}" 
+            style="display: inline-block;"
+            onsubmit="return confirm('⚠️ Isso vai RECALCULAR todos os pontos do bolão. Um backup será criado automaticamente. Continuar?');">
+            <button type="submit"
+                    style="padding: 0.8rem 1.5rem; background: var(--verde); color: #000; border: none; 
+                        border-radius: 6px; font-weight: 600; cursor: pointer; margin-right: 0.5rem;">
+                🔄 Recalcular Pontos
+            </button>
+        </form>
+
+        <a href="{{ url_for('main.listar_snapshots', bolao_id=bolao.id) }}"
+        style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--cinza-medio); color: var(--texto); 
+                text-decoration: none; border-radius: 6px; font-weight: 600;">
+            📦 Ver Backups
         </a>
         {% endif %}
     </div>

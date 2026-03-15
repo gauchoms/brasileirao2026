@@ -230,3 +230,28 @@ class Notificacao(db.Model):
     mensagem = db.Column(db.String(200), nullable=False)
     lida = db.Column(db.Boolean, default=False)
     data = db.Column(db.DateTime, default=db.func.now())
+    
+
+
+class SnapshotPontuacao(db.Model):
+    """
+    Backup dos pontos antes de recalcular
+    """
+    __tablename__ = 'snapshot_pontuacao'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    bolao_id = db.Column(db.Integer, db.ForeignKey('bolao.id'), nullable=False)
+    data_snapshot = db.Column(db.DateTime, default=db.func.now())
+    motivo = db.Column(db.String(200))  # Ex: "Recálculo manual admin" ou "Edição de regras"
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))  # Quem fez
+    
+    # JSON com TODOS os dados antes do recálculo
+    dados_json = db.Column(db.Text, nullable=False)
+    # Formato: {"palpites": [{id, pontos}, ...], "participantes": [{id, pontos_totais}, ...]}
+    
+    # Relacionamentos
+    bolao = db.relationship('Bolao', backref='snapshots')
+    usuario = db.relationship('Usuario')
+    
+    def __repr__(self):
+        return f'<Snapshot {self.id} - Bolão {self.bolao_id} - {self.data_snapshot}>'
