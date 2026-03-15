@@ -502,17 +502,34 @@ def bolao_video_ranking(bolao_id):
         flash('⚠️ É preciso ter pelo menos 2 participantes com palpites para gerar o vídeo!', 'warning')
         return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
     
+
     # Converter para DataFrame
     df_data = {}
-    
-    for rodada in sorted(evolucao.keys()):
-        rodada_data = {}
-        for usuario_id, pontos in evolucao[rodada].items():
-            nome = usuarios_nomes.get(usuario_id, f'Usuário {usuario_id}')
-            rodada_data[nome] = pontos
-        df_data[f'Rodada {rodada}'] = rodada_data
-    
+
+    # Verificar se é bolão de campeonato ou time
+    eh_campeonato = bolao.competicao_id is not None
+
+    if eh_campeonato:
+        # Usar número da rodada
+        for rodada in sorted(evolucao.keys()):
+            rodada_data = {}
+            for usuario_id, pontos in evolucao[rodada].items():
+                nome = usuarios_nomes.get(usuario_id, f'Usuário {usuario_id}')
+                rodada_data[nome] = pontos
+            df_data[f'Rodada {rodada}'] = rodada_data
+    else:
+        # Usar contador sequencial de jogos
+        contador = 0
+        for rodada in sorted(evolucao.keys()):
+            contador += 1
+            rodada_data = {}
+            for usuario_id, pontos in evolucao[rodada].items():
+                nome = usuarios_nomes.get(usuario_id, f'Usuário {usuario_id}')
+                rodada_data[nome] = pontos
+            df_data[f'Jogo {contador}'] = rodada_data
+
     df = pd.DataFrame(df_data).T
+
     df = df.fillna(0)
     
     # Criar arquivo temporário
@@ -526,7 +543,7 @@ def bolao_video_ranking(bolao_id):
             df=df,
             filename=temp_path,
             orientation='h',
-            sort='desc',
+            sort='asc',
             n_bars=min(10, len(usuarios_nomes)),  # Top 10 ou menos se tiver menos participantes
             fixed_order=False,
             fixed_max=True,
