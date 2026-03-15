@@ -70,14 +70,20 @@ def calcular_pontos_palpite(palpite, jogo, regra):
         # Ganha pontos por acertar o resultado
         pontos += regra.pontos_resultado
         
-        # Acertos adicionais (só para vitórias, não para empates)
+        # Acertos adicionais
         if resultado_real != 'empate':
-            # Acertou gols do vencedor?
+            # VITÓRIAS: pontua vencedor e perdedor separadamente
             if gols_vencedor_real == gols_vencedor_palpite:
                 pontos += regra.pontos_gols_vencedor
             
-            # Acertou gols do perdedor?
             if gols_perdedor_real == gols_perdedor_palpite:
+                pontos += regra.pontos_gols_perdedor
+        else:
+            # EMPATES: pontua se acertou os gols de ambos os times
+            if palpite.gols_casa_palpite == jogo.gols_casa:
+                pontos += regra.pontos_gols_vencedor
+            
+            if palpite.gols_fora_palpite == jogo.gols_fora:
                 pontos += regra.pontos_gols_perdedor
         
         # Acertou diferença de gols?
