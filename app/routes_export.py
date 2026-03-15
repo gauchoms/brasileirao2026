@@ -349,18 +349,18 @@ def bolao_ranking_evolucao(bolao_id):
         except:
             continue
         
+  
         # Inicializar rodada
         if rodada not in evolucao:
-            # Copiar pontos da rodada anterior
+            # Copiar pontos da rodada anterior (deep copy!)
             if rodada > 1 and (rodada - 1) in evolucao:
-                evolucao[rodada] = evolucao[rodada - 1].copy()
+                evolucao[rodada] = {k: v for k, v in evolucao[rodada - 1].items()}  # ✅ CORRETO!
             else:
                 evolucao[rodada] = {}
-        
-        # Inicializar participante
-        if palpite.usuario_id not in evolucao[rodada]:
-            evolucao[rodada][palpite.usuario_id] = 0
-        
+                # Inicializar participante
+                if palpite.usuario_id not in evolucao[rodada]:
+                    evolucao[rodada][palpite.usuario_id] = 0
+                
         # Adicionar pontos desta rodada
         evolucao[rodada][palpite.usuario_id] += palpite.pontos_obtidos
     
@@ -531,7 +531,7 @@ def bolao_video_ranking(bolao_id):
             fixed_order=False,
             fixed_max=True,
             steps_per_period=10,
-            period_length=500,
+            period_length=3500,
             figsize=(8, 5),
             cmap='dark24',
             title=f'🏆 {bolao.nome} - Evolução do Ranking',
