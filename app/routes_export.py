@@ -565,5 +565,10 @@ def bolao_video_ranking(bolao_id):
         if os.path.exists(temp_path):
             os.unlink(temp_path)
         
+        # ADICIONAR PRINT DO ERRO
+        print(f"❌ ERRO ao gerar vídeo: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
         flash(f'❌ Erro ao gerar vídeo: {str(e)}', 'danger')
         return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
