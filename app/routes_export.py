@@ -541,7 +541,7 @@ def bolao_video_ranking(bolao_id):
             n_bars=min(10, len(usuarios_nomes)),
             fixed_order=False,
             fixed_max=True,
-            steps_per_period=10,
+            steps_per_period=3,
             period_length=3500,  # em milissegundos
             figsize=(8, 5),
             cmap='dark24',
