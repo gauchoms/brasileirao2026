@@ -432,7 +432,6 @@ def bolao_ranking_evolucao(bolao_id):
             'Content-Disposition': f'attachment; filename=ranking_{bolao.nome.replace(" ", "_")}.csv'
         }
     )
-
 @bp_export.route('/bolao_video/<int:bolao_id>')
 def bolao_video_ranking(bolao_id):
     """
@@ -444,45 +443,43 @@ def bolao_video_ranking(bolao_id):
     import os
     import tempfile
     from flask import flash, redirect, url_for
-    from app.models import Bolao, Palpite, Usuario
+    from app.models import Bolao, Palpite, Usuario, Jogo
     
     bolao = Bolao.query.get_or_404(bolao_id)
-
     
-    # Buscar todos os palpites do bolão
-    palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()
+    # Buscar todos os palpites de jogos finalizados, ordenados por data
+    palpites = Palpite.query.filter_by(bolao_id=bolao_id)\
+        .join(Jogo)\
+        .filter(Jogo.gols_casa.isnot(None))\
+        .order_by(Jogo.data)\
+        .all()
     
     print(f"🔍 DEBUG: Total de palpites: {len(palpites)}")  # DEBUG
-
+    
     # Verificar se tem palpites
     if not palpites:
         flash('⚠️ Este bolão ainda não tem palpites suficientes para gerar um vídeo!', 'warning')
         return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
     
-    # Estrutura: {rodada: {usuario: pontos}}
+    # Estrutura: {nr_jogo: {usuario_id: pontos}}
     evolucao = {}
     usuarios_nomes = {}
+    jogos_processados = set()
+    contador_jogo = 0
     
     for palpite in palpites:
         jogo = palpite.jogo
         
-        # Só jogos finalizados
-        if jogo.gols_casa is None:
-            continue
-        
-        # Extrair rodada
-        rodada_str = jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '')
-        try:
-            rodada = int(rodada_str)
-        except:
-            continue
-        
-        # Inicializar rodada
-        if rodada not in evolucao:
-            if rodada > 1 and (rodada - 1) in evolucao:
-                evolucao[rodada] = evolucao[rodada - 1].copy()
+        # Se esse jogo ainda não foi processado, incrementa contador
+        if jogo.id not in jogos_processados:
+            contador_jogo += 1
+            jogos_processados.add(jogo.id)
+            
+            # Copiar pontos do jogo anterior (deep copy!)
+            if contador_jogo > 1 and (contador_jogo - 1) in evolucao:
+                evolucao[contador_jogo] = {k: v for k, v in evolucao[contador_jogo - 1].items()}
             else:
-                evolucao[rodada] = {}
+                evolucao[contador_jogo] = {}
         
         # Guardar nome do usuário
         if palpite.usuario_id not in usuarios_nomes:
@@ -490,28 +487,25 @@ def bolao_video_ranking(bolao_id):
             if usuario:
                 usuarios_nomes[palpite.usuario_id] = usuario.username
         
-        # Inicializar participante
-        if palpite.usuario_id not in evolucao[rodada]:
-            evolucao[rodada][palpite.usuario_id] = 0
+        # Garantir que usuário existe antes de adicionar pontos
+        if palpite.usuario_id not in evolucao[contador_jogo]:
+            evolucao[contador_jogo][palpite.usuario_id] = 0
         
-        # Adicionar pontos
-        evolucao[rodada][palpite.usuario_id] += palpite.pontos_obtidos
+        # Adicionar pontos deste jogo
+        evolucao[contador_jogo][palpite.usuario_id] += palpite.pontos_obtidos
     
-        
-    print(f"🔍 DEBUG: Rodadas com dados: {len(evolucao)}")  # DEBUG
+    print(f"🔍 DEBUG: Jogos processados: {len(evolucao)}")  # DEBUG
     print(f"🔍 DEBUG: Participantes: {len(usuarios_nomes)}")  # DEBUG
     
     # Validações
     if not evolucao:
-    
         print("❌ DEBUG: Sem evolução (nenhum jogo finalizado)!")  # DEBUG
         flash('⚠️ Nenhum jogo foi finalizado ainda! Aguarde os primeiros resultados.', 'warning')
         return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
     
-    
     if len(evolucao) < 2:
-        print(f"❌ DEBUG: Poucas rodadas ({len(evolucao)} < 2)!")  # DEBUG
-        flash('⚠️ É preciso ter pelo menos 2 rodadas finalizadas para gerar o vídeo!', 'warning')
+        print(f"❌ DEBUG: Poucos jogos ({len(evolucao)} < 2)!")  # DEBUG
+        flash('⚠️ É preciso ter pelo menos 2 jogos finalizados para gerar o vídeo!', 'warning')
         return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
     
     if len(usuarios_nomes) < 2:
@@ -519,34 +513,17 @@ def bolao_video_ranking(bolao_id):
         flash('⚠️ É preciso ter pelo menos 2 participantes com palpites para gerar o vídeo!', 'warning')
         return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
     
-
     # Converter para DataFrame
     df_data = {}
-
-    # Verificar se é bolão de campeonato ou time
-    eh_campeonato = bolao.competicao_id is not None
-
-    if eh_campeonato:
-        # Usar número da rodada
-        for rodada in sorted(evolucao.keys()):
-            rodada_data = {}
-            for usuario_id, pontos in evolucao[rodada].items():
-                nome = usuarios_nomes.get(usuario_id, f'Usuário {usuario_id}')
-                rodada_data[nome] = pontos
-            df_data[f'Rodada {rodada}'] = rodada_data
-    else:
-        # Usar contador sequencial de jogos
-        contador = 0
-        for rodada in sorted(evolucao.keys()):
-            contador += 1
-            rodada_data = {}
-            for usuario_id, pontos in evolucao[rodada].items():
-                nome = usuarios_nomes.get(usuario_id, f'Usuário {usuario_id}')
-                rodada_data[nome] = pontos
-            df_data[f'Jogo {contador}'] = rodada_data
-
+    
+    for nr_jogo in sorted(evolucao.keys()):
+        jogo_data = {}
+        for usuario_id, pontos in evolucao[nr_jogo].items():
+            nome = usuarios_nomes.get(usuario_id, f'Usuário {usuario_id}')
+            jogo_data[nome] = pontos
+        df_data[f'Jogo {nr_jogo}'] = jogo_data
+    
     df = pd.DataFrame(df_data).T
-
     df = df.fillna(0)
     
     # Criar arquivo temporário
@@ -561,11 +538,11 @@ def bolao_video_ranking(bolao_id):
             filename=temp_path,
             orientation='h',
             sort='asc',
-            n_bars=min(10, len(usuarios_nomes)),  # Top 10 ou menos se tiver menos participantes
+            n_bars=min(10, len(usuarios_nomes)),
             fixed_order=False,
             fixed_max=True,
             steps_per_period=10,
-            period_length=3500,
+            period_length=3500,  # em milissegundos
             figsize=(8, 5),
             cmap='dark24',
             title=f'🏆 {bolao.nome} - Evolução do Ranking',
@@ -599,7 +576,6 @@ def bolao_video_ranking(bolao_id):
         if os.path.exists(temp_path):
             os.unlink(temp_path)
         
-        # ADICIONAR PRINT DO ERRO
         print(f"❌ ERRO ao gerar vídeo: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
