@@ -28,7 +28,7 @@ def atualizar_resultados_job(app):
             from app.api import get_resultados_brasileirao
             from app import db
 
-            logger.info(f"[SCHEDULER] Rodando atualização: {datetime.now(BRASILIA).strftime('%d/%m/%Y %H:%M')}")
+            print(f"[SCHEDULER] Rodando atualização: {datetime.now(BRASILIA).strftime('%d/%m/%Y %H:%M')}")
 
             competicoes = Competicao.query.all()
             novos = 0
@@ -78,14 +78,14 @@ def atualizar_resultados_job(app):
                                 jogo.gols_fora = gols_fora
 
                 except Exception as e:
-                    logger.error(f"[SCHEDULER] Erro na competição {comp.nome}: {e}")
+                    print(f"[SCHEDULER] Erro na competição {comp.nome}: {e}")
                     continue
 
             db.session.commit()
-            logger.info(f"[SCHEDULER] Concluído: {novos} novos resultados, {palpites_calculados} palpites calculados")
+            print(f"[SCHEDULER] Concluído: {novos} novos resultados, {palpites_calculados} palpites calculados")
 
         except Exception as e:
-            logger.error(f"[SCHEDULER] Erro geral: {e}")
+            print(f"[SCHEDULER] Erro geral: {e}")
 
 
 def verificar_jogos_proximos(app):
@@ -121,11 +121,11 @@ def verificar_jogos_proximos(app):
             ).count()
 
             if jogos_proximos > 0 or jogos_terminando > 0:
-                logger.info(f"[SCHEDULER] Jogo detectado (próximos={jogos_proximos}, terminando={jogos_terminando}), atualizando...")
+                print(f"[SCHEDULER] Jogo detectado (próximos={jogos_proximos}, terminando={jogos_terminando}), atualizando...")
                 atualizar_resultados_job(app)
 
         except Exception as e:
-            logger.error(f"[SCHEDULER] Erro ao verificar jogos: {e}")
+            print(f"[SCHEDULER] Erro ao verificar jogos: {e}")
 
 
 def iniciar_scheduler(app):
@@ -137,7 +137,7 @@ def iniciar_scheduler(app):
 
     # Evita iniciar múltiplas vezes
     if _scheduler is not None and _scheduler.running:
-        logger.info("[SCHEDULER] Já está rodando, ignorando.")
+        print("[SCHEDULER] Já está rodando, ignorando.")
         return _scheduler
 
     _scheduler = BackgroundScheduler(timezone=BRASILIA)
@@ -163,5 +163,5 @@ def iniciar_scheduler(app):
     )
 
     _scheduler.start()
-    logger.info("[SCHEDULER] Iniciado com 2 jobs ativos ✅")
+    print("[SCHEDULER] Iniciado com 2 jobs ativos ✅")
     return _scheduler
