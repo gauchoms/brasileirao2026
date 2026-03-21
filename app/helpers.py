@@ -62,6 +62,7 @@ TRADUCAO_PAISES = {
     "Egypt": "Egito",
     "South Africa": "África do Sul",
     "Ivory Coast": "Costa do Marfim",
+    "Cape Verde Islands": "Ilhas Cabo Verde",
     "Tunisia": "Tunísia",
     "Algeria": "Argélia",
 
@@ -101,6 +102,7 @@ SELECOES_NACIONAIS.update([
     "Scotland", "Escócia", "Austria", "Áustria", "Iran", "Irã",
     "Saudi Arabia", "Arábia Saudita", "Qatar", "Catar",
     "Ghana", "Gana", "Cameroon", "Camarões", "Tunisia", "Tunísia",
+    "Cape Verde Islands", "Ilhas Cabo Verde",
 ])
 
 

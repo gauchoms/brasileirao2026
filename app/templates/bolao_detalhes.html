@@ -187,7 +187,10 @@
         <div style="display: grid; gap: 1rem;" id="lista-jogos">
             {% for jogo in jogos %}
             
-                <div class="card" style="margin-bottom: 1rem;">
+                <div class="card jogo-item"
+                     data-status="{% if jogo.gols_casa is not none %}encerrados{% else %}abertos{% endif %}"
+                     data-rodada="{{ jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') }}"
+                     style="margin-bottom: 1rem;">
                     <!-- CABEÇALHO DO JOGO -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; 
                                 padding-bottom: 0.8rem; border-bottom: 1px solid var(--cinza-medio);">

@@ -816,22 +816,26 @@ def perfil():
         elif avatar_tipo == 'upload':
             file = request.files.get('avatar_file')
             if file and file.filename:
-                from werkzeug.utils import secure_filename
-                from PIL import Image
+                import cloudinary
+                import cloudinary.uploader
                 import os
-                
-                filename = secure_filename(f"user_{current_user.id}_{file.filename}")
-                filepath = os.path.join('app', 'static', 'uploads', 'avatars', filename)
-                
-                # Cria pasta se não existir
-                os.makedirs(os.path.dirname(filepath), exist_ok=True)
-                
-                # Redimensiona e salva
-                img = Image.open(file)
-                img = img.resize((200, 200), Image.Resampling.LANCZOS)
-                img.save(filepath)
-                
-                current_user.avatar_custom_url = f'/static/uploads/avatars/{filename}'
+
+                cloudinary.config(
+                    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+                    api_key=os.getenv('CLOUDINARY_API_KEY'),
+                    api_secret=os.getenv('CLOUDINARY_API_SECRET')
+                )
+
+                resultado = cloudinary.uploader.upload(
+                    file,
+                    public_id=f"avatars/user_{current_user.id}",
+                    overwrite=True,
+                    transformation=[
+                        {'width': 200, 'height': 200, 'crop': 'fill', 'gravity': 'face'}
+                    ]
+                )
+
+                current_user.avatar_custom_url = resultado['secure_url']
                 current_user.avatar_sugerido_id = None
         
         # Atualiza time do coração
