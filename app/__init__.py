@@ -61,9 +61,10 @@ def create_app():
         return data_br.strftime('%d/%m/%Y às %H:%M:%S')
 
     # Scheduler de atualização automática
-    from app.scheduler import iniciar_scheduler
-
-    iniciar_scheduler(app)
+    import os
+    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        from app.scheduler import iniciar_scheduler
+        iniciar_scheduler(app)
 
     return app
 
