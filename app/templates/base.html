@@ -355,9 +355,11 @@
                 <a href="/meus_boloes">Meus Bolões</a>
                 <a href="/criar_bolao">Criar Bolão</a>
                 <a href="/entrar_bolao">Entrar em Bolão</a>
-                <a href="/competicoes">Competições</a>
+                <a href="/projecoes">Projeções</a>
+                <a href="/dashboard">Dashboard</a>
                 
                 {% if current_user.is_admin %}
+                    <a href="/admin/competicoes">Competições</a>
                     <a href="/admin/gerenciar" style="color: var(--vermelho);">Admin</a>
                 {% endif %}
                 
