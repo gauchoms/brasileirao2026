@@ -941,25 +941,11 @@ def criar_bolao():
         modo = request.form.get('modo_pontuacao', 'acumulativo')
 
         # Cria a regra de pontuação com nova estrutura
-<<<<<<< HEAD
-        regra = RegraPontuacao(
-            nome=f"Regra de {nome}",
-            criador_id=current_user.id,
-            pontos_resultado=request.form.get('pontos_resultado', 5, type=int),  # ✅ CORRIGIDO
-            pontos_gols_vencedor=request.form.get('pontos_gols_vencedor', 3, type=int),  # ✅ CORRIGIDO
-            pontos_gols_perdedor=request.form.get('pontos_gols_perdedor', 2, type=int),  # ✅ CORRIGIDO
-            pontos_diferenca_gols=request.form.get('pontos_diferenca_gols', 1, type=int),  # ✅ CORRIGIDO
-            requer_resultado_correto=request.form.get('requer_resultado') == 'on',
-            ativar_bonus_gols=request.form.get('ativar_bonus_gols') == 'on',
-            limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int),
-            pontos_por_gol_extra=request.form.get('pontos_por_gol_extra', 1, type=int),
-            data_criacao=db.func.now()
-        )
+        bonus_ativo = request.form.get('ativar_bonus_gols') == 'on'
 
-=======
         if modo == 'simples':
             # MODO SIMPLES: só placar exato
-            pontos_exato = int(request.form.get('pontos_placar_exato_simples', 1))
+            pontos_exato = request.form.get('pontos_placar_exato_simples', 1, type=int)
             regra = RegraPontuacao(
                 nome=f"Regra de {nome}",
                 criador_id=current_user.id,
@@ -978,17 +964,16 @@ def criar_bolao():
             regra = RegraPontuacao(
                 nome=f"Regra de {nome}",
                 criador_id=current_user.id,
-                pontos_resultado=int(request.form.get('pontos_resultado', 5)),
-                pontos_gols_vencedor=int(request.form.get('pontos_gols_vencedor', 3)),
-                pontos_gols_perdedor=int(request.form.get('pontos_gols_perdedor', 2)),
-                pontos_diferenca_gols=int(request.form.get('pontos_diferenca_gols', 1)),
-                requer_resultado_correto=False,
+                pontos_resultado=request.form.get('pontos_resultado', 5, type=int),
+                pontos_gols_vencedor=request.form.get('pontos_gols_vencedor', 3, type=int),
+                pontos_gols_perdedor=request.form.get('pontos_gols_perdedor', 2, type=int),
+                pontos_diferenca_gols=request.form.get('pontos_diferenca_gols', 1, type=int),
+                requer_resultado_correto=request.form.get('requer_resultado') == 'on',
                 ativar_bonus_gols=bonus_ativo,
-                limite_gols_bonus=int(request.form.get('limite_gols_bonus', 5)) if bonus_ativo else 0,
-                pontos_por_gol_extra=int(request.form.get('pontos_por_gol_extra', 2)) if bonus_ativo else 0,
+                limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int) if bonus_ativo else 0,
+                pontos_por_gol_extra=request.form.get('pontos_por_gol_extra', 1, type=int) if bonus_ativo else 0,
                 data_criacao=db.func.now()
             )
->>>>>>> staging
 
         
         db.session.add(regra)
