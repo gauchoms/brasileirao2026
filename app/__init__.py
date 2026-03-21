@@ -60,6 +60,11 @@ def create_app():
         data_br = converter_utc_brasilia(data)
         return data_br.strftime('%d/%m/%Y às %H:%M:%S')
 
+    # Scheduler de atualização automática
+    from app.scheduler import iniciar_scheduler
+
+    iniciar_scheduler(app)
+
     return app
 
 @login_manager.user_loader
