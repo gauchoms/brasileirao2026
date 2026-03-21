@@ -13,6 +13,8 @@ class Config:
     if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     
+
+    
     SQLALCHEMY_DATABASE_URI = DATABASE_URL or 'sqlite:///' + os.path.join(basedir, 'brasileirao.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     API_FOOTBALL_KEY = os.getenv('API_FOOTBALL_KEY')

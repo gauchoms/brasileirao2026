@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="google-adsense-account" content="ca-pub-8239762738099420">
+    <title>{% block title %}Brasileirão 2026{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form-styles.css') }}">
+    
+    <style>
+        :root {
+            /* CORES PRINCIPAIS */
+            --fundo: #ffffff;
+            --fundo-secondary: #f8f9fa;
+            --texto: #1a1a1a;
+            --texto-secondary: #4a4a4a;
+            --texto-fraco: #999999;
+            
+            /* CORES DE MARCA */
+            --verde-brasil: #00a651;
+            --amarelo-brasil: #ffd700;
+            --azul-brasil: #003087;
+            
+            /* CORES BOLÕES (Verde Sage + Pêssego) */
+            --bolao-primary: #9caf88;
+            --bolao-secondary: #ffc57e;
+            --bolao-accent: #7ea86b;
+            
+            /* CORES PROJEÇÕES (Turquesa + Lilás) */
+            --proj-primary: #64c9cf;
+            --proj-secondary: #c8a8e9;
+            --proj-accent: #52b5bb;
+            
+            /* CORES FUNCIONAIS */
+            --border: #e0e0e0;
+            --border-light: #f0f0f0;
+            --shadow: rgba(0, 0, 0, 0.08);
+            --success: #00a651;
+            --error: #e74c3c;
+            --warning: #f39c12;
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+
+        body {
+            background: var(--fundo);
+            color: var(--texto);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* NAVEGAÇÃO */
+        nav {
+            background: var(--fundo);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            height: 70px;
+            box-shadow: 0 2px 8px var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--verde-brasil), var(--azul-brasil));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        nav a {
+            color: var(--texto-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            position: relative;
+        }
+
+        nav a:hover { 
+            color: var(--verde-brasil);
+        }
+        
+        nav a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--verde-brasil);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.5rem 2rem;
+        }
+
+        /* TIPOGRAFIA */
+        h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3rem;
+            letter-spacing: 2px;
+            color: var(--texto);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem;
+            letter-spacing: 1.5px;
+            color: var(--texto);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: var(--texto);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        p {
+            color: var(--texto-secondary);
+            line-height: 1.7;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--fundo);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px var(--shadow);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 16px var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        /* BOTÕES */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--verde-brasil), #009245);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 166, 81, 0.3);
+        }
+
+        .btn-bolao {
+            background: linear-gradient(135deg, var(--bolao-primary), var(--bolao-accent));
+            color: white;
+        }
+
+        .btn-bolao:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(156, 175, 136, 0.4);
+        }
+
+        .btn-proj {
+            background: linear-gradient(135deg, var(--proj-primary), var(--proj-accent));
+            color: white;
+        }
+
+        .btn-proj:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(100, 201, 207, 0.4);
+        }
+
+        /* MOBILE MENU */
+        .nav-desktop {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            width: 100%;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        
+        .mobile-menu-btn span {
+            width: 25px;
+            height: 3px;
+            background: var(--texto);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        
+        .mobile-menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+        }
+        
+        .mobile-menu-overlay.active {
+            display: block;
+        }
+        
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            bottom: 0;
+            width: 80%;
+            max-width: 300px;
+            background: var(--fundo);
+            z-index: 999;
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            padding-top: 70px;
+            box-shadow: -4px 0 12px var(--shadow);
+        }
+        
+        .mobile-menu.active {
+            right: 0;
+        }
+        
+        .mobile-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--texto);
+            text-decoration: none;
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .mobile-menu a:hover {
+            background: var(--fundo-secondary);
+        }
+        
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem;
+            }
+            
+            .nav-desktop {
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: flex;
+            }
+            
+            .logo {
+                font-size: 1.4rem !important;
+            }
+            
+            .container {
+                padding: 1.5rem 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--fundo-secondary);
+            padding: 2.5rem;
+            margin-top: 4rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--texto-fraco);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        footer a:hover {
+            color: var(--verde-brasil);
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo">Brasileirão 2026</a>
+        
+        <!-- Menu Desktop -->
+        <div class="nav-desktop">
+            <a href="/projecoes">Projeções</a>
+            <a href="/dashboard">Dashboard</a>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 1.5rem;">
+                {% if current_user.is_authenticated %}
+                    <a href="/meus_boloes">🎯 Bolões</a>
+                    {% if current_user.is_admin %}
+                        <a href="/admin/competicoes">⚙️ Admin</a>
+                    {% endif %}
+                    <a href="/perfil">👤 Perfil</a>
+                    <span style="display: flex; align-items: center; gap: 0.5rem; color: var(--texto-secondary); font-size: 0.9rem;">
+                        {% if current_user.avatar_tipo == 'sugerido' and current_user.avatar_sugerido_id %}
+                            <span style="font-size: 1.5rem;">{{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][current_user.avatar_sugerido_id - 1] }}</span>
+                        {% elif current_user.avatar_tipo == 'upload' and current_user.avatar_custom_url %}
+                            <img src="{{ current_user.avatar_custom_url }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border);">
+                        {% else %}
+                            <span style="font-size: 1.5rem;">👤</span>
+                        {% endif %}
+                        {{ current_user.username }}
+                        {% if current_user.is_admin %}
+                            <span style="color: var(--amarelo-brasil); font-weight: 600;">(Admin)</span>
+                        {% endif %}
+                    </span>
+                    <a href="/logout" style="color: var(--error);">Sair</a>
+                {% else %}
+                    <a href="/login">Login</a>
+                    <a href="/registro" class="btn btn-primary" style="padding: 0.5rem 1rem;">Criar Conta</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Botão Hamburguer Mobile -->
+        <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </nav>
+    
+    <!-- Overlay Mobile -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+    
+    <!-- Menu Mobile -->
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="/projecoes">Projeções</a>
+        <a href="/dashboard">Dashboard</a>
+        {% if current_user.is_authenticated %}
+            <a href="/meus_boloes">🎯 Bolões</a>
+            {% if current_user.is_admin %}
+                <a href="/admin/competicoes">⚙️ Admin</a>
+            {% endif %}
+            <a href="/perfil">👤 Perfil</a>
+            <div style="padding: 1rem; border-top: 1px solid var(--border); margin-top: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                    {% if current_user.avatar_tipo == 'sugerido' and current_user.avatar_sugerido_id %}
+                        <span style="font-size: 1.5rem;">{{ ['⚽', '🏆', '👟', '🥅', '🔥', '⭐', '⚡', '💪', '🎯', '👊', '🚀', '💎'][current_user.avatar_sugerido_id - 1] }}</span>
+                    {% elif current_user.avatar_tipo == 'upload' and current_user.avatar_custom_url %}
+                        <img src="{{ current_user.avatar_custom_url }}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                    {% else %}
+                        <span style="font-size: 1.5rem;">👤</span>
+                    {% endif %}
+                    <span>{{ current_user.username }}</span>
+                </div>
+                <a href="/logout" class="btn" style="color: var(--error); display: block; text-align: center; padding: 0.8rem; background: var(--fundo-secondary); border-radius: 6px;">Sair</a>
+            </div>
+        {% else %}
+            <a href="/login">Login</a>
+            <a href="/registro">Criar Conta</a>
+        {% endif %}
+    </div>
+    
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        <div style="color: var(--texto-fraco); font-size: 0.9rem;">
+            <a href="/termos" style="margin: 0 1rem;">Termos de Uso</a>
+            •
+            <a href="/privacidade" style="margin: 0 1rem;">Privacidade</a>
+            •
+            <span>© 2026 Brasileirão 2026</span>
+        </div>
+    </footer>
+
+    <script>
+    function toggleMobileMenu() {
+        const menu = document.getElementById('mobile-menu');
+        const overlay = document.getElementById('mobile-menu-overlay');
+        const btn = document.getElementById('mobile-menu-btn');
+        
+        menu.classList.toggle('active');
+        overlay.classList.toggle('active');
+        btn.classList.toggle('active');
+    }
+
+    // Fecha menu ao clicar em um link
+    document.querySelectorAll('.mobile-menu a').forEach(link => {
+        link.addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.remove('active');
+            document.getElementById('mobile-menu-overlay').classList.remove('active');
+        });
+    });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

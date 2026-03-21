@@ -1,0 +1,207 @@
+/* 
+ADICIONE ESTE CSS NO SEU base.html OU CRIE UM ARQUIVO form-styles.css
+
+Melhora a visibilidade dos campos de formulário em todos os navegadores
+*/
+
+/* ========================================
+   INPUTS E CAMPOS DE FORMULÁRIO
+======================================== */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+select,
+textarea {
+    /* Borda visível */
+    border: 2px solid #444 !important;
+    
+    /* Background com contraste */
+    background-color: #2a2a2a !important;
+    
+    /* Texto visível */
+    color: #fff !important;
+    
+    /* Padding confortável */
+    padding: 0.8rem !important;
+    
+    /* Bordas arredondadas */
+    border-radius: 6px !important;
+    
+    /* Transição suave */
+    transition: all 0.3s ease !important;
+}
+
+/* Estado de foco (quando clica no campo) */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+select:focus,
+textarea:focus {
+    /* Borda verde brilhante */
+    border-color: var(--verde, #00ff88) !important;
+    
+    /* Sombra verde */
+    box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1) !important;
+    
+    /* Remove outline padrão */
+    outline: none !important;
+    
+    /* Background um pouco mais claro */
+    background-color: #333 !important;
+}
+
+/* Placeholder (texto de exemplo) */
+input::placeholder,
+textarea::placeholder {
+    color: #888 !important;
+    opacity: 1 !important;
+}
+
+/* Select (dropdown) */
+select {
+    /* Aparência customizada */
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    
+    /* Seta customizada */
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23fff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.7rem center !important;
+    background-size: 1.2rem !important;
+    padding-right: 2.5rem !important;
+}
+
+/* Opções do select */
+select option {
+    background-color: #2a2a2a !important;
+    color: #fff !important;
+    padding: 0.5rem !important;
+}
+
+/* Checkbox e Radio */
+input[type="checkbox"],
+input[type="radio"] {
+    /* Tamanho maior */
+    width: 20px !important;
+    height: 20px !important;
+    
+    /* Cursor de pointer */
+    cursor: pointer !important;
+    
+    /* Borda visível */
+    border: 2px solid #444 !important;
+    
+    /* Background */
+    background-color: #2a2a2a !important;
+}
+
+/* Checkbox/Radio quando marcado */
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+    background-color: var(--verde, #00ff88) !important;
+    border-color: var(--verde, #00ff88) !important;
+}
+
+/* Labels */
+label {
+    /* Cursor de pointer quando tem input associado */
+    cursor: pointer !important;
+    
+    /* Contraste */
+    color: #fff !important;
+}
+
+/* Buttons */
+button,
+input[type="submit"],
+input[type="button"] {
+    /* Remove borda padrão */
+    border: 2px solid transparent !important;
+    
+    /* Cursor de pointer */
+    cursor: pointer !important;
+    
+    /* Transição suave */
+    transition: all 0.3s ease !important;
+}
+
+button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover {
+    /* Aumenta levemente */
+    transform: translateY(-2px) !important;
+    
+    /* Sombra */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Campos desabilitados */
+input:disabled,
+select:disabled,
+textarea:disabled,
+button:disabled {
+    /* Cursor não permitido */
+    cursor: not-allowed !important;
+    
+    /* Opacidade */
+    opacity: 0.5 !important;
+    
+    /* Cor diferente */
+    background-color: #1a1a1a !important;
+    border-color: #333 !important;
+}
+
+/* ========================================
+   CLASSES UTILITÁRIAS PARA FORMULÁRIOS
+======================================== */
+
+/* Campo com erro */
+.input-erro {
+    border-color: #ff3333 !important;
+}
+
+.input-erro:focus {
+    border-color: #ff3333 !important;
+    box-shadow: 0 0 0 3px rgba(255, 51, 51, 0.1) !important;
+}
+
+/* Campo com sucesso */
+.input-sucesso {
+    border-color: var(--verde, #00ff88) !important;
+}
+
+/* Mensagem de erro */
+.mensagem-erro {
+    color: #ff3333;
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+    display: block;
+}
+
+/* Mensagem de sucesso */
+.mensagem-sucesso {
+    color: var(--verde, #00ff88);
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+    display: block;
+}
+
+/* ========================================
+   RESPONSIVO
+======================================== */
+
+@media (max-width: 768px) {
+    input, select, textarea {
+        font-size: 16px !important; /* Evita zoom no iOS */
+    }
+}

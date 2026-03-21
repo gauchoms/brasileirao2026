@@ -784,9 +784,16 @@ def registro():
         # Faz login automaticamente
         login_user(novo_usuario)
         
+        # ✅ CORREÇÃO: Redireciona para o bolão se veio de um link de convite
+        next_url = request.args.get('next')
+        if next_url:
+            return redirect(next_url)
+        
         return redirect('/perfil')
     
-    return render_template('registro.html')
+    # ✅ CORREÇÃO: Passa o parâmetro next para o template
+    next_url = request.args.get('next', '')
+    return render_template('registro.html', next_url=next_url)
 
 @bp.route('/perfil', methods=['GET', 'POST'])
 @login_required
@@ -932,16 +939,15 @@ def criar_bolao():
         regra = RegraPontuacao(
             nome=f"Regra de {nome}",
             criador_id=current_user.id,
-            pontos_resultado=request.form.get('pts_resultado', 5, type=int),
-            pontos_gols_vencedor=request.form.get('pts_gols_vencedor', 3, type=int),
-            pontos_gols_perdedor=request.form.get('pts_gols_perdedor', 2, type=int),
-            pontos_diferenca_gols=request.form.get('pts_diferenca_gols', 1, type=int),
+            pontos_resultado=request.form.get('pontos_resultado', 5, type=int),  # ✅ CORRIGIDO
+            pontos_gols_vencedor=request.form.get('pontos_gols_vencedor', 3, type=int),  # ✅ CORRIGIDO
+            pontos_gols_perdedor=request.form.get('pontos_gols_perdedor', 2, type=int),  # ✅ CORRIGIDO
+            pontos_diferenca_gols=request.form.get('pontos_diferenca_gols', 1, type=int),  # ✅ CORRIGIDO
             requer_resultado_correto=request.form.get('requer_resultado') == 'on',
             ativar_bonus_gols=request.form.get('ativar_bonus_gols') == 'on',
             limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int),
-            pontos_por_gol_extra=request.form.get('pts_por_gol_extra', 1, type=int),
-            data_criacao=db.func.now()  # ADICIONA ESTA LINHA
-
+            pontos_por_gol_extra=request.form.get('pontos_por_gol_extra', 1, type=int),
+            data_criacao=db.func.now()
         )
 
 
@@ -1100,8 +1106,21 @@ def bolao_detalhes(bolao_id):
     from app.models import Palpite
     todos_palpites = Palpite.query.filter_by(bolao_id=bolao_id).all()    
     
+    # ✅ CORREÇÃO: Buscar regra de pontuação para mostrar no template
+    regra = RegraPontuacao.query.get(bolao.regra_pontuacao_id)
+    if not regra:
+        # Criar regra default temporária se não encontrar
+        regra = RegraPontuacao(
+            pontos_resultado=5,
+            pontos_gols_vencedor=3,
+            pontos_gols_perdedor=2,
+            pontos_diferenca_gols=1,
+            requer_resultado_correto=True
+        )
+    
     return render_template('bolao_detalhes.html', 
                          bolao=bolao, 
+                         regra=regra,  # ✅ ADICIONA REGRA
                          eh_dono=eh_dono,
                          jogos=jogos,
                          palpites_usuario=palpites_usuario,
@@ -1273,6 +1292,83 @@ def corrigir_jogos_brasileirao():
         'total_jogos_serie_a': jogos_serie_a
     })
 
+@bp.route('/convite/<codigo>')
+def link_convite(codigo):
+    """
+    ✅ NOVO: Link direto de convite para bolão
+    Se não estiver logado, redireciona para login/registro com next parameter
+    Se estiver logado, processa entrada automaticamente
+    """
+    from app.models import Bolao, ParticipanteBolao, SolicitacaoEntrada
+    
+    codigo = codigo.strip().upper()
+    
+    # Busca bolão pelo código
+    bolao = Bolao.query.filter_by(codigo_convite=codigo).first()
+    
+    if not bolao:
+        flash('Código de convite inválido!', 'error')
+        return redirect('/')
+    
+    # Se não estiver logado, redireciona para login com next
+    if not current_user.is_authenticated:
+        flash(f'Faça login ou cadastre-se para entrar no bolão "{bolao.nome}"', 'info')
+        return redirect(f'/login?next=/convite/{codigo}')
+    
+    # Verifica se já participa
+    ja_participa = ParticipanteBolao.query.filter_by(
+        bolao_id=bolao.id,
+        usuario_id=current_user.id
+    ).first()
+    
+    if ja_participa:
+        flash(f'Você já participa do bolão "{bolao.nome}"!', 'info')
+        return redirect(f'/bolao/{bolao.id}')
+    
+    # Verifica se é o dono
+    if bolao.dono_id == current_user.id:
+        flash(f'Você é o criador deste bolão!', 'info')
+        return redirect(f'/bolao/{bolao.id}')
+    
+    # PÚBLICO: Entra automaticamente
+    if bolao.tipo_acesso == 'publico':
+        participante = ParticipanteBolao(
+            bolao_id=bolao.id,
+            usuario_id=current_user.id,
+            pontos_totais=0
+        )
+        db.session.add(participante)
+        db.session.commit()
+        
+        flash(f'✅ Você entrou no bolão "{bolao.nome}" com sucesso!', 'success')
+        return redirect(f'/bolao/{bolao.id}')
+    
+    # PRIVADO: Cria solicitação
+    else:
+        # Verifica se já tem solicitação pendente
+        solicitacao_existente = SolicitacaoEntrada.query.filter_by(
+            bolao_id=bolao.id,
+            usuario_id=current_user.id,
+            status='pendente'
+        ).first()
+        
+        if solicitacao_existente:
+            flash(f'Você já solicitou entrada neste bolão. Aguarde aprovação.', 'info')
+            return redirect(f'/bolao/{bolao.id}')
+        
+        # Cria solicitação
+        solicitacao = SolicitacaoEntrada(
+            bolao_id=bolao.id,
+            usuario_id=current_user.id,
+            status='pendente'
+        )
+        db.session.add(solicitacao)
+        db.session.commit()
+        
+        flash(f'Solicitação enviada! Aguarde aprovação do criador.', 'info')
+        return redirect(f'/bolao/{bolao.id}')
+
+
 @bp.route('/entrar_bolao', methods=['GET', 'POST'])
 @login_required
 def entrar_bolao():
@@ -1294,11 +1390,14 @@ def entrar_bolao():
         ).first()
         
         if ja_participa:
-            return render_template('entrar_bolao.html', erro=f'Você já participa do bolão "{bolao.nome}"!')
+            # ✅ CORREÇÃO: Redireciona para o bolão ao invés de mostrar erro
+            flash(f'Você já participa do bolão "{bolao.nome}"!', 'info')
+            return redirect(f'/bolao/{bolao.id}')
         
         # Verifica se é o dono
         if bolao.dono_id == current_user.id:
-            return render_template('entrar_bolao.html', erro=f'Você é o criador do bolão "{bolao.nome}"!')
+            flash(f'Você é o criador do bolão "{bolao.nome}"!', 'info')
+            return redirect(f'/bolao/{bolao.id}')
         
         # PÚBLICO: Entra automaticamente
         if bolao.tipo_acesso == 'publico':
@@ -1310,8 +1409,9 @@ def entrar_bolao():
             db.session.add(participante)
             db.session.commit()
             
-            return render_template('entrar_bolao.html', 
-                sucesso=f'Você entrou no bolão "{bolao.nome}" com sucesso!')
+            # ✅ CORREÇÃO: Redireciona para o bolão
+            flash(f'✅ Você entrou no bolão "{bolao.nome}" com sucesso!', 'success')
+            return redirect(f'/bolao/{bolao.id}')
         
         # PRIVADO: Cria solicitação
         else:
@@ -1335,8 +1435,9 @@ def entrar_bolao():
             db.session.add(solicitacao)
             db.session.commit()
             
-            return render_template('entrar_bolao.html', 
-                sucesso=f'Solicitação enviada para o bolão "{bolao.nome}"! Aguarde aprovação.')
+            # ✅ CORREÇÃO: Redireciona para o bolão
+            flash(f'Solicitação enviada! Aguarde aprovação.', 'info')
+            return redirect(f'/bolao/{bolao.id}')
     
     return render_template('entrar_bolao.html')
 
@@ -2039,3 +2140,19 @@ def listar_snapshots(bolao_id):
     
     return render_template('snapshots_bolao.html', bolao=bolao, snapshots=snapshots)
 
+
+@bp.route('/visualizar_projecoes/<int:competicao_id>')
+@login_required
+def visualizar_projecoes(competicao_id):
+    """Interface de projeções"""
+    competicao = Competicao.query.get_or_404(competicao_id)
+    
+    jogos = Jogo.query.filter_by(competicao_id=competicao_id).all()
+    times_ids = set()
+    for jogo in jogos:
+        times_ids.add(jogo.time_casa_id)
+        times_ids.add(jogo.time_fora_id)
+    
+    times = Time.query.filter(Time.id.in_(times_ids)).order_by(Time.nome).all()
+    
+    return render_template('visualizar_projecoes.html', competicao=competicao, times=times)

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Backups - {{ bolao.nome }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 2rem auto;">
+    
+    <div style="margin-bottom: 2rem;">
+        <a href="{{ url_for('main.bolao_detalhes', bolao_id=bolao.id) }}" 
+           style="color: var(--texto-fraco); text-decoration: none;">
+            ← Voltar para o bolão
+        </a>
+    </div>
+    
+    <h1 style="margin-bottom: 0.5rem;">🔙 Backups de Pontuação</h1>
+    <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
+        Bolão: <strong>{{ bolao.nome }}</strong>
+    </p>
+    
+    {% if snapshots %}
+    <div style="background: var(--cinza); border-radius: 8px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--verde); background: var(--cinza-escuro);">
+                    <th style="text-align: left; padding: 1rem; color: var(--texto-fraco);">ID</th>
+                    <th style="text-align: left; padding: 1rem; color: var(--texto-fraco);">DATA</th>
+                    <th style="text-align: left; padding: 1rem; color: var(--texto-fraco);">MOTIVO</th>
+                    <th style="text-align: center; padding: 1rem; color: var(--texto-fraco);">FEITO POR</th>
+                    <th style="text-align: center; padding: 1rem; color: var(--texto-fraco);">AÇÃO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for snapshot in snapshots %}
+                <tr style="border-bottom: 1px solid var(--cinza-medio);">
+                    <td style="padding: 1rem;">
+                        <code style="background: var(--cinza-medio); padding: 0.3rem 0.6rem; border-radius: 4px;">
+                            #{{ snapshot.id }}
+                        </code>
+                    </td>
+                    <td style="padding: 1rem;">
+                        {{ snapshot.data_snapshot.strftime('%d/%m/%Y %H:%M') }}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {{ snapshot.motivo }}
+                    </td>
+                    <td style="text-align: center; padding: 1rem;">
+                        {{ snapshot.usuario.username if snapshot.usuario else 'Sistema' }}
+                    </td>
+                    <td style="text-align: center; padding: 1rem;">
+                        <form method="POST" action="{{ url_for('main.restaurar_snapshot', snapshot_id=snapshot.id) }}" 
+                              onsubmit="return confirm('⚠️ Tem certeza? Isso vai RESTAURAR os pontos para como estavam em {{ snapshot.data_snapshot.strftime('%d/%m/%Y às %H:%M') }}');"
+                              style="display: inline;">
+                            <button type="submit"
+                                    style="background: #ff9500; color: white; border: none; padding: 0.5rem 1rem; 
+                                           border-radius: 4px; font-weight: 600; cursor: pointer;">
+                                🔄 Restaurar
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="background: var(--cinza); padding: 3rem; border-radius: 8px; text-align: center; color: var(--texto-fraco);">
+        <p style="font-size: 3rem; margin-bottom: 1rem;">📦</p>
+        <p>Nenhum backup encontrado para este bolão.</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+            Backups são criados automaticamente antes de recalcular pontos.
+        </p>
+    </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

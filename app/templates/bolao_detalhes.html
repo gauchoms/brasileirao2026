@@ -186,87 +186,172 @@
         
         <div style="display: grid; gap: 1rem;" id="lista-jogos">
             {% for jogo in jogos %}
-            <div class="jogo-card jogo-item" 
-                 data-status="{% if jogo.gols_casa is none %}abertos{% else %}encerrados{% endif %}"
-                 data-rodada="{{ jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') }}"
-                 style="background: var(--cinza); padding: 1.5rem; border-radius: 8px;">
-                <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2rem;">
-                    
-                    <!-- Time Casa -->
-                    <div style="text-align: right;">
-                        <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_casa.nome }}</div>
-                        <div style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.3rem;">
-                            <div>{{ jogo.competicao.nome }}</div>
-                            {% if jogo.gols_casa is not none %}
-                                Resultado: {{ jogo.gols_casa }}
-                            {% else %}
-                                {{ jogo.data[:10] if jogo.data else 'A definir' }}
+            
+                <div class="card" style="margin-bottom: 1rem;">
+                    <!-- CABEÇALHO DO JOGO -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; 
+                                padding-bottom: 0.8rem; border-bottom: 1px solid var(--cinza-medio);">
+                        <div style="font-size: 0.85rem; color: var(--texto-fraco); font-weight: 600;">
+                            {% if jogo.competicao %}
+                                {{ jogo.competicao.nome }}
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--texto-fraco);">
+                            {% if jogo.data %}
+                                {# Data já vem como string do banco #}
+                                {{ jogo.data[:16] if jogo.data|length > 16 else jogo.data }}
                             {% endif %}
                         </div>
                     </div>
-                    
-                    <!-- Teste -->
 
-                    <!-- Palpite -->
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        {% if jogo.gols_casa is none %}
-                            <input type="number" min="0" max="99" 
-                                   value="{{ palpites_usuario[jogo.id].gols_casa_palpite if jogo.id in palpites_usuario else '' }}"
-                                   id="casa-{{ jogo.id }}"
-                                   style="width: 60px; padding: 0.5rem; text-align: center; background: var(--cinza-medio); 
-                                          border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto); 
-                                          font-size: 1.2rem; font-weight: 600;">
-                            <span style="font-size: 1.2rem; color: var(--texto-fraco);">×</span>
-                            <input type="number" min="0" max="99"
-                                   value="{{ palpites_usuario[jogo.id].gols_fora_palpite if jogo.id in palpites_usuario else '' }}"
-                                   id="fora-{{ jogo.id }}"
-                                   style="width: 60px; padding: 0.5rem; text-align: center; background: var(--cinza-medio); 
-                                          border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto); 
-                                          font-size: 1.2rem; font-weight: 600;">
-                            <button onclick="salvarPalpite({{ jogo.id }}, {{ bolao.id }})"
-                                    style="background: var(--verde); color: #000; border: none; padding: 0.5rem 1rem; 
-                                           border-radius: 6px; font-weight: 600; cursor: pointer; white-space: nowrap;">
-                                Salvar
-                            </button>
-                        {% else %}
-                            <div style="text-align: center;">
-                                {% if jogo.id in palpites_usuario %}
-                                    <div style="font-size: 1.2rem; font-weight: 600;">
-                                        {{ palpites_usuario[jogo.id].gols_casa_palpite }} × {{ palpites_usuario[jogo.id].gols_fora_palpite }}
-                                    </div>
-                                    <div style="margin-top: 0.3rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600;
-                                               background: {% if palpites_usuario[jogo.id].pontos_obtidos >= 5 %}var(--verde){% elif palpites_usuario[jogo.id].pontos_obtidos > 0 %}var(--amarelo){% else %}#e74c3c{% endif %}; 
-                                               color: #000;">
-                                        {{ palpites_usuario[jogo.id].pontos_obtidos }} pts
-                                    </div>
-                                    <!-- Botão Comprovante -->
-                                    <a href="/comprovante/{{ palpites_usuario[jogo.id].id }}" target="_blank"
-                                       style="display: inline-block; margin-top: 0.5rem; padding: 0.3rem 0.6rem; background: var(--cinza-medio); 
-                                              color: var(--texto); text-decoration: none; border-radius: 4px; font-size: 0.75rem;">
-                                        📄 Comprovante
-                                    </a>
+                    <!-- CONFRONTO COM LOGOS/BANDEIRAS -->
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center;">
+                        
+                        <!-- TIME CASA -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem;">
+                            <!-- LOGO/BANDEIRA -->
+                          <!-- TIME CASA -->
+                            {% if jogo.time_casa.logo_url %}
+                            <img src="{{ jogo.time_casa.logo_url }}" 
+                                alt="{{ jogo.time_casa.nome }}"
+                                style="width: 60px; height: 60px; object-fit: contain;">
+                            {% else %}
+                            <span style="font-size: 2.5rem;">⚽</span>
+                            {% endif %}
+
+                            
+                            <!-- NOME DO TIME (TRADUZIDO SE FOR SELEÇÃO) -->
+                            <div style="font-weight: 600; text-align: center; font-size: 0.95rem; color: var(--texto);">
+                                {% if eh_selecao(jogo.time_casa.nome) %}
+                                    {{ traduzir_pais(jogo.time_casa.nome) }}
                                 {% else %}
-                                    <div style="color: var(--texto-fraco); font-size: 0.9rem;">Sem palpite</div>
+                                    {{ jogo.time_casa.nome }}
                                 {% endif %}
                             </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Time Fora -->
-                    <div style="text-align: left;">
-                        <div style="font-weight: 600; font-size: 1.1rem;">{{ jogo.time_fora.nome }}</div>
-                        <div style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.3rem;">
-                            <div>{{ jogo.competicao.nome }}</div>
-                            {% if jogo.gols_fora is not none %}
-                                Resultado: {{ jogo.gols_fora }}
+                            
+                            <!-- PLACAR/INPUT -->   
+                            {% if jogo.gols_casa is not none %}
+                                <!-- JOGO FINALIZADO -->
+                                <div style="font-size: 2rem; font-weight: 700; color: var(--texto);">
+                                    {{ jogo.gols_casa }}
+                                </div>
                             {% else %}
-                                {{ jogo.data[:10] if jogo.data else 'A definir' }}
+                                <!-- FAZER PALPITE -->
+                                <input type="number" min="0" max="99" 
+                                    value="{{ palpites_usuario[jogo.id].gols_casa_palpite if jogo.id in palpites_usuario else '' }}"
+                                    id="casa-{{ jogo.id }}"
+                                    style="width: 70px; padding: 0.6rem; text-align: center; 
+                                            background: var(--fundo); border: 2px solid var(--cinza-medio); 
+                                            border-radius: 6px; color: var(--texto); 
+                                            font-size: 1.5rem; font-weight: 700;">
+                            {% endif %}
+                        </div>
+                        
+                        <!-- VS / RESULTADO -->
+                        <div style="text-align: center;">
+                            {% if jogo.gols_casa is not none %}
+                                <!-- JOGO FINALIZADO -->
+                                <div style="font-size: 0.9rem; color: var(--texto-fraco); font-weight: 600;">
+                                    FINAL
+                                </div>
+                            {% else %}
+                                <!-- AGUARDANDO -->
+                                <div style="font-size: 1.5rem; color: var(--texto-fraco); font-weight: 700;">
+                                    ×
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- TIME FORA -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem;">
+                            <!-- LOGO TIME FORA -->
+                            {% if jogo.time_fora.logo_url %}
+                            <img src="{{ jogo.time_fora.logo_url }}" 
+                                alt="{{ jogo.time_fora.nome }}"
+                                style="width: 60px; height: 60px; object-fit: contain;">
+                            {% else %}
+                            <span style="font-size: 2.5rem;">⚽</span>
+                            {% endif %}
+                                                        
+                            <!-- NOME DO TIME (TRADUZIDO SE FOR SELEÇÃO) -->
+                            <div style="font-weight: 600; text-align: center; font-size: 0.95rem; color: var(--texto);">
+                                {% if eh_selecao(jogo.time_fora.nome) %}
+                                    {{ traduzir_pais(jogo.time_fora.nome) }}
+                                {% else %}
+                                    {{ jogo.time_fora.nome }}
+                                {% endif %}
+                            </div>
+                            
+                            <!-- PLACAR/INPUT -->
+                            {% if jogo.gols_fora is not none %}
+                                <!-- JOGO FINALIZADO -->
+                                <div style="font-size: 2rem; font-weight: 700; color: var(--texto);">
+                                    {{ jogo.gols_fora }}
+                                </div>
+                            {% else %}
+                                <!-- FAZER PALPITE -->
+                                <input type="number" min="0" max="99"
+                                    value="{{ palpites_usuario[jogo.id].gols_fora_palpite if jogo.id in palpites_usuario else '' }}"
+                                    id="fora-{{ jogo.id }}"
+                                    style="width: 70px; padding: 0.6rem; text-align: center; 
+                                            background: var(--fundo); border: 2px solid var(--cinza-medio); 
+                                            border-radius: 6px; color: var(--texto); 
+                                            font-size: 1.5rem; font-weight: 700;">
                             {% endif %}
                         </div>
                     </div>
                     
+                    <!-- BOTÃO SALVAR PALPITE -->
+                    {% if jogo.gols_casa is none %}
+                    <div style="margin-top: 1.5rem; text-align: center;">
+                        <button onclick="salvarPalpite({{ jogo.id }}, {{ bolao.id }})"
+                                class="btn-primary"
+                                id="btn-salvar-{{ jogo.id }}">
+                            💾 Salvar Palpite
+                        </button>
+                        
+                        <!-- MENSAGEM DE FEEDBACK -->
+                        <div id="msg-palpite-{{ jogo.id }}" style="display: none; margin-top: 0.5rem;"></div>
+                    </div>
+                    
+                    <!-- COMPROVANTE (jogo aberto, palpite já salvo) -->
+                    {% if jogo.id in palpites_usuario and palpites_usuario[jogo.id].hash_comprovante %}
+                    <div style="margin-top: 0.8rem; text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--texto-fraco); margin-bottom: 0.4rem;">
+                            Palpite salvo: <strong>{{ palpites_usuario[jogo.id].gols_casa_palpite }} × {{ palpites_usuario[jogo.id].gols_fora_palpite }}</strong>
+                        </div>
+                       <a href="/comprovante/{{ palpites_usuario[jogo.id].id }}" target="_blank"
+                           style="display: inline-block; padding: 0.4rem 0.9rem; background: var(--cinza-medio); 
+                                  color: var(--texto); text-decoration: none; border-radius: 6px; font-size: 0.8rem;">
+                            📄 Ver Comprovante
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    
+                    <!-- PALPITE E PONTUAÇÃO (SE JOGO FINALIZADO) -->
+                    {% if jogo.gols_casa is not none and jogo.id in palpites_usuario %}
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--cinza-medio); 
+                                text-align: center;">
+                        <div style="font-size: 0.9rem; color: var(--texto-fraco); margin-bottom: 0.5rem;">
+                            Seu palpite: <strong>{{ palpites_usuario[jogo.id].gols_casa_palpite }} × {{ palpites_usuario[jogo.id].gols_fora_palpite }}</strong>
+                        </div>
+                        <div class="badge {% if palpites_usuario[jogo.id].pontos_obtidos >= 5 %}badge-success{% elif palpites_usuario[jogo.id].pontos_obtidos > 0 %}badge-warning{% else %}badge-danger{% endif %}">
+                            {{ palpites_usuario[jogo.id].pontos_obtidos }} pontos
+                        </div>
+                        {% if palpites_usuario[jogo.id].hash_comprovante %}
+                        <div style="margin-top: 0.6rem;">
+                            <a href="/comprovante/{{ palpites_usuario[jogo.id].id }}"target="_blank"
+                               style="display: inline-block; padding: 0.4rem 0.9rem; background: var(--cinza-medio); 
+                                      color: var(--texto); text-decoration: none; border-radius: 6px; font-size: 0.8rem;">
+                                📄 Ver Comprovante
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
-            </div>
+
             {% endfor %}
         </div>
     </div>
@@ -657,13 +742,56 @@ function mostrarTab(tab) {
 }
 
 
+// ========================================
+// SALVAR PALPITE COM FEEDBACK VISUAL ✅
+// ========================================
+const palpitesSalvos = {};
+
+function formatarDataHora(timestamp) {
+    const data = new Date(timestamp);
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const ano = data.getFullYear();
+    const hora = String(data.getHours()).padStart(2, '0');
+    const min = String(data.getMinutes()).padStart(2, '0');
+    return `${dia}/${mes}/${ano} às ${hora}:${min}`;
+}
+
 function salvarPalpite(jogoId, bolaoId) {
     const golsCasa = document.getElementById('casa-' + jogoId).value;
     const golsFora = document.getElementById('fora-' + jogoId).value;
     
+    // Encontra o botão (busca pelo onclick)
+    const botoes = document.querySelectorAll(`button[onclick*="salvarPalpite(${jogoId}"]`);
+    const botao = botoes[0];
+    
+    // Cria div de mensagem se não existir
+    let msgDiv = document.getElementById('msg-palpite-' + jogoId);
+    if (!msgDiv && botao) {
+        msgDiv = document.createElement('div');
+        msgDiv.id = 'msg-palpite-' + jogoId;
+        msgDiv.style.marginTop = '0.5rem';
+        msgDiv.style.fontSize = '0.75rem';
+        msgDiv.style.display = 'none';
+        botao.parentElement.appendChild(msgDiv);
+    }
+    
     if (golsCasa === '' || golsFora === '') {
-        alert('Preencha o placar completo');
+        if (msgDiv) {
+            msgDiv.textContent = '⚠️ Preencha ambos os placares';
+            msgDiv.style.color = '#ff9500';
+            msgDiv.style.display = 'block';
+            setTimeout(() => msgDiv.style.display = 'none', 3000);
+        }
         return;
+    }
+    
+    // ✅ FEEDBACK: Muda botão para "Salvando..."
+    const textoOriginal = botao ? botao.textContent : 'Salvar';
+    if (botao) {
+        botao.textContent = '⏳ Salvando...';
+        botao.style.background = '#ff9500';
+        botao.disabled = true;
     }
     
     fetch('/salvar_palpite', {
@@ -679,15 +807,116 @@ function salvarPalpite(jogoId, bolaoId) {
     .then(res => res.json())
     .then(data => {
         if (data.sucesso) {
-            alert('Palpite salvo!');
+            // ✅ SUCESSO: Botão verde "Salvo"
+            if (botao) {
+                botao.textContent = '✅ Salvo';
+                botao.style.background = 'var(--verde)';
+                botao.style.color = '#000';
+                
+                setTimeout(() => {
+                    botao.textContent = textoOriginal;
+                    botao.style.background = 'var(--verde)';
+                    botao.style.color = '#000';
+                    botao.disabled = false;
+                }, 3000);
+            }
+            
+            // ✅ TIMESTAMP
+            const agora = Date.now();
+            palpitesSalvos[jogoId] = agora;
+            
+            if (msgDiv) {
+                msgDiv.textContent = `✅ Último palpite salvo em ${formatarDataHora(agora)}`;
+                msgDiv.style.color = 'var(--verde)';
+                msgDiv.style.display = 'block';
+            }
+            
+            // Salva no localStorage
+            localStorage.setItem(`palpite_${jogoId}`, JSON.stringify({
+                timestamp: agora,
+                gols_casa: golsCasa,
+                gols_fora: golsFora
+            }));
+            
         } else {
-            alert('Erro: ' + (data.erro || 'Desconhecido'));
+            // ❌ ERRO
+            if (botao) {
+                botao.textContent = '❌ Erro';
+                botao.style.background = '#ff3333';
+                botao.disabled = false;
+                
+                setTimeout(() => {
+                    botao.textContent = textoOriginal;
+                    botao.style.background = 'var(--verde)';
+                }, 3000);
+            }
+            
+            if (msgDiv) {
+                msgDiv.textContent = `❌ ${data.erro || 'Erro ao salvar'}`;
+                msgDiv.style.color = '#ff3333';
+                msgDiv.style.display = 'block';
+            }
         }
     })
     .catch(err => {
-        alert('Erro ao salvar palpite');
+        console.error('Erro:', err);
+        if (botao) {
+            botao.textContent = '❌ Erro';
+            botao.style.background = '#ff3333';
+            botao.disabled = false;
+            
+            setTimeout(() => {
+                botao.textContent = textoOriginal;
+                botao.style.background = 'var(--verde)';
+            }, 3000);
+        }
+        
+        if (msgDiv) {
+            msgDiv.textContent = '❌ Erro de conexão. Tente novamente.';
+            msgDiv.style.color = '#ff3333';
+            msgDiv.style.display = 'block';
+        }
     });
 }
+
+// ✅ CARREGAR TIMESTAMPS AO ABRIR PÁGINA
+window.addEventListener('DOMContentLoaded', function() {
+    // Busca todos os botões de salvar palpite
+    const botoes = document.querySelectorAll('button[onclick^="salvarPalpite"]');
+    
+    botoes.forEach(botao => {
+        // Extrai jogoId do onclick
+        const match = botao.getAttribute('onclick').match(/salvarPalpite\((\d+)/);
+        if (match) {
+            const jogoId = match[1];
+            const palpiteSalvo = localStorage.getItem(`palpite_${jogoId}`);
+            
+            if (palpiteSalvo) {
+                try {
+                    const dados = JSON.parse(palpiteSalvo);
+                    
+                    // Cria div de mensagem
+                    let msgDiv = document.getElementById('msg-palpite-' + jogoId);
+                    if (!msgDiv) {
+                        msgDiv = document.createElement('div');
+                        msgDiv.id = 'msg-palpite-' + jogoId;
+                        msgDiv.style.marginTop = '0.5rem';
+                        msgDiv.style.fontSize = '0.75rem';
+                        botao.parentElement.appendChild(msgDiv);
+                    }
+                    
+                    msgDiv.textContent = `✅ Último palpite salvo em ${formatarDataHora(dados.timestamp)}`;
+                    msgDiv.style.color = 'var(--verde)';
+                    msgDiv.style.display = 'block';
+                    
+                    palpitesSalvos[jogoId] = dados.timestamp;
+                } catch (e) {
+                    console.error('Erro ao carregar palpite:', e);
+                }
+            }
+        }
+    });
+});
 
 function filtrarJogos() {
     const filtroStatus = document.getElementById('filtro-status').value;
@@ -772,19 +1001,34 @@ function toggleDetalhesJogo(jogoId) {
     }
     event.stopPropagation();
 }
+// ✅ COPIAR LINK - Usa nova rota /convite/
 function copiarLink() {
-    const link = window.location.origin + '/entrar_bolao?codigo={{ bolao.codigo_convite }}';
+    const codigo = '{{ bolao.codigo_convite }}';
+    const link = window.location.origin + '/convite/' + codigo;
+    
     navigator.clipboard.writeText(link).then(() => {
         const msg = document.getElementById('msg-compartilhar');
         msg.textContent = '✅ Link copiado!';
         msg.style.display = 'block';
         setTimeout(() => msg.style.display = 'none', 3000);
+    }).catch(err => {
+        console.error('Erro ao copiar:', err);
+        alert('Erro ao copiar link. Tente novamente.');
     });
 }
 
+// ✅ COMPARTILHAR NO WHATSAPP - Usa nova rota /convite/
 function compartilharWhatsApp() {
-    const texto = encodeURIComponent('🎯 Entre no meu bolão "{{ bolao.nome }}"!\n\nCódigo: {{ bolao.codigo_convite }}\n\nLink: ' + window.location.origin + '/entrar_bolao?codigo={{ bolao.codigo_convite }}');
-    window.open('https://wa.me/?text=' + texto, '_blank');
+    const codigo = '{{ bolao.codigo_convite }}';
+    const nomeBolao = '{{ bolao.nome }}';
+    const link = window.location.origin + '/convite/' + codigo;
+    
+    const texto = `🏆 Venha participar do bolão "${nomeBolao}"!\n\n` +
+                  `Clique no link para entrar: ${link}\n\n` +
+                  `Ou use o código: ${codigo}`;
+    
+    const urlWhatsApp = 'https://wa.me/?text=' + encodeURIComponent(texto);
+    window.open(urlWhatsApp, '_blank');
 }
 </script>
 <style>

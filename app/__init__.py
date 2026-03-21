@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from config import Config
 
+
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -21,10 +22,32 @@ def create_app():
 
     from app import routes
     app.register_blueprint(routes.bp)
+    # ADICIONAR AQUI DENTRO:
+    from app.helpers import (
+        traduzir_pais,
+        obter_logo_time,
+        obter_bandeira_selecao,
+        eh_selecao,
+        obter_logo_ou_bandeira
+    )
     
+    # Disponibiliza funções nos templates
+    app.jinja_env.globals.update(
+        traduzir_pais=traduzir_pais,
+        obter_logo_time=obter_logo_time,
+        obter_bandeira_selecao=obter_bandeira_selecao,
+        eh_selecao=eh_selecao,
+        obter_logo_ou_bandeira=obter_logo_ou_bandeira
+    )
+    
+    from app import routes_projecoes
+    app.register_blueprint(routes_projecoes.bp_projecoes)
+
     # ADICIONAR ESTAS 2 LINHAS:
     from app import routes_export
     app.register_blueprint(routes_export.bp_export)
+
+    
     
     # Importa a função de conversão de timezone
     from app.utils import converter_utc_brasilia
