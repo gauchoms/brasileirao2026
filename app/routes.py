@@ -257,7 +257,6 @@ def salvar_projecao():
 
     return jsonify({'sucesso': True, 'total_pontos': total})
 
-
 @bp.route('/atualizar_resultados', methods=['POST'])
 @admin_required
 def atualizar_resultados():
@@ -935,7 +934,14 @@ def criar_bolao():
             time_especifico_id = request.form.get('time_id_ano', type=int)
             ano = request.form.get('ano', type=int)
         
+           
+       
+       
+        # Captura modo escolhido
+        modo = request.form.get('modo_pontuacao', 'acumulativo')
+
         # Cria a regra de pontuação com nova estrutura
+<<<<<<< HEAD
         regra = RegraPontuacao(
             nome=f"Regra de {nome}",
             criador_id=current_user.id,
@@ -950,6 +956,39 @@ def criar_bolao():
             data_criacao=db.func.now()
         )
 
+=======
+        if modo == 'simples':
+            # MODO SIMPLES: só placar exato
+            pontos_exato = int(request.form.get('pontos_placar_exato_simples', 1))
+            regra = RegraPontuacao(
+                nome=f"Regra de {nome}",
+                criador_id=current_user.id,
+                pontos_resultado=pontos_exato,
+                pontos_gols_vencedor=0,
+                pontos_gols_perdedor=0,
+                pontos_diferenca_gols=0,
+                requer_resultado_correto=False,
+                ativar_bonus_gols=False,
+                limite_gols_bonus=5,
+                pontos_por_gol_extra=1,
+                data_criacao=db.func.now()
+            )
+        else:
+            # MODO ACUMULATIVO: todos os campos
+            regra = RegraPontuacao(
+                nome=f"Regra de {nome}",
+                criador_id=current_user.id,
+                pontos_resultado=int(request.form.get('pontos_resultado', 5)),
+                pontos_gols_vencedor=int(request.form.get('pontos_gols_vencedor', 3)),
+                pontos_gols_perdedor=int(request.form.get('pontos_gols_perdedor', 2)),
+                pontos_diferenca_gols=int(request.form.get('pontos_diferenca_gols', 1)),
+                requer_resultado_correto=False,
+                ativar_bonus_gols=bonus_ativo,
+                limite_gols_bonus=int(request.form.get('limite_gols_bonus', 5)) if bonus_ativo else 0,
+                pontos_por_gol_extra=int(request.form.get('pontos_por_gol_extra', 2)) if bonus_ativo else 0,
+                data_criacao=db.func.now()
+            )
+>>>>>>> staging
 
         
         db.session.add(regra)
