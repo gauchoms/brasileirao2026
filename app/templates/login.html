@@ -26,7 +26,7 @@
 
     
 
-    <form method="POST" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+    <form method="POST" action="/login?next={{ request.args.get('next', '') }}" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
 
         <div style="margin-bottom: 1.5rem;">
 
