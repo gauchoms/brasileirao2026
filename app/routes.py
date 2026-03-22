@@ -677,6 +677,7 @@ def redefinir_senha(token):
         usuario.set_password(nova_senha)
         usuario.reset_token = None
         usuario.reset_token_expira = None
+        db.session.add(usuario)
         db.session.commit()
 
         return render_template('redefinir_senha.html', sucesso=True)
