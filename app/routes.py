@@ -651,8 +651,6 @@ def esqueci_senha():
         return render_template('esqueci_senha.html', mensagem=mensagem)
 
     return render_template('esqueci_senha.html')
-
-
 @bp.route('/redefinir_senha/<token>', methods=['GET', 'POST'])
 def redefinir_senha(token):
     from app.models import Usuario
@@ -674,15 +672,20 @@ def redefinir_senha(token):
         if nova_senha != confirmar:
             return render_template('redefinir_senha.html', token=token, erro='As senhas não coincidem.')
 
+        print(f"[DEBUG] Hash ANTES: {usuario.password_hash[:30]}")
         usuario.set_password(nova_senha)
         usuario.reset_token = None
         usuario.reset_token_expira = None
         db.session.add(usuario)
         db.session.commit()
+        db.session.refresh(usuario)
+        print(f"[DEBUG] Hash DEPOIS: {usuario.password_hash[:30]}")
+        print(f"[DEBUG] Usuario ID: {usuario.id}, username: {usuario.username}")
 
         return render_template('redefinir_senha.html', sucesso=True)
 
     return render_template('redefinir_senha.html', token=token)
+
 
 
 @bp.route('/criar_admin')
