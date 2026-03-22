@@ -607,10 +607,17 @@ def importar_jogos():
 def login():
     if request.method == 'POST':
         from app.models import Usuario
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        print(f"[DEBUG LOGIN] Input username: '{username}'")
         
         user = Usuario.query.filter_by(username=username).first()
+        
+        print(f"[DEBUG LOGIN] Usuário encontrado: {user}")
+        if user:
+            print(f"[DEBUG LOGIN] check_password result: {user.check_password(password)}")
+            print(f"[DEBUG LOGIN] Hash atual: {user.password_hash[:30]}")
         
         if user and user.check_password(password):
             login_user(user)
