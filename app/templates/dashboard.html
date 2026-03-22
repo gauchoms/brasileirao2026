@@ -3,11 +3,11 @@
 {% block title %}Dashboard - Brasileirão 2026{% endblock %}
 
 {% block content %}
-<h1>Dashboard</h1>
+<h1 data-i18n="dash_titulo">Dashboard</h1>
 
 <!-- Seleção de Competição -->
 <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-    <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">COMPETIÇÃO</label>
+    <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="dash_label_comp">COMPETIÇÃO</label>
     <select onchange="window.location.href='/dashboard?competicao_id=' + this.value" 
         style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                border-radius: 6px; color: var(--texto); font-size: 1rem;">
@@ -25,7 +25,7 @@
     <table style="width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="border-bottom: 2px solid var(--verde);">
-                <th style="text-align: left; padding: 0.7rem 1rem; color: var(--texto-fraco);">TIME</th>
+                <th style="text-align: left; padding: 0.7rem 1rem; color: var(--texto-fraco);" data-i18n="dash_time">TIME</th>
                 <th style="text-align: center; padding: 0.7rem 1rem; color: var(--texto-fraco); cursor: pointer;" onclick="window.location.href='/dashboard?ordenar=pontos_reais&competicao_id={{ competicao_selecionada }}'">
                     PTS REAIS {% if ordenar_por == 'pontos_reais' %}▼{% endif %}
                 </th>
@@ -69,7 +69,7 @@
 <div style="margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h2>{{ time_selecionado.nome }}</h2>
-        <a href="/dashboard?competicao_id={{ competicao_selecionada }}" style="color: var(--texto-fraco); text-decoration: none; font-size: 0.9rem;">← Voltar</a>
+        <a href="/dashboard?competicao_id={{ competicao_selecionada }}" style="color: var(--texto-fraco); text-decoration: none; font-size: 0.9rem;" data-i18n="dash_voltar">← Voltar</a>
     </div>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
@@ -78,9 +78,9 @@
             <div style="color: var(--texto-fraco); font-size: 0.85rem; margin-bottom: 0.5rem;">{{ nome }}</div>
             <div style="font-size: 2rem; font-weight: 600; margin-bottom: 0.5rem;">{{ detalhe.cenarios[tipo].pct }}%</div>
             <div style="font-size: 0.9rem;">
-                <span style="color: var(--texto-fraco);">Real:</span> {{ detalhe.cenarios[tipo].real }} pts
+                <span style="color: var(--texto-fraco);" data-i18n="dash_real">Real:</span> {{ detalhe.cenarios[tipo].real }} pts
                 <span style="margin: 0 0.5rem;">•</span>
-                <span style="color: var(--texto-fraco);">Proj:</span> {{ detalhe.cenarios[tipo].projetado_ate_agora }} pts
+                <span style="color: var(--texto-fraco);" data-i18n="dash_proj">Proj:</span> {{ detalhe.cenarios[tipo].projetado_ate_agora }} pts
             </div>
             <div style="margin-top: 0.5rem; font-size: 0.85rem; color: {% if detalhe.cenarios[tipo].diff >= 0 %}var(--verde){% else %}#e74c3c{% endif %};">
                 {% if detalhe.cenarios[tipo].diff >= 0 %}+{% endif %}{{ detalhe.cenarios[tipo].diff }} pts
@@ -91,7 +91,7 @@
 
     <!-- Gráfico de Evolução -->
     <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px;">
-        <h3 style="margin-bottom: 1rem;">Evolução</h3>
+        <h3 style="margin-bottom: 1rem;" data-i18n="dash_evolucao">Evolução</h3>
         <canvas id="chart-evolucao"></canvas>
     </div>
 </div>

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Redefinir senha{% endblock %}
+{% block content %}
+<div style="max-width: 400px; margin: 4rem auto; padding: 0 1rem;">
+
+    {% if token_invalido %}
+    <!-- Link expirado ou inválido -->
+    <div style="text-align: center;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">⏰</div>
+        <h1 style="margin-bottom: 1rem;">Link expirado</h1>
+        <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
+            Este link de recuperação é inválido ou expirou.<br>
+            Links são válidos por 1 hora.
+        </p>
+        <a href="/esqueci_senha"
+           style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--verde);
+                  color: #000; text-decoration: none; border-radius: 6px; font-weight: 600;">
+            Solicitar novo link
+        </a>
+    </div>
+
+    {% elif sucesso %}
+    <!-- Senha redefinida com sucesso -->
+    <div style="text-align: center;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+        <h1 style="margin-bottom: 1rem;">Senha redefinida!</h1>
+        <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
+            Sua senha foi alterada com sucesso.
+        </p>
+        <a href="/login"
+           style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--verde);
+                  color: #000; text-decoration: none; border-radius: 6px; font-weight: 600;">
+            Fazer login
+        </a>
+    </div>
+
+    {% else %}
+    <!-- Formulário de nova senha -->
+    <h1 style="text-align: center; margin-bottom: 0.5rem;">🔐 Nova senha</h1>
+    <p style="text-align: center; color: var(--texto-fraco); margin-bottom: 2rem; font-size: 0.95rem;">
+        Escolha uma senha forte com pelo menos 6 caracteres.
+    </p>
+
+    {% if erro %}
+    <div style="background: #e74c3c; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; text-align: center;">
+        {{ erro }}
+    </div>
+    {% endif %}
+
+    <form method="POST" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem; font-weight: 600;">
+                NOVA SENHA
+            </label>
+            <input type="password" name="nova_senha" required minlength="6"
+                   placeholder="Mínimo 6 caracteres"
+                   style="width: 100%; padding: 0.8rem; background: var(--cinza-medio);
+                          border: 2px solid var(--cinza-medio); border-radius: 6px;
+                          color: var(--texto); font-size: 1rem;">
+        </div>
+
+        <div style="margin-bottom: 2rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem; font-weight: 600;">
+                CONFIRMAR SENHA
+            </label>
+            <input type="password" name="confirmar_senha" required minlength="6"
+                   placeholder="Repita a senha"
+                   style="width: 100%; padding: 0.8rem; background: var(--cinza-medio);
+                          border: 2px solid var(--cinza-medio); border-radius: 6px;
+                          color: var(--texto); font-size: 1rem;">
+        </div>
+
+        <button type="submit"
+                style="width: 100%; padding: 1rem; background: var(--verde); color: #000; border: none;
+                       border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+            Salvar nova senha
+        </button>
+    </form>
+    {% endif %}
+
+</div>
+{% endblock %}

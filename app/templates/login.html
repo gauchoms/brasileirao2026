@@ -10,7 +10,7 @@
 
 <div style="max-width: 400px; margin: 4rem auto;">
 
-    <h1 style="text-align: center; margin-bottom: 2rem;">Login</h1>
+    <h1 style="text-align: center; margin-bottom: 2rem;" data-i18n="login_titulo">Login</h1>
 
     
 
@@ -30,7 +30,7 @@
 
         <div style="margin-bottom: 1.5rem;">
 
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">USUÁRIO</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="login_usuario">USUÁRIO</label>
 
             <input type="text" name="username" required 
 
@@ -44,7 +44,7 @@
 
         <div style="margin-bottom: 2rem;">
 
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">SENHA</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="login_senha">SENHA</label>
 
             <input type="password" name="password" required 
 
@@ -53,8 +53,9 @@
                        border-radius: 6px; color: var(--texto); font-size: 1rem;">
 
         </div>
-        <div style="text-align: center; margin-bottom: 1.5rem; color: var(--texto-fraco); font-size: 0.9rem;">
-            Não tem conta? <a href="/registro" style="color: var(--verde); text-decoration: none;">Criar conta</a>
+        <div style="text-align: center; margin-bottom: 1.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="login_sem_conta">Não tem conta? <a href="/registro" style="color: var(--verde); text-decoration: none;" data-i18n="login_criar" data-i18n="login_criar">Criar conta</a>
+            &nbsp;•&nbsp;
+            <a href="/esqueci_senha" style="color: var(--texto-fraco); text-decoration: none;" data-i18n="login_esqueci">Esqueci minha senha</a>
         </div>
 
         
@@ -67,11 +68,7 @@
 
             onmouseover="this.style.opacity='0.85'" 
 
-            onmouseout="this.style.opacity='1'">
-
-            Entrar
-
-        </button>
+            onmouseout="this.style.opacity='1'" data-i18n="login_btn">Entrar</button>
 
     </form>
 

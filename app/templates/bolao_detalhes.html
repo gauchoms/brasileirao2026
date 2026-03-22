@@ -25,9 +25,7 @@
                 <!-- Botões de Compartilhamento -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
                     <button onclick="copiarLink()" style="background: var(--cinza-medio); color: var(--texto); border: none; 
-                           padding: 0.5rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
-                        🔗 Copiar Link
-                    </button>
+                           padding: 0.5rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem;" data-i18n="bd_copiar_link">🔗 Copiar Link</button>
                     <button onclick="compartilharWhatsApp()" style="background: #25D366; color: white; border: none; 
                            padding: 0.5rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
                         📱 WhatsApp
@@ -42,9 +40,7 @@
                 {% if eh_dono %}
                 <button onclick="atualizarJogosBolao({{ bolao.id }})" id="btn-atualizar-jogos"
                     style="margin-top: 0.5rem; width: 100%; background: var(--amarelo); color: #000; border: none; 
-                           padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
-                    🔄 Atualizar Jogos
-                </button>
+                           padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;" data-i18n="bd_atualizar">🔄 Atualizar Jogos</button>
                 <div id="msg-atualizar-jogos" style="margin-top: 0.5rem; font-size: 0.75rem; display: none;"></div>
                 {% endif %}
             </div>
@@ -54,34 +50,24 @@
     <!-- Tabs -->
     <div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--cinza-medio);">
         <a href="#" onclick="mostrarTab('ranking'); return false;" id="tab-ranking"
-           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--verde); border-bottom: 3px solid var(--verde);">
-            🏆 Ranking
-        </a>
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--verde); border-bottom: 3px solid var(--verde);" data-i18n="bd_ranking">🏆 Ranking</a>
         <a href="#" onclick="mostrarTab('palpites'); return false;" id="tab-palpites"
-           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
-            🎯 Meus Palpites
-        </a>
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;" data-i18n="bd_meus_palpites">🎯 Meus Palpites</a>
         <a href="#" onclick="mostrarTab('todos-palpites'); return false;" id="tab-todos-palpites"
-           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
-            📋 Todos os Palpites
-        </a>
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;" data-i18n="bd_todos_palpites">📋 Todos os Palpites</a>
         <a href="#" onclick="mostrarTab('regras'); return false;" id="tab-regras"
-           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
-            📋 Regras
-        </a>
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;" data-i18n="bd_regras">📋 Regras</a>
         
         {% if eh_dono %}
         <a href="#" onclick="mostrarTab('participantes'); return false;" id="tab-participantes"
-           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
-            👥 Participantes
-        </a>
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;" data-i18n="bd_participantes">👥 Participantes</a>
         {% endif %}
     </div>
 
     <!-- Conteúdo das Tabs -->
     
     <div id="content-ranking">
-        <h2 style="margin-bottom: 1.5rem;">🏆 Ranking</h2>
+        <h2 style="margin-bottom: 1.5rem;" data-i18n="bd_ranking_h2">🏆 Ranking</h2>
         
         {% if bolao.participantes.count() > 0 %}
         <div style="background: var(--cinza); border-radius: 8px; overflow: hidden;">
@@ -90,8 +76,8 @@
                 <thead>
                     <tr style="border-bottom: 2px solid var(--verde);">
                         <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); width: 60px;">POS</th>
-                        <th style="text-align: left; padding: 0.7rem; color: var(--texto-fraco);">PARTICIPANTE</th>
-                        <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco);">PONTOS</th>
+                        <th style="text-align: left; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_participante">PARTICIPANTE</th>
+                        <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_pontos">PONTOS</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -144,7 +130,7 @@
         {% else %}
         <div style="text-align: center; padding: 3rem; color: var(--texto-fraco);">
             <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
-            <p>Nenhum participante ainda.</p>
+            <p data-i18n="bd_nenhum_part">Nenhum participante ainda.</p>
             <p style="margin-top: 0.5rem;">Compartilhe o código <strong>{{ bolao.codigo_convite }}</strong> com seus amigos!</p>
         </div>
         {% endif %}
@@ -153,7 +139,7 @@
 
     <div id="content-palpites" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h2>Meus Palpites</h2>
+            <h2 data-i18n="bd_meus_palpites_h2">Meus Palpites</h2>
             
             <div class="filtros-container" style="display: flex; gap: 1rem;" >
                 <!-- Filtro Status -->
@@ -309,9 +295,7 @@
                     <div style="margin-top: 1.5rem; text-align: center;">
                         <button onclick="salvarPalpite({{ jogo.id }}, {{ bolao.id }})"
                                 class="btn-primary"
-                                id="btn-salvar-{{ jogo.id }}">
-                            💾 Salvar Palpite
-                        </button>
+                                id="btn-salvar-{{ jogo.id }}" data-i18n="bd_salvar_palpite">💾 Salvar Palpite</button>
                         
                         <!-- MENSAGEM DE FEEDBACK -->
                         <div id="msg-palpite-{{ jogo.id }}" style="display: none; margin-top: 0.5rem;"></div>
@@ -360,7 +344,7 @@
     </div>
     <!-- Tab: Todos os Palpites -->
     <div id="content-todos-palpites" style="display: none;">
-        <h2 style="margin-bottom: 1.5rem;">📋 Todos os Palpites</h2>
+        <h2 style="margin-bottom: 1.5rem;" data-i18n="bd_todos_h2">📋 Todos os Palpites</h2>
         
         <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
             Clique em um jogo para ver os palpites de todos os participantes
@@ -395,9 +379,9 @@
                         <div style="font-size: 0.85rem; color: var(--texto-fraco);">
                             {{ jogo.competicao.nome }} • {{ jogo.rodada }}
                             {% if jogo_encerrado %}
-                                • <span style="color: var(--verde);">Encerrado</span>
+                                • <span style="color: var(--verde);" data-i18n="bd_encerrado">Encerrado</span>
                             {% else %}
-                                • <span style="color: var(--amarelo);">Em andamento</span>
+                                • <span style="color: var(--amarelo);" data-i18n="bd_andamento">Em andamento</span>
                             {% endif %}
                         </div>
                     </div>
@@ -483,7 +467,7 @@
     <!-- Tab: Regras -->
 <div id="content-regras" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2 style="margin: 0;">📋 Regras de Pontuação</h2>
+        <h2 style="margin: 0;" data-i18n="bd_regras_h2">📋 Regras de Pontuação</h2>
         
         {% if current_user.is_admin %}
         <a href="{{ url_for('main.editar_bolao', bolao_id=bolao.id) }}"
@@ -522,7 +506,7 @@
         {% endfor %}
         
         <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cinza-medio);">
-            <h3 style="color: var(--amarelo); margin-bottom: 1rem;">📹 Compartilhar nas Redes</h3>
+            <h3 style="color: var(--amarelo); margin-bottom: 1rem;" data-i18n="bd_compartilhar">📹 Compartilhar nas Redes</h3>
             
             {% if rodadas_finalizadas.count >= 2 %}
                 <!-- HABILITADO -->
@@ -567,11 +551,11 @@
 
 
     </div>
-        <h2 style="margin-bottom: 1.5rem;">📋 Regras de Pontuação</h2>
+        <h2 style="margin-bottom: 1.5rem;" data-i18n="bd_regras_h2">📋 Regras de Pontuação</h2>
         
         <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; line-height: 1.8;">
             
-            <h3 style="color: var(--amarelo); margin-bottom: 1rem;">Sistema de Pontos:</h3>
+            <h3 style="color: var(--amarelo); margin-bottom: 1rem;" data-i18n="bd_sistema_pts">Sistema de Pontos:</h3>
             
             <ul style="list-style: none; padding: 0; margin-bottom: 2rem;">
                 <li style="padding: 0.5rem 0;">✅ Acertar o resultado (vitória/empate): <strong style="color: var(--verde);">{{ bolao.regra.pontos_resultado }} pontos</strong></li>
@@ -602,7 +586,7 @@
             </div>
             {% endif %}
             
-            <h3 style="color: var(--amarelo); margin-top: 2rem; margin-bottom: 1rem;">💡 Exemplos (jogo termina 3x1):</h3>
+            <h3 style="color: var(--amarelo); margin-top: 2rem; margin-bottom: 1rem;" data-i18n="bd_exemplos">💡 Exemplos (jogo termina 3x1):</h3>
             
             {% set pts_max = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_vencedor + bolao.regra.pontos_gols_perdedor + bolao.regra.pontos_diferenca_gols %}
             
@@ -610,33 +594,33 @@
                 <div style="margin-bottom: 0.8rem;">
                     Seu palpite <strong>3x1</strong> → 
                     <span style="color: var(--verde); font-weight: 600;">{{ pts_max }} pontos</span> ✨
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(placar exato - todos os acertos)</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_placar_exato">(placar exato - todos os acertos)</span>
                 </div>
                 
                 {% set pts_2x1 = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_perdedor %}
                 <div style="margin-bottom: 0.8rem;">
                     Seu palpite <strong>2x1</strong> → 
                     <span style="color: var(--amarelo); font-weight: 600;">{{ pts_2x1 }} pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(resultado + gols do perdedor)</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_resultado_perd">(resultado + gols do perdedor)</span>
                 </div>
                 
                 {% set pts_3x0 = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_vencedor %}
                 <div style="margin-bottom: 0.8rem;">
                     Seu palpite <strong>3x0</strong> → 
                     <span style="color: var(--amarelo); font-weight: 600;">{{ pts_3x0 }} pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(resultado + gols do vencedor)</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_resultado_venc">(resultado + gols do vencedor)</span>
                 </div>
                 
                 <div style="margin-bottom: 0.8rem;">
                     Seu palpite <strong>2x0</strong> → 
                     <span style="color: var(--amarelo); font-weight: 600;">{{ bolao.regra.pontos_resultado }} pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(apenas resultado)</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_apenas_resultado">(apenas resultado)</span>
                 </div>
                 
                 <div>
                     Seu palpite <strong>1x3</strong> → 
-                    <span style="color: #e74c3c; font-weight: 600;">0 pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(errou o resultado)</span>
+                    <span style="color: #e74c3c; font-weight: 600;" data-i18n="bd_zero_pts">0 pontos</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_errou">(errou o resultado)</span>
                 </div>
             </div>
             
@@ -645,7 +629,7 @@
 
     {% if eh_dono %}
     <div id="content-participantes" style="display: none;">
-        <h2 style="margin-bottom: 1.5rem;">Participantes</h2>
+        <h2 style="margin-bottom: 1.5rem;" data-i18n="bd_participantes_h2">Participantes</h2>
         
         <!-- Solicitações Pendentes -->
         {% set solicitacoes = solicitacoes_pendentes %}

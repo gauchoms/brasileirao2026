@@ -2,14 +2,14 @@
 {% block title %}Verificar Comprovante{% endblock %}
 {% block content %}
 <div style="max-width: 600px; margin: 3rem auto; padding: 0 1rem;">
-    <h1 style="text-align: center; margin-bottom: 2rem;">Verificar Comprovante</h1>
+    <h1 style="text-align: center; margin-bottom: 2rem;" data-i18n="ver_titulo">Verificar Comprovante</h1>
     
     <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; text-align: center;">
         
         {% if palpite %}
         <!-- Comprovante válido -->
         <div style="font-size: 4rem; color: var(--verde);">✓</div>
-        <h2 style="color: var(--verde); margin: 1rem 0;">Comprovante Autêntico!</h2>
+        <h2 style="color: var(--verde); margin: 1rem 0;" data-i18n="ver_valido">Comprovante Autêntico!</h2>
         
         <div style="background: var(--cinza-medio); padding: 1.5rem; border-radius: 6px; margin-top: 2rem; text-align: left;">
             <div style="margin-bottom: 0.8rem;">
@@ -32,8 +32,8 @@
         {% else %}
         <!-- Comprovante inválido -->
         <div style="font-size: 4rem; color: #e74c3c;">✗</div>
-        <h2 style="color: #e74c3c; margin: 1rem 0;">Comprovante Inválido</h2>
-        <p style="color: var(--texto-fraco);">Este hash não corresponde a nenhum palpite registrado.</p>
+        <h2 style="color: #e74c3c; margin: 1rem 0;" data-i18n="ver_invalido">Comprovante Inválido</h2>
+        <p style="color: var(--texto-fraco);" data-i18n="ver_invalido_p">Este hash não corresponde a nenhum palpite registrado.</p>
         {% endif %}
         
     </div>

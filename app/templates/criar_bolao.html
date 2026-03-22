@@ -4,7 +4,7 @@
 
 {% block content %}
 <div style="max-width: 600px; margin: 2rem auto;">
-    <h1 style="margin-bottom: 2rem;">Criar Novo Bolão</h1>
+    <h1 style="margin-bottom: 2rem;" data-i18n="cb_titulo">Criar Novo Bolão</h1>
 
     {% if erro %}
     <div style="background: #e74c3c; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
@@ -15,29 +15,29 @@
     <form method="POST" id="form-criar-bolao" style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
         
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">NOME DO BOLÃO</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_nome">NOME DO BOLÃO</label>
             <input type="text" name="nome" required placeholder="Ex: Bolão da Copa 2026"
                 style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                        border-radius: 6px; color: var(--texto); font-size: 1rem;">
         </div>
 
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIPO DE BOLÃO</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_tipo">TIPO DE BOLÃO</label>
             <select name="tipo_bolao" id="tipo-bolao" onchange="mostrarCampos()" required
                 style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                        border-radius: 6px; color: var(--texto); font-size: 1rem;">
-                <option value="campeonato_completo">Campeonato Completo</option>
-                <option value="time_campeonato">Time em um Campeonato</option>
-                <option value="time_ano_completo">Time em Todas as Competições do Ano</option>
+                <option value="campeonato_completo" data-i18n="cb_camp_completo">Campeonato Completo</option>
+                <option value="time_campeonato" data-i18n="cb_time_camp">Time em um Campeonato</option>
+                <option value="time_ano_completo" data-i18n="cb_time_ano">Time em Todas as Competições do Ano</option>
             </select>
         </div>
 
         <div id="campos-campeonato-completo" style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">COMPETIÇÃO</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_competicao">COMPETIÇÃO</label>
             <select name="competicao_id" id="select-competicao"
                 style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                        border-radius: 6px; color: var(--texto); font-size: 1rem;">
-                <option value="">Selecione uma competição</option>
+                <option value="" data-i18n="cb_sel_comp">Selecione uma competição</option>
                 {% for comp in competicoes %}
                 <option value="{{ comp.id }}">{{ comp.nome }}</option>
                 {% endfor %}
@@ -46,33 +46,33 @@
 
         <div id="campos-time-campeonato" style="display: none;">
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">COMPETIÇÃO</label>
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_competicao">COMPETIÇÃO</label>
                 <select name="competicao_id_time" id="select-competicao-time" onchange="carregarTimesCampeonato()"
                     style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                            border-radius: 6px; color: var(--texto); font-size: 1rem;">
-                    <option value="">Selecione uma competição</option>
+                    <option value="" data-i18n="cb_sel_comp">Selecione uma competição</option>
                     {% for comp in competicoes %}
                     <option value="{{ comp.id }}">{{ comp.nome }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIME</label>
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_time">TIME</label>
                 <select name="time_id_campeonato" id="select-time-campeonato"
                     style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                            border-radius: 6px; color: var(--texto); font-size: 1rem;">
-                    <option value="">Escolha a competição primeiro</option>
+                    <option value="" data-i18n="cb_comp_primeiro">Escolha a competição primeiro</option>
                 </select>
             </div>
         </div>
 
         <div id="campos-time-ano" style="display: none;">
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIME</label>
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_time">TIME</label>
                 <select name="time_id_ano" id="select-time-ano"
                     style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                            border-radius: 6px; color: var(--texto); font-size: 1rem;">
-                    <option value="">Selecione um time</option>
+                    <option value="" data-i18n="cb_sel_time">Selecione um time</option>
                     {% for time in times %}
                     <option value="{{ time.id }}">{{ time.nome }}</option>
                     {% endfor %}
@@ -99,7 +99,7 @@
     
     <!-- ESCOLHA DO MODO -->
     <div style="margin-bottom: 1.5rem;">
-        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Modo de Pontuação:</label>
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;" data-i18n="cb_modo_pts">Modo de Pontuação:</label>
         
         <div style="display: flex; flex-direction: column; gap: 1rem;">
             <!-- MODO SIMPLES -->
@@ -112,7 +112,7 @@
                     </div>
                     
                     <div id="campos-simples" style="margin-top: 1rem; display: none;">
-                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Pontos por acerto exato:</label>
+                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;" data-i18n="cb_pts_exato">Pontos por acerto exato:</label>
                         <input type="number" name="pontos_placar_exato_simples" min="1" value="1" 
                                style="width: 100px; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
                     </div>
@@ -130,25 +130,25 @@
                     
                     <div id="campos-acumulativo" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                         <div>
-                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">✅ Acertar Resultado:</label>
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;" data-i18n="cb_acertar_res">✅ Acertar Resultado:</label>
                             <input type="number" name="pontos_resultado" min="0" value="5"
                                    style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
                         </div>
                         
                         <div>
-                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">🎯 Acertar Gols Vencedor:</label>
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;" data-i18n="cb_gols_venc">🎯 Acertar Gols Vencedor:</label>
                             <input type="number" name="pontos_gols_vencedor" min="0" value="3"
                                    style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
                         </div>
                         
                         <div>
-                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">❌ Acertar Gols Perdedor:</label>
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;" data-i18n="cb_gols_perd">❌ Acertar Gols Perdedor:</label>
                             <input type="number" name="pontos_gols_perdedor" min="0" value="2"
                                    style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
                         </div>
                         
                         <div>
-                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">➕➖ Acertar Diferença:</label>
+                            <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;" data-i18n="cb_diferenca">➕➖ Acertar Diferença:</label>
                             <input type="number" name="pontos_diferenca_gols" min="0" value="1"
                                    style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
                         </div>
@@ -162,7 +162,7 @@
     <div style="padding: 1rem; background: var(--cinza-medio); border-radius: 6px; border-left: 4px solid #ff6b35;">
         <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 1rem;">
             <input type="checkbox" name="ativar_bonus_gols" id="checkbox-bonus" onclick="toggleBonusGols()" style="width: 20px; height: 20px;">
-            <span style="font-weight: 600;">🔥 Bônus Elástico (Jogos com Muitos Gols)</span>
+            <span style="font-weight: 600;" data-i18n="cb_bonus">🔥 Bônus Elástico (Jogos com Muitos Gols)</span>
         </label>
         
         <div id="campos-bonus" style="display: none;">
@@ -172,14 +172,14 @@
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                 <div>
-                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Limite de gols totais:</label>
+                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;" data-i18n="cb_limite_gols">Limite de gols totais:</label>
                     <input type="number" name="limite_gols_bonus" id="limite-bonus" min="3" value="5"
                            style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
                     <small style="color: var(--texto-claro); font-size: 0.8rem;">Ex: Se > 5 gols no jogo</small>
                 </div>
                 
                 <div>
-                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Pontos por gol adicional:</label>
+                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;" data-i18n="cb_pts_gol">Pontos por gol adicional:</label>
                     <input type="number" name="pontos_por_gol_extra" id="pts-bonus" min="1" value="2"
                            style="width: 100%; padding: 0.5rem; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
                     <small style="color: var(--texto-claro); font-size: 0.8rem;">Pontos por cada gol extra</small>
@@ -194,12 +194,12 @@
 </div>
 
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIPO DE ACESSO</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_acesso">TIPO DE ACESSO</label>
             <select name="tipo_acesso" required
                 style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                        border-radius: 6px; color: var(--texto); font-size: 1rem;">
-                <option value="publico">Público (qualquer um pode entrar)</option>
-                <option value="privado">Privado (apenas com código)</option>
+                <option value="publico" data-i18n="cb_publico">Público (qualquer um pode entrar)</option>
+                <option value="privado" data-i18n="cb_privado">Privado (apenas com código)</option>
             </select>
         </div>
 
@@ -248,12 +248,12 @@ function toggleBonusGols() {
 
 <<<<<<< HEAD
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">TIPO DE ACESSO</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_acesso">TIPO DE ACESSO</label>
             <select name="tipo_acesso"
                 style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                        border-radius: 6px; color: var(--texto); font-size: 1rem;">
-                <option value="publico">Público (qualquer um pode entrar com o código)</option>
-                <option value="privado">Privado (você precisa aprovar cada participante)</option>
+                <option value="publico" data-i18n="cb_publico2">Público (qualquer um pode entrar com o código)</option>
+                <option value="privado" data-i18n="cb_privado2">Privado (você precisa aprovar cada participante)</option>
             </select>
         </div>
 
@@ -305,14 +305,14 @@ function carregarTimesCampeonato() {
     const selectTime = document.getElementById('select-time-campeonato');
     
     if (!competicaoId) {
-        selectTime.innerHTML = '<option value="">Escolha a competição primeiro</option>';
+        selectTime.innerHTML = '<option value="" data-i18n="cb_comp_primeiro">Escolha a competição primeiro</option>';
         return;
     }
     
     fetch(`/api/times_competicao/${competicaoId}`)
         .then(response => response.json())
         .then(data => {
-            selectTime.innerHTML = '<option value="">Selecione um time</option>';
+            selectTime.innerHTML = '<option value="" data-i18n="cb_sel_time">Selecione um time</option>';
             data.times.forEach(time => {
                 const option = document.createElement('option');
                 option.value = time.id;
@@ -322,7 +322,7 @@ function carregarTimesCampeonato() {
         })
         .catch(error => {
             console.error('Erro:', error);
-            selectTime.innerHTML = '<option value="">Erro ao carregar times</option>';
+            selectTime.innerHTML = '<option value="" data-i18n="cb_erro_times">Erro ao carregar times</option>';
         });
 }
 

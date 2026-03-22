@@ -10,7 +10,7 @@
 
 <div style="max-width: 700px; margin: 2rem auto;">
 
-    <h1>Meu Perfil</h1>
+    <h1 data-i18n="perfil_titulo">Meu Perfil</h1>
 
 
 
@@ -34,13 +34,13 @@
 
         <div style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
 
-            <h2 style="margin-bottom: 1.5rem;">Informações Básicas</h2>
+            <h2 style="margin-bottom: 1.5rem;" data-i18n="perfil_info">Informações Básicas</h2>
 
             
 
             <div style="margin-bottom: 1rem;">
 
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">NOME COMPLETO</label>
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="perfil_label_nome">NOME COMPLETO</label>
 
                 <input type="text" name="nome_completo" value="{{ current_user.nome_completo or '' }}"
 
@@ -54,7 +54,7 @@
 
             <div style="margin-bottom: 1rem;">
 
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">E-MAIL</label>
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="perfil_label_email">E-MAIL</label>
 
                 <input type="email" name="email" value="{{ current_user.email or '' }}"
 
@@ -72,7 +72,7 @@
 
         <div style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
 
-            <h2 style="margin-bottom: 1.5rem;">Avatar</h2>
+            <h2 style="margin-bottom: 1.5rem;" data-i18n="perfil_avatar">Avatar</h2>
 
             
 
@@ -86,7 +86,7 @@
                         
                         onclick="document.getElementById('avatares-sugeridos').style.display='grid'; document.getElementById('upload-custom').style.display='none';">
 
-                    <span>Escolher avatar sugerido</span>
+                    <span data-i18n="perfil_avatar_sugerido">Escolher avatar sugerido</span>
 
                 </label>
 
@@ -128,7 +128,7 @@
 
                         onclick="document.getElementById('avatares-sugeridos').style.display='none'; document.getElementById('upload-custom').style.display='block';">
 
-                    <span>Enviar minha foto</span>
+                    <span data-i18n="perfil_avatar_upload">Enviar minha foto</span>
 
                 </label>
 
@@ -160,11 +160,11 @@
 
         <div style="background: var(--cinza); padding: 2rem; border-radius: 8px;">
 
-            <h2 style="margin-bottom: 1.5rem;">Time do Coração</h2>
+            <h2 style="margin-bottom: 1.5rem;" data-i18n="perfil_time">Time do Coração</h2>
 
             
 
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">BUSCAR TIME</label>
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="perfil_label_buscar">BUSCAR TIME</label>
 
             <input type="text" id="busca-time" placeholder="Digite o nome do time..."
 
@@ -180,7 +180,7 @@
 
                        border-radius: 6px; color: var(--texto); font-size: 1rem;">
 
-                <option value="">Nenhum time selecionado</option>
+                <option value="" data-i18n="perfil_nenhum_time">Nenhum time selecionado</option>
 
                 {% for time in times %}
 
@@ -206,11 +206,7 @@
 
             onmouseover="this.style.opacity='0.85'" 
 
-            onmouseout="this.style.opacity='1'">
-
-            Salvar Perfil
-
-        </button>
+            onmouseout="this.style.opacity='1'" data-i18n="perfil_salvar">Salvar Perfil</button>
 
     </form>
 
@@ -219,9 +215,7 @@
               color: #e74c3c; border: 2px solid #e74c3c; border-radius: 6px; font-size: 1rem; 
               font-weight: 600; text-align: center; text-decoration: none; transition: all 0.2s;"
        onmouseover="this.style.background='#e74c3c'; this.style.color='#fff'"
-       onmouseout="this.style.background='transparent'; this.style.color='#e74c3c'">
-        🚪 Sair
-    </a>
+       onmouseout="this.style.background='transparent'; this.style.color='#e74c3c'" data-i18n="perfil_sair">🚪 Sair</a>
 
 </div>
 

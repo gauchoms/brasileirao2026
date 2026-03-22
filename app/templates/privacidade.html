@@ -2,7 +2,7 @@
 {% block title %}Política de Privacidade{% endblock %}
 {% block content %}
 <div style="max-width: 800px; margin: 3rem auto; padding: 0 1rem;">
-    <h1 style="margin-bottom: 2rem;">Política de Privacidade (LGPD)</h1>
+    <h1 style="margin-bottom: 2rem;" data-i18n="priv_h1">Política de Privacidade (LGPD)</h1>
     
     <div style="background: var(--cinza); padding: 2rem; border-radius: 8px; line-height: 1.8;">
         
@@ -61,7 +61,7 @@
         Resposta em até 15 dias úteis</p>
         
         <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--cinza-medio); color: var(--texto-fraco); font-size: 0.9rem;">
-            Última atualização: {{ now().strftime('%d/%m/%Y') }}
+            <span data-i18n="ultima_atualizacao">Última atualização:</span> {{ now().strftime('%d/%m/%Y') }}
         </div>
     </div>
 </div>

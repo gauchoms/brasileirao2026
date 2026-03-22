@@ -626,6 +626,64 @@ def logout():
     logout_user()
     return redirect('/')
 
+@bp.route('/esqueci_senha', methods=['GET', 'POST'])
+def esqueci_senha():
+    from app.models import Usuario
+    import secrets
+    from datetime import datetime, timedelta
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        usuario = Usuario.query.filter_by(email=email).first()
+
+        # Sempre mostra a mesma mensagem (segurança)
+        mensagem = 'Se este email estiver cadastrado, você receberá as instruções em breve.'
+
+        if usuario:
+            token = secrets.token_urlsafe(32)
+            usuario.reset_token = token
+            usuario.reset_token_expira = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+
+            from app.email import email_recuperar_senha
+            email_recuperar_senha(usuario, token)
+
+        return render_template('esqueci_senha.html', mensagem=mensagem)
+
+    return render_template('esqueci_senha.html')
+
+
+@bp.route('/redefinir_senha/<token>', methods=['GET', 'POST'])
+def redefinir_senha(token):
+    from app.models import Usuario
+    from datetime import datetime
+
+    usuario = Usuario.query.filter_by(reset_token=token).first()
+
+    # Valida token
+    if not usuario or not usuario.reset_token_expira or usuario.reset_token_expira < datetime.utcnow():
+        return render_template('redefinir_senha.html', token_invalido=True)
+
+    if request.method == 'POST':
+        nova_senha = request.form.get('nova_senha', '')
+        confirmar = request.form.get('confirmar_senha', '')
+
+        if len(nova_senha) < 6:
+            return render_template('redefinir_senha.html', token=token, erro='A senha deve ter pelo menos 6 caracteres.')
+
+        if nova_senha != confirmar:
+            return render_template('redefinir_senha.html', token=token, erro='As senhas não coincidem.')
+
+        usuario.set_password(nova_senha)
+        usuario.reset_token = None
+        usuario.reset_token_expira = None
+        db.session.commit()
+
+        return render_template('redefinir_senha.html', sucesso=True)
+
+    return render_template('redefinir_senha.html', token=token)
+
+
 @bp.route('/criar_admin')
 def criar_admin():
     from app.models import Usuario
@@ -2184,3 +2242,19 @@ def visualizar_projecoes(competicao_id):
     times = Time.query.filter(Time.id.in_(times_ids)).order_by(Time.nome).all()
     
     return render_template('visualizar_projecoes.html', competicao=competicao, times=times)
+@bp.route('/migrar_reset_senha_render')
+def migrar_reset_senha_render():
+    from sqlalchemy import text, inspect
+    try:
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('usuario')]
+        
+        if 'reset_token' not in columns:
+            db.session.execute(text("ALTER TABLE usuario ADD COLUMN reset_token VARCHAR(100)"))
+        if 'reset_token_expira' not in columns:
+            db.session.execute(text("ALTER TABLE usuario ADD COLUMN reset_token_expira TIMESTAMP"))
+        
+        db.session.commit()
+        return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas!'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500

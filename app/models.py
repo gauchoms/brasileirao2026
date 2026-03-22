@@ -61,6 +61,10 @@ class Usuario(UserMixin, db.Model):
     tipo = db.Column(db.String(20), default='participante')  # admin, dono, participante
     status = db.Column(db.String(20), default='ativo')  # ativo, suspenso
     data_cadastro = db.Column(db.DateTime, default=db.func.now())
+
+    # Recuperação de senha
+    reset_token = db.Column(db.String(100), nullable=True)
+    reset_token_expira = db.Column(db.DateTime, nullable=True)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

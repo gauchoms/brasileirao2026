@@ -6,7 +6,7 @@
 
 <div style="max-width: 500px; margin: 4rem auto; padding: 0 1rem;">
 
-    <h1 style="text-align: center; margin-bottom: 0.5rem;">Criar Conta</h1>
+    <h1 style="text-align: center; margin-bottom: 0.5rem;" data-i18n="reg_titulo">Criar Conta</h1>
     
     {% if next_url %}
     <p style="text-align: center; color: var(--texto-fraco); font-size: 0.9rem; margin-bottom: 2rem;">
@@ -73,26 +73,21 @@
                 <input type="checkbox" required
                        style="width: 20px; height: 20px; margin-right: 0.8rem; margin-top: 0.2rem; cursor: pointer;">
                 <span style="color: var(--texto-fraco); font-size: 0.85rem;">
-                    Li e aceito os <a href="/termos" target="_blank" style="color: var(--verde);">Termos de Uso</a> 
-                    e a <a href="/privacidade" target="_blank" style="color: var(--verde);">Política de Privacidade</a>
+                    Li e aceito os <a href="/termos" data-i18n="reg_termos">Termos de Uso</a> 
+                    e a <a href="/privacidade" data-i18n="reg_privacidade">Política de Privacidade</a>
                 </span>
             </label>
         </div>
 
         <button type="submit" 
                 style="width: 100%; padding: 1rem; background: var(--verde); color: #000; border: none; 
-                       border-radius: 6px; font-size: 1.1rem; font-weight: 600; cursor: pointer;">
-            ✅ Criar Conta
-        </button>
+                       border-radius: 6px; font-size: 1.1rem; font-weight: 600; cursor: pointer;" data-i18n="reg_btn">✅ Criar Conta</button>
 
         <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cinza-medio);">
-            <p style="color: var(--texto-fraco); font-size: 0.9rem;">
-                Já tem uma conta? 
+            <p style="color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="reg_ja_tem">Já tem uma conta? 
                 <!-- ✅ CORREÇÃO: Preserva next no link de login -->
                 <a href="{{ url_for('main.login') }}{% if next_url %}?next={{ next_url }}{% endif %}" 
-                   style="color: var(--verde); font-weight: 600;">
-                    Fazer Login
-                </a>
+                   style="color: var(--verde); font-weight: 600;" data-i18n="reg_fazer_login">Fazer Login</a>
             </p>
         </div>
     </form>

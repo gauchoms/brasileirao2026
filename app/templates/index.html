@@ -3,58 +3,58 @@
 {% block content %}
 <div style="max-width: 1200px; margin: 0 auto; padding: 2rem 0;">
     <div style="text-align: center; margin-bottom: 4rem;">
-        <h1 style="font-size: 3rem; margin-bottom: 1rem;">⚽ Bolões e Projeções - Crie já o seu!!!! </h1>
-        <p style="font-size: 1.3rem; color: var(--texto-fraco);">Crie bolões, desafie seus amigos e mostre quem entende mais de futebol!</p>
+        <h1 style="font-size: 3rem; margin-bottom: 1rem;" data-i18n="index_h1">⚽ Bolões e Projeções</h1>
+        <p style="font-size: 1.3rem; color: var(--texto-fraco);" data-i18n="index_sub">Crie bolões, desafie seus amigos e mostre quem entende mais de futebol!</p>
     </div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
         <a href="/meus_boloes" style="text-decoration: none;">
             <div style="background: linear-gradient(135deg, var(--verde) 0%, #00a651 100%); padding: 3rem 2rem; border-radius: 12px; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 20px rgba(0,166,81,0.3);" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
-                <h2 style="color: #000; margin-bottom: 0.5rem;">Meus Bolões</h2>
-                <p style="color: rgba(0,0,0,0.7);">Gerencie seus bolões, faça palpites e veja o ranking</p>
+                <h2 style="color: #000; margin-bottom: 0.5rem;" data-i18n="index_card_boloes">Meus Bolões</h2>
+                <p style="color: rgba(0,0,0,0.7);" data-i18n="index_card_boloes_sub">Gerencie seus bolões, faça palpites e veja o ranking</p>
             </div>
         </a>
         <a href="/entrar_bolao" style="text-decoration: none;">
             <div style="background: linear-gradient(135deg, var(--amarelo) 0%, #ffa000 100%); padding: 3rem 2rem; border-radius: 12px; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 20px rgba(255,215,0,0.3);" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">🔑</div>
-                <h2 style="color: #000; margin-bottom: 0.5rem;">Entrar com Código</h2>
-                <p style="color: rgba(0,0,0,0.7);">Tem um código? Entre em um bolão existente</p>
+                <h2 style="color: #000; margin-bottom: 0.5rem;" data-i18n="index_card_entrar">Entrar com Código</h2>
+                <p style="color: rgba(0,0,0,0.7);" data-i18n="index_card_entrar_sub">Tem um código? Entre em um bolão existente</p>
             </div>
         </a>
         <a href="/projecoes" style="text-decoration: none;">
             <div style="background: linear-gradient(135deg, var(--cinza) 0%, var(--cinza-medio) 100%); padding: 3rem 2rem; border-radius: 12px; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
-                <h2 style="color: var(--texto); margin-bottom: 0.5rem;">Projeções</h2>
-                <p style="color: var(--texto-fraco);">Projete cenários para seu time favorito</p>
+                <h2 style="color: var(--texto); margin-bottom: 0.5rem;" data-i18n="index_card_proj">Projeções</h2>
+                <p style="color: var(--texto-fraco);" data-i18n="index_card_proj_sub">Projete cenários para seu time favorito</p>
             </div>
         </a>
         {% if current_user.is_authenticated and current_user.is_admin %}
         <a href="/admin/gerenciar" style="text-decoration: none;">
             <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 3rem 2rem; border-radius: 12px; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 20px rgba(231,76,60,0.3);" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">⚙️</div>
-                <h2 style="color: white; margin-bottom: 0.5rem;">Administração</h2>
-                <p style="color: rgba(255,255,255,0.8);">Gerenciar usuários, bolões e competições</p>
+                <h2 style="color: white; margin-bottom: 0.5rem;" data-i18n="index_card_admin">Administração</h2>
+                <p style="color: rgba(255,255,255,0.8);" data-i18n="index_card_admin_sub">Gerenciar usuários, bolões e competições</p>
             </div>
         </a>
         {% endif %}
     </div>
     <div style="background: var(--cinza); padding: 3rem; border-radius: 12px;">
-        <h2 style="text-align: center; margin-bottom: 2rem;">Como Funciona</h2>
+        <h2 style="text-align: center; margin-bottom: 2rem;" data-i18n="index_como">Como Funciona</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
             <div style="text-align: center;">
                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">1️⃣</div>
-                <h3 style="margin-bottom: 0.5rem;">Crie seu Bolão</h3>
-                <p style="color: var(--texto-fraco); font-size: 0.9rem;">Escolha a competição e convide seus amigos</p>
+                <h3 style="margin-bottom: 0.5rem;" data-i18n="index_p1">Crie seu Bolão</h3>
+                <p style="color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="index_p1_sub">Escolha a competição e convide seus amigos</p>
             </div>
             <div style="text-align: center;">
                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">2️⃣</div>
-                <h3 style="margin-bottom: 0.5rem;">Faça seus Palpites</h3>
-                <p style="color: var(--texto-fraco); font-size: 0.9rem;">Preveja os placares antes dos jogos acontecerem</p>
+                <h3 style="margin-bottom: 0.5rem;" data-i18n="index_p2">Faça seus Palpites</h3>
+                <p style="color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="index_p2_sub">Preveja os placares antes dos jogos acontecerem</p>
             </div>
             <div style="text-align: center;">
                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">3️⃣</div>
-                <h3 style="margin-bottom: 0.5rem;">Acompanhe o Ranking</h3>
-                <p style="color: var(--texto-fraco); font-size: 0.9rem;">Veja quem está ganhando em tempo real</p>
+                <h3 style="margin-bottom: 0.5rem;" data-i18n="index_p3">Acompanhe o Ranking</h3>
+                <p style="color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="index_p3_sub">Veja quem está ganhando em tempo real</p>
             </div>
         </div>
     </div>

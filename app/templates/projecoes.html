@@ -35,10 +35,10 @@
 </div>
 {% endif %}
 
-<h1>Projeções</h1>
+<h1 data-i18n="proj_titulo">Projeções</h1>
 <!-- Seleção de Competição -->
     <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-        <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;">COMPETIÇÃO</label>
+        <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="proj_label_comp">COMPETIÇÃO</label>
         <select onchange="window.location.href='/projecoes?competicao_id=' + this.value" 
             style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
                    border-radius: 6px; color: var(--texto); font-size: 1rem;">
@@ -54,7 +54,7 @@
 <form method="GET" action="/projecoes" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
     <input type="hidden" name="competicao_id" value="{{ competicao_selecionada }}">
     <div>
-        <label style="display: block; font-size: 0.8rem; color: var(--texto-fraco); margin-bottom: 0.4rem; letter-spacing: 1px;">TIME</label>
+        <label style="display: block; font-size: 0.8rem; color: var(--texto-fraco); margin-bottom: 0.4rem; letter-spacing: 1px;" data-i18n="proj_time">TIME</label>
         <select name="time_id" onchange="this.form.submit()" style="
             background: var(--cinza); color: var(--texto); border: 1px solid var(--cinza-medio);
             padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.95rem; cursor: pointer; min-width: 200px;">
@@ -69,7 +69,7 @@
 
     {% if time_selecionado %}
     <div>
-        <label style="display: block; font-size: 0.8rem; color: var(--texto-fraco); margin-bottom: 0.4rem; letter-spacing: 1px;">PROJEÇÃO</label>
+        <label style="display: block; font-size: 0.8rem; color: var(--texto-fraco); margin-bottom: 0.4rem; letter-spacing: 1px;" data-i18n="proj_projecao">PROJEÇÃO</label>
         <select name="projecao" onchange="this.form.submit()" style="
             background: var(--cinza); color: var(--texto); border: 1px solid var(--cinza-medio);
             padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.95rem; cursor: pointer; min-width: 200px;">
