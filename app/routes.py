@@ -607,12 +607,15 @@ def importar_jogos():
 def login():
     if request.method == 'POST':
         from app.models import Usuario
-        username = request.form.get('username', '').strip()
+        login_input = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         
-        print(f"[DEBUG LOGIN] Input username: '{username}'")
+        print(f"[DEBUG LOGIN] Input: '{login_input}'")
         
-        user = Usuario.query.filter_by(username=username).first()
+        # Busca por username OU email
+        user = Usuario.query.filter(
+            (Usuario.username == login_input) | (Usuario.email == login_input)
+        ).first()
         
         print(f"[DEBUG LOGIN] Usuário encontrado: {user}")
         if user:
