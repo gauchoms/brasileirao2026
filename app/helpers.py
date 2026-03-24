@@ -69,11 +69,14 @@ TRADUCAO_PAISES = {
     # Ásia / Oceania
     "Japan": "Japão",
     "South Korea": "Coreia do Sul",
+    "Uzbekistan":"Usbequistão",
     "China": "China",
     "Australia": "Austrália",
     "Saudi Arabia": "Arábia Saudita",
     "Iran": "Irã",
     "Qatar": "Catar",
+    "New Zealand":"Nova Zelândia",
+    "Jordan":"Jordânia",
     "United Arab Emirates": "Emirados Árabes",
 
     # World
