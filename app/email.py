@@ -27,7 +27,7 @@ def email_boas_vindas(usuario):
     """Email de boas-vindas ao cadastrar"""
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #00a651;">Bem-vindo ao Brasileirão 2026!</h1>
+        <h1 style="color: #00a651;">Bem-vindo ao Errei de novo!!! Brinque e palpite nos bolões. Copa do mundo, brasileirão, e muito mais!!!!</h1>
         <p>Olá <strong>{usuario.nome_completo or usuario.username}</strong>,</p>
         <p>Sua conta foi criada com sucesso!</p>
         <p>Agora você pode:</p>
@@ -36,11 +36,11 @@ def email_boas_vindas(usuario):
             <li>Fazer palpites e ganhar pontos</li>
             <li>Acompanhar rankings em tempo real</li>
         </ul>
-        <p>Acesse: <a href="https://brasileirao2026.onrender.com">brasileirao2026.onrender.com</a></p>
+        <p>Acesse: <a href="https://erreidenovo.com.br">erreidenovo.com.br</a></p>
         <p style="color: #666; font-size: 0.9em;">Boa sorte! 🏆</p>
     </div>
     """
-    return enviar_email(usuario.email, "Bem-vindo ao Brasileirão 2026! ⚽", html)
+    return enviar_email(usuario.email, "Bem-vindo ao Errei de novo! ⚽", html)
 
 
 def email_solicitacao_entrada(bolao, usuario_solicitante):
@@ -78,7 +78,7 @@ def email_solicitacao_respondida(solicitacao, aprovada):
     if aprovada:
         html += f"""
         <p>Agora você pode fazer seus palpites!</p>
-        <a href="https://brasileirao2026.onrender.com/bolao/{solicitacao.bolao.id}" 
+        <a href="https://erreidenovo.com.br/bolao/{solicitacao.bolao.id}" 
            style="display: inline-block; background: #00a651; color: white; padding: 12px 24px; 
                   text-decoration: none; border-radius: 6px; font-weight: bold;">
             Acessar Bolão
@@ -92,7 +92,7 @@ def email_solicitacao_respondida(solicitacao, aprovada):
 
 def email_recuperar_senha(usuario, token):
     """Email com link para redefinir senha"""
-    base_url = os.environ.get('BASE_URL', 'https://brasileirao2026.onrender.com')
+    base_url = os.environ.get('BASE_URL', 'https://erreidenovo.com.br')
     link = f"{base_url}/redefinir_senha/{token}"
 
     html = f"""
@@ -117,4 +117,4 @@ def email_recuperar_senha(usuario, token):
         </p>
     </div>
     """
-    return enviar_email(usuario.email, "Redefinição de senha - Brasileirão 2026", html)
+    return enviar_email(usuario.email, "Redefinição de senha - Time Errei de Novo", html)
