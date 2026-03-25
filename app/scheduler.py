@@ -128,6 +128,80 @@ def verificar_jogos_proximos(app):
             print(f"[SCHEDULER] Erro ao verificar jogos: {e}")
 
 
+def sincronizar_jogos_job(app):
+    """
+    Roda de hora em hora.
+    Importa jogos NOVOS que ainda não estão no banco para todos os bolões ativos.
+    Mesma lógica do botão 'Atualizar Jogos' no detalhe do bolão.
+    """
+    with app.app_context():
+        try:
+            from app.models import Bolao, Jogo, Time
+            from app.api import get_jogos_competicao, processar_jogos, importar_jogos_time_ano
+            from app import db
+
+            print(f"[SCHEDULER] Sincronizando jogos: {datetime.now(BRASILIA).strftime('%d/%m/%Y %H:%M')}")
+
+            boloes = Bolao.query.filter_by(status='ativo').all()
+            total_novos = 0
+
+            for bolao in boloes:
+                try:
+                    if bolao.tipo_bolao == 'time_ano_completo':
+                        time = Time.query.get(bolao.time_especifico_id)
+                        if time and time.api_id:
+                            resultado = importar_jogos_time_ano(time.api_id, bolao.ano)
+                            total_novos += resultado.get('total_jogos', 0)
+
+                    elif bolao.tipo_bolao in ['campeonato_completo', 'time_campeonato']:
+                        if bolao.competicao and bolao.competicao.api_league_id:
+                            jogos_data = get_jogos_competicao(bolao.competicao.api_league_id, bolao.competicao.ano)
+                            jogos = processar_jogos(jogos_data)
+
+                            times_cadastrados = {}
+
+                            for jogo in jogos:
+                                jogo_existente = Jogo.query.filter_by(api_id=jogo['api_id']).first()
+                                if jogo_existente:
+                                    continue
+
+                                # Cadastra times se necessário
+                                for key in ['time_casa_id', 'time_fora_id']:
+                                    api_id = jogo[key]
+                                    nome = jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora']
+                                    if api_id not in times_cadastrados:
+                                        time_db = Time.query.filter_by(api_id=api_id).first()
+                                        if not time_db:
+                                            time_db = Time(api_id=api_id, nome=nome, ativo=True)
+                                            db.session.add(time_db)
+                                            db.session.flush()
+                                        times_cadastrados[api_id] = time_db.id
+
+                                novo_jogo = Jogo(
+                                    api_id=jogo['api_id'],
+                                    competicao_id=bolao.competicao_id,
+                                    rodada=jogo['rodada'],
+                                    time_casa_id=times_cadastrados[jogo['time_casa_id']],
+                                    time_fora_id=times_cadastrados[jogo['time_fora_id']],
+                                    data=jogo['data'],
+                                    gols_casa=jogo['gols_casa'],
+                                    gols_fora=jogo['gols_fora']
+                                )
+                                db.session.add(novo_jogo)
+                                total_novos += 1
+
+                            db.session.commit()
+
+                except Exception as e:
+                    print(f"[SCHEDULER] Erro ao sincronizar bolão {bolao.id}: {e}")
+                    continue
+
+            print(f"[SCHEDULER] Sincronização concluída: {total_novos} jogos novos ✅")
+
+        except Exception as e:
+            print(f"[SCHEDULER] Erro geral na sincronização: {e}")
+
+
 def iniciar_scheduler(app):
     """
     Inicia o scheduler com proteção contra duplicatas.
@@ -162,6 +236,16 @@ def iniciar_scheduler(app):
         replace_existing=True
     )
 
+    # Job D: de hora em hora, importa jogos novos para todos os bolões ativos
+    _scheduler.add_job(
+        func=sincronizar_jogos_job,
+        trigger=IntervalTrigger(hours=1),
+        args=[app],
+        id='sincronizar_jogos',
+        name='Sincronizar jogos novos',
+        replace_existing=True
+    )
+
     _scheduler.start()
-    print("[SCHEDULER] Iniciado com 2 jobs ativos ✅")
+    print("[SCHEDULER] Iniciado com 3 jobs ativos ✅")
     return _scheduler
