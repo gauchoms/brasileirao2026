@@ -1015,6 +1015,7 @@ def criar_bolao():
        
         # Captura modo escolhido
         modo = request.form.get('modo_pontuacao', 'acumulativo')
+        criterios_desempate = request.form.get('criterios_desempate', 'placares_exatos,acertos_resultado,palpite_antigo')
 
         # Cria a regra de pontuação com nova estrutura
         bonus_ativo = request.form.get('ativar_bonus_gols') == 'on'
@@ -1033,6 +1034,7 @@ def criar_bolao():
                 ativar_bonus_gols=False,
                 limite_gols_bonus=5,
                 pontos_por_gol_extra=1,
+                criterios_desempate=criterios_desempate,
                 data_criacao=db.func.now()
             )
         else:
@@ -1048,6 +1050,7 @@ def criar_bolao():
                 ativar_bonus_gols=bonus_ativo,
                 limite_gols_bonus=request.form.get('limite_gols_bonus', 4, type=int) if bonus_ativo else 0,
                 pontos_por_gol_extra=request.form.get('pontos_por_gol_extra', 1, type=int) if bonus_ativo else 0,
+                criterios_desempate=criterios_desempate,
                 data_criacao=db.func.now()
             )
 
@@ -1217,6 +1220,73 @@ def bolao_detalhes(bolao_id):
             pontos_diferenca_gols=1,
             requer_resultado_correto=True
         )
+
+    # Computa ranking com critérios de desempate
+    import json
+    ranking = []
+    for part in bolao.participantes.all():
+        palpites_part = Palpite.query.filter_by(bolao_id=bolao_id, usuario_id=part.usuario_id).all()
+
+        placares_exatos = 0
+        acertos_resultado = 0
+        timestamp_min = None
+        detalhes = []
+
+        for p in palpites_part:
+            j = p.jogo
+            if j.gols_casa is None or j.gols_fora is None:
+                continue
+
+            res_real = 'casa' if j.gols_casa > j.gols_fora else ('fora' if j.gols_fora > j.gols_casa else 'empate')
+            res_palpite = 'casa' if p.gols_casa_palpite > p.gols_fora_palpite else ('fora' if p.gols_fora_palpite > p.gols_casa_palpite else 'empate')
+
+            eh_placar_exato = (p.gols_casa_palpite == j.gols_casa and p.gols_fora_palpite == j.gols_fora)
+            eh_acerto_resultado = (res_real == res_palpite)
+
+            if eh_placar_exato:
+                placares_exatos += 1
+            if eh_acerto_resultado:
+                acertos_resultado += 1
+
+            if p.timestamp_preciso and (timestamp_min is None or p.timestamp_preciso < timestamp_min):
+                timestamp_min = p.timestamp_preciso
+
+            detalhes.append({
+                'time_casa': j.time_casa.nome,
+                'time_fora': j.time_fora.nome,
+                'data': j.data[:16] if j.data else '',
+                'gols_casa_real': j.gols_casa,
+                'gols_fora_real': j.gols_fora,
+                'gols_casa_palpite': p.gols_casa_palpite,
+                'gols_fora_palpite': p.gols_fora_palpite,
+                'pontos': p.pontos_obtidos,
+                'placar_exato': eh_placar_exato,
+                'acerto_resultado': eh_acerto_resultado,
+            })
+
+        ranking.append({
+            'participante': part,
+            'pontos': part.pontos_totais,
+            'placares_exatos': placares_exatos,
+            'acertos_resultado': acertos_resultado,
+            'timestamp_min': timestamp_min,
+            'detalhes_json': json.dumps(detalhes, ensure_ascii=False),
+        })
+
+    criterios = (regra.criterios_desempate if regra and getattr(regra, 'criterios_desempate', None) else 'placares_exatos,acertos_resultado,palpite_antigo').split(',')
+
+    def sort_key(item):
+        keys = [-item['pontos']]
+        for c in criterios:
+            if c == 'placares_exatos':
+                keys.append(-item['placares_exatos'])
+            elif c == 'acertos_resultado':
+                keys.append(-item['acertos_resultado'])
+            elif c == 'palpite_antigo':
+                keys.append(item['timestamp_min'] or 9999999999999)
+        return tuple(keys)
+
+    ranking.sort(key=sort_key)
     
     return render_template('bolao_detalhes.html', 
                          bolao=bolao, 
@@ -1226,6 +1296,8 @@ def bolao_detalhes(bolao_id):
                          palpites_usuario=palpites_usuario,
                          solicitacoes_pendentes=solicitacoes_pendentes,
                          todos_palpites=todos_palpites,
+                         ranking=ranking,
+                         criterios=criterios,
                          agora=datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
 
 
@@ -2256,6 +2328,16 @@ def visualizar_projecoes(competicao_id):
     times = Time.query.filter(Time.id.in_(times_ids)).order_by(Time.nome).all()
     
     return render_template('visualizar_projecoes.html', competicao=competicao, times=times)
+@bp.route('/migrar_criterios_desempate')
+def migrar_criterios_desempate():
+    from sqlalchemy import text
+    try:
+        db.session.execute(text("ALTER TABLE regra_pontuacao ADD COLUMN IF NOT EXISTS criterios_desempate VARCHAR(200) DEFAULT 'placares_exatos,acertos_resultado,palpite_antigo'"))
+        db.session.commit()
+        return jsonify({'sucesso': True, 'mensagem': 'Coluna criterios_desempate adicionada!'})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+
 @bp.route('/migrar_reset_senha_render')
 def migrar_reset_senha_render():
     from sqlalchemy import text, inspect

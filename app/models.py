@@ -1,7 +1,6 @@
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from sqlalchemy.orm import validates
 
 class Time(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -49,6 +48,7 @@ class Usuario(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     termos_aceitos_em = db.Column(db.DateTime)
 
+    
     # Avatar
     avatar_tipo = db.Column(db.String(20), default='sugerido')  # sugerido, upload
     avatar_sugerido_id = db.Column(db.Integer, db.ForeignKey('avatar_sugerido.id'), nullable=True)
@@ -65,13 +65,7 @@ class Usuario(UserMixin, db.Model):
     # Recuperação de senha
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expira = db.Column(db.DateTime, nullable=True)
-
-    @validates('username', 'email')
-    def trim_campos(self, key, value):
-        if value:
-            return value.strip()
-        return value
-
+    
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
     
@@ -115,9 +109,12 @@ class RegraPontuacao(db.Model):
     limite_gols_bonus = db.Column(db.Integer, default=4)
     pontos_por_gol_extra = db.Column(db.Integer, default=1)
     
+    criterios_desempate = db.Column(db.String(200), default='placares_exatos,acertos_resultado,palpite_antigo')
+
     publica = db.Column(db.Boolean, default=False)
     data_criacao = db.Column(db.DateTime)
     
+
 
 
 class Bolao(db.Model):

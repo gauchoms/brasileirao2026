@@ -246,7 +246,50 @@ function toggleBonusGols() {
     campos.style.display = checkbox.checked ? 'block' : 'none';
 }
 
-<<<<<<< HEAD
+
+        <!-- CRITÉRIOS DE DESEMPATE -->
+        <div style="background: var(--cinza-escuro); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                🔀 Critérios de Desempate
+            </h3>
+            <p style="color: var(--texto-fraco); font-size: 0.85rem; margin-bottom: 1rem;">
+                Em caso de empate em pontos, defina a ordem de prioridade:
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="color: var(--verde); font-weight: 600; min-width: 28px;">1º</span>
+                    <select id="desempate_1" onchange="atualizarDesempate()"
+                        style="flex:1; padding: 0.7rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto);">
+                        <option value="placares_exatos">🎯 Mais Placares Exatos</option>
+                        <option value="acertos_resultado">✅ Mais Acertos de Resultado</option>
+                        <option value="palpite_antigo">⏱️ Palpite Enviado Mais Cedo</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="color: var(--amarelo); font-weight: 600; min-width: 28px;">2º</span>
+                    <select id="desempate_2" onchange="atualizarDesempate()"
+                        style="flex:1; padding: 0.7rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto);">
+                        <option value="acertos_resultado">✅ Mais Acertos de Resultado</option>
+                        <option value="placares_exatos">🎯 Mais Placares Exatos</option>
+                        <option value="palpite_antigo">⏱️ Palpite Enviado Mais Cedo</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="color: var(--texto-fraco); font-weight: 600; min-width: 28px;">3º</span>
+                    <select id="desempate_3" onchange="atualizarDesempate()"
+                        style="flex:1; padding: 0.7rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto);">
+                        <option value="palpite_antigo">⏱️ Palpite Enviado Mais Cedo</option>
+                        <option value="placares_exatos">🎯 Mais Placares Exatos</option>
+                        <option value="acertos_resultado">✅ Mais Acertos de Resultado</option>
+                    </select>
+                </div>
+            </div>
+            <div id="aviso-desempate" style="display:none; color:#e74c3c; font-size:0.85rem; margin-top:0.8rem;">
+                ⚠️ Cada critério deve ser diferente!
+            </div>
+            <input type="hidden" name="criterios_desempate" id="criterios_desempate" value="placares_exatos,acertos_resultado,palpite_antigo">
+        </div>
+
         <div style="margin-bottom: 1.5rem;">
             <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_acesso">TIPO DE ACESSO</label>
             <select name="tipo_acesso"
@@ -282,8 +325,21 @@ function toggleBonusGols() {
 
 {% block scripts %}
 <script>
-=======
->>>>>>> staging
+function atualizarDesempate() {
+    const v1 = document.getElementById('desempate_1').value;
+    const v2 = document.getElementById('desempate_2').value;
+    const v3 = document.getElementById('desempate_3').value;
+    const aviso = document.getElementById('aviso-desempate');
+    const hidden = document.getElementById('criterios_desempate');
+
+    if (v1 === v2 || v1 === v3 || v2 === v3) {
+        aviso.style.display = 'block';
+    } else {
+        aviso.style.display = 'none';
+        hidden.value = `${v1},${v2},${v3}`;
+    }
+}
+
 function mostrarCampos() {
     const tipo = document.getElementById('tipo-bolao').value;
     

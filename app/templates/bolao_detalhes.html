@@ -78,11 +78,13 @@
                         <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); width: 60px;">POS</th>
                         <th style="text-align: left; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_participante">PARTICIPANTE</th>
                         <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_pontos">PONTOS</th>
+                        <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate 1">🎯 Exatos</th>
+                        <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate 2">✅ Resultados</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% set participantes_ordenados = bolao.participantes.all()|sort(attribute='pontos_totais', reverse=True) %}
-                    {% for part in participantes_ordenados %}
+                    {% for item in ranking %}
+                    {% set part = item.participante %}
                     <tr style="border-bottom: 1px solid var(--cinza-medio);">
                         <td style="text-align: center; padding: 1rem; font-weight: 600; font-size: 1.1rem;">
                             {% if loop.index == 1 %}
@@ -117,16 +119,47 @@
                             </div>
                         </td>
                         <td style="text-align: center; padding: 1rem;">
-                            <div style="font-size: 1.5rem; font-weight: 600; color: var(--verde);">
-                                {{ part.pontos_totais }}
+                            <div onclick="abrirModalPontos('{{ part.usuario.nome_completo or part.usuario.username }}', {{ item.detalhes_json }})"
+                                 style="font-size: 1.5rem; font-weight: 600; color: var(--verde); cursor: pointer; text-decoration: underline dotted;"
+                                 title="Clique para ver detalhe jogo a jogo">
+                                {{ item.pontos }}
                             </div>
                         </td>
+                        <td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">
+                            {{ item.placares_exatos }}
+                        </td>
+                        <td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">
+                            {{ item.acertos_resultado }}
+                        </td>
                     </tr>
-                    
                     {% endfor %}
                 </tbody>
             </table></div>
+            <!-- Legenda critérios de desempate -->
+            <div style="padding: 0.8rem 1rem; background: var(--cinza-medio); font-size: 0.8rem; color: var(--texto-fraco);">
+                🔀 Desempate:
+                {% for c in criterios %}
+                    {% if c == 'placares_exatos' %}🎯 Placares exatos{% elif c == 'acertos_resultado' %}✅ Acertos de resultado{% elif c == 'palpite_antigo' %}⏱️ Palpite mais antigo{% endif %}
+                    {% if not loop.last %} → {% endif %}
+                {% endfor %}
+            </div>
         </div>
+
+        <!-- MODAL DE DETALHE DE PONTUAÇÃO -->
+        <div id="modal-pontos" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background: var(--cinza); border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative;">
+                <button onclick="fecharModal()" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--texto-fraco); font-size:1.5rem; cursor:pointer;">✕</button>
+                <h3 id="modal-titulo" style="margin-bottom: 1.5rem;"></h3>
+
+                <!-- Totais por categoria -->
+                <div id="modal-totais" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;"></div>
+
+                <!-- Jogo a jogo -->
+                <h4 style="color: var(--texto-fraco); font-size: 0.85rem; margin-bottom: 0.8rem;">JOGO A JOGO</h4>
+                <div id="modal-jogos" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            </div>
+        </div>
+
         {% else %}
         <div style="text-align: center; padding: 3rem; color: var(--texto-fraco);">
             <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
@@ -928,6 +961,65 @@ function filtrarJogos() {
         jogo.style.display = mostrar ? 'block' : 'none';
     });
 }
+function abrirModalPontos(nome, detalhes) {
+    document.getElementById('modal-titulo').textContent = '📊 ' + nome + ' — Detalhe de Pontuação';
+
+    // Totais por categoria
+    const jogosComResultado = detalhes.filter(d => d.pontos !== undefined);
+    const totalPontos = jogosComResultado.reduce((s, d) => s + d.pontos, 0);
+    const placares = jogosComResultado.filter(d => d.placar_exato).length;
+    const acertos = jogosComResultado.filter(d => d.acerto_resultado).length;
+
+    document.getElementById('modal-totais').innerHTML = `
+        <div style="background:var(--fundo); padding:1rem; border-radius:8px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:700; color:var(--verde);">${totalPontos}</div>
+            <div style="font-size:0.8rem; color:var(--texto-fraco);">Total de Pontos</div>
+        </div>
+        <div style="background:var(--fundo); padding:1rem; border-radius:8px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:700; color:var(--amarelo);">${placares}</div>
+            <div style="font-size:0.8rem; color:var(--texto-fraco);">🎯 Placares Exatos</div>
+        </div>
+        <div style="background:var(--fundo); padding:1rem; border-radius:8px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:700; color:#3498db;">${acertos}</div>
+            <div style="font-size:0.8rem; color:var(--texto-fraco);">✅ Acertos Resultado</div>
+        </div>
+    `;
+
+    // Jogo a jogo
+    if (detalhes.length === 0) {
+        document.getElementById('modal-jogos').innerHTML = '<div style="color:var(--texto-fraco); text-align:center;">Nenhum jogo finalizado ainda.</div>';
+    } else {
+        document.getElementById('modal-jogos').innerHTML = detalhes.map(d => {
+            const cor = d.placar_exato ? 'var(--verde)' : d.acerto_resultado ? 'var(--amarelo)' : '#e74c3c';
+            const badge = d.placar_exato ? '🎯 Exato' : d.acerto_resultado ? '✅ Resultado' : '❌';
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:0.7rem 1rem; background:var(--fundo); border-radius:6px; border-left: 3px solid ${cor};">
+                    <div>
+                        <div style="font-size:0.9rem; font-weight:600;">${d.time_casa} × ${d.time_fora}</div>
+                        <div style="font-size:0.8rem; color:var(--texto-fraco);">
+                            Real: ${d.gols_casa_real}-${d.gols_fora_real} &nbsp;|&nbsp; Palpite: ${d.gols_casa_palpite}-${d.gols_fora_palpite}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:700; color:${cor};">${d.pontos} pts</div>
+                        <div style="font-size:0.75rem; color:${cor};">${badge}</div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    const modal = document.getElementById('modal-pontos');
+    modal.style.display = 'flex';
+}
+
+function fecharModal() {
+    document.getElementById('modal-pontos').style.display = 'none';
+}
+
+document.getElementById('modal-pontos').addEventListener('click', function(e) {
+    if (e.target === this) fecharModal();
+});
+
 function responderSolicitacao(solicitacaoId, acao) {
     fetch('/responder_solicitacao', {
         method: 'POST',
