@@ -176,11 +176,7 @@
             <div style="background: var(--cinza); border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative;">
                 <button onclick="fecharModal()" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--texto-fraco); font-size:1.5rem; cursor:pointer;">✕</button>
                 <h3 id="modal-titulo" style="margin-bottom: 1.5rem;"></h3>
-
-                <!-- Totais por categoria -->
                 <div id="modal-totais" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;"></div>
-
-                <!-- Jogo a jogo -->
                 <h4 style="color: var(--texto-fraco); font-size: 0.85rem; margin-bottom: 0.8rem;">JOGO A JOGO</h4>
                 <div id="modal-jogos" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
             </div>
@@ -193,6 +189,38 @@
             <p style="margin-top: 0.5rem;">Compartilhe o código <strong>{{ bolao.codigo_convite }}</strong> com seus amigos!</p>
         </div>
         {% endif %}
+    </div>
+
+    <!-- MODAIS GLOBAIS (fora de qualquer tab) -->
+    <div id="modal-replicar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1001; align-items:center; justify-content:center;">
+        <div style="background: var(--cinza); border-radius: 12px; padding: 2rem; max-width: 480px; width: 90%; position: relative;">
+            <h3 style="margin-bottom: 1rem;">🔁 Confirmar Réplica</h3>
+            <p style="color: var(--texto-fraco); font-size: 0.9rem; margin-bottom: 1rem;">
+                Os seguintes bolões já têm palpite para este jogo. Deseja sobrescrever?
+            </p>
+            <div id="modal-replicar-lista" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            <div id="modal-replicar-novos" style="margin-bottom: 1.5rem;"></div>
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="confirmarReplicar()" 
+                    style="flex:1; padding: 0.8rem; background: var(--verde); color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    ✅ Confirmar e Replicar
+                </button>
+                <button onclick="fecharModalReplicar()"
+                    style="flex:1; padding: 0.8rem; background: var(--cinza-medio); color: var(--texto); border: none; border-radius: 6px; cursor: pointer;">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-pontos" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background: var(--cinza); border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative;">
+            <button onclick="fecharModal()" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--texto-fraco); font-size:1.5rem; cursor:pointer;">✕</button>
+            <h3 id="modal-titulo" style="margin-bottom: 1.5rem;"></h3>
+            <div id="modal-totais" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;"></div>
+            <h4 style="color: var(--texto-fraco); font-size: 0.85rem; margin-bottom: 0.8rem;">JOGO A JOGO</h4>
+            <div id="modal-jogos" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+        </div>
     </div>
     
 
