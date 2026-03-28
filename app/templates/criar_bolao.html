@@ -193,24 +193,6 @@
     </div>
 </div>
 
-        <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: var(--texto-fraco); font-size: 0.9rem;" data-i18n="cb_acesso">TIPO DE ACESSO</label>
-            <select name="tipo_acesso" required
-                style="width: 100%; padding: 0.8rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
-                       border-radius: 6px; color: var(--texto); font-size: 1rem;">
-                <option value="publico" data-i18n="cb_publico">Público (qualquer um pode entrar)</option>
-                <option value="privado" data-i18n="cb_privado">Privado (apenas com código)</option>
-            </select>
-        </div>
-
-        <button type="submit" 
-                style="width: 100%; background: var(--verde); color: #000; border: none; padding: 1rem; 
-                       border-radius: 6px; font-size: 1.1rem; font-weight: 600; cursor: pointer;">
-            ⚽ Criar Bolão
-        </button>
-    </form>
-</div>
-
 <script>
 // Mostrar/esconder campos baseado no modo selecionado
 document.querySelectorAll('input[name="modo_pontuacao"]').forEach(radio => {
@@ -246,6 +228,7 @@ function toggleBonusGols() {
     campos.style.display = checkbox.checked ? 'block' : 'none';
 }
 
+</script>
 
         <!-- CRITÉRIOS DE DESEMPATE -->
         <div style="background: var(--cinza-escuro); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
