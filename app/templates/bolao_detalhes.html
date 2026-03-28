@@ -151,7 +151,27 @@
             </div>
         </div>
 
-        <!-- MODAL DE DETALHE DE PONTUAÇÃO -->
+        <!-- MODAL DE CONFIRMAÇÃO DE RÉPLICA -->
+        <div id="modal-replicar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1001; align-items:center; justify-content:center;">
+            <div style="background: var(--cinza); border-radius: 12px; padding: 2rem; max-width: 480px; width: 90%; position: relative;">
+                <h3 style="margin-bottom: 1rem;">🔁 Confirmar Réplica</h3>
+                <p style="color: var(--texto-fraco); font-size: 0.9rem; margin-bottom: 1rem;">
+                    Os seguintes bolões já têm palpite para este jogo. Deseja sobrescrever?
+                </p>
+                <div id="modal-replicar-lista" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                <div id="modal-replicar-novos" style="margin-bottom: 1.5rem;"></div>
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="confirmarReplicar()" 
+                        style="flex:1; padding: 0.8rem; background: var(--verde); color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                        ✅ Confirmar e Replicar
+                    </button>
+                    <button onclick="fecharModalReplicar()"
+                        style="flex:1; padding: 0.8rem; background: var(--cinza-medio); color: var(--texto); border: none; border-radius: 6px; cursor: pointer;">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
         <div id="modal-pontos" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
             <div style="background: var(--cinza); border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative;">
                 <button onclick="fecharModal()" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--texto-fraco); font-size:1.5rem; cursor:pointer;">✕</button>
@@ -336,6 +356,14 @@
                                 class="btn-primary"
                                 id="btn-salvar-{{ jogo.id }}" data-i18n="bd_salvar_palpite">💾 Salvar Palpite</button>
                         
+                        <!-- REPLICAR EM OUTROS BOLÕES -->
+                        <div style="margin-top: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            <input type="checkbox" id="replicar-{{ jogo.id }}" style="width:16px; height:16px; cursor:pointer;">
+                            <label for="replicar-{{ jogo.id }}" style="font-size: 0.85rem; color: var(--texto-fraco); cursor:pointer;">
+                                🔁 Replicar nos meus outros bolões
+                            </label>
+                        </div>
+
                         <!-- MENSAGEM DE FEEDBACK -->
                         <div id="msg-palpite-{{ jogo.id }}" style="display: none; margin-top: 0.5rem;"></div>
                     </div>
@@ -863,6 +891,12 @@ function salvarPalpite(jogoId, bolaoId) {
                 gols_casa: golsCasa,
                 gols_fora: golsFora
             }));
+
+            // 🔁 Replicar se checkbox marcado
+            const checkReplicar = document.getElementById('replicar-' + jogoId);
+            if (checkReplicar && checkReplicar.checked) {
+                tentarReplicar(jogoId, bolaoId, parseInt(golsCasa), parseInt(golsFora));
+            }
             
         } else {
             // ❌ ERRO
@@ -967,6 +1001,76 @@ function filtrarJogos() {
         jogo.style.display = mostrar ? 'block' : 'none';
     });
 }
+// RÉPLICA DE PALPITE
+let _replicarPayload = null;
+
+function tentarReplicar(jogoId, bolaoId, golsCasa, golsFora) {
+    fetch('/replicar_palpite', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ jogo_id: jogoId, bolao_id: bolaoId, gols_casa: golsCasa, gols_fora: golsFora, confirmar: false })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.requer_confirmacao) {
+            _replicarPayload = { jogoId, bolaoId, golsCasa, golsFora };
+
+            // Monta lista de bolões com palpite existente
+            document.getElementById('modal-replicar-lista').innerHTML =
+                data.boloes_com_palpite.map(b =>
+                    `<div style="padding:0.6rem 1rem; background:var(--fundo); border-radius:6px; display:flex; justify-content:space-between;">
+                        <span>📋 ${b.nome}</span>
+                        <span style="color:var(--amarelo);">Atual: ${b.palpite_atual}</span>
+                    </div>`
+                ).join('');
+
+            // Bolões sem palpite
+            const novos = data.boloes_sem_palpite;
+            document.getElementById('modal-replicar-novos').innerHTML = novos.length > 0
+                ? `<p style="color:var(--texto-fraco); font-size:0.85rem;">Também será replicado (sem palpite ainda): ${novos.map(b => b.nome).join(', ')}</p>`
+                : '';
+
+            document.getElementById('modal-replicar').style.display = 'flex';
+
+        } else if (data.sucesso) {
+            mostrarMsgReplicar(jogoId, data.replicados);
+        }
+    })
+    .catch(err => console.error('Erro ao replicar:', err));
+}
+
+function confirmarReplicar() {
+    if (!_replicarPayload) return;
+    const { jogoId, bolaoId, golsCasa, golsFora } = _replicarPayload;
+    fecharModalReplicar();
+
+    fetch('/replicar_palpite', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ jogo_id: jogoId, bolao_id: bolaoId, gols_casa: golsCasa, gols_fora: golsFora, confirmar: true })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.sucesso) mostrarMsgReplicar(jogoId, data.replicados);
+    });
+}
+
+function fecharModalReplicar() {
+    document.getElementById('modal-replicar').style.display = 'none';
+    _replicarPayload = null;
+}
+
+function mostrarMsgReplicar(jogoId, total) {
+    const msg = document.getElementById('msg-palpite-' + jogoId);
+    if (msg) {
+        msg.textContent = total > 0
+            ? `🔁 Replicado para ${total} bolão(ões)!`
+            : '🔁 Nenhum outro bolão encontrado com este jogo.';
+        msg.style.color = 'var(--verde)';
+        msg.style.display = 'block';
+    }
+}
+
 function abrirModalPontos(nome, detalhes) {
     document.getElementById('modal-titulo').textContent = '📊 ' + nome + ' — Detalhe de Pontuação';
 

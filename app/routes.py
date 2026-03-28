@@ -2350,6 +2350,120 @@ def visualizar_projecoes(competicao_id):
     times = Time.query.filter(Time.id.in_(times_ids)).order_by(Time.nome).all()
     
     return render_template('visualizar_projecoes.html', competicao=competicao, times=times)
+@bp.route('/replicar_palpite', methods=['POST'])
+@login_required
+def replicar_palpite():
+    """
+    Replica um palpite para todos os outros bolões do usuário
+    que contenham o mesmo jogo e ainda estejam abertos.
+    """
+    from app.models import Palpite, ParticipanteBolao, Bolao
+    from app.comprovante import gerar_hash_palpite
+    import time as time_module
+
+    data = request.get_json()
+    jogo_id = data.get('jogo_id')
+    gols_casa = data.get('gols_casa')
+    gols_fora = data.get('gols_fora')
+    bolao_origem_id = data.get('bolao_id')
+    confirmar = data.get('confirmar', False)  # True = usuário já confirmou sobrescrita
+
+    if gols_casa is None or gols_fora is None or not jogo_id:
+        return jsonify({'erro': 'Dados incompletos'}), 400
+
+    # Verifica se o jogo ainda está aberto
+    jogo = Jogo.query.get_or_404(jogo_id)
+    if jogo.data:
+        from datetime import datetime
+        data_str = jogo.data.replace('+00:00', '').replace('Z', '')
+        data_jogo = datetime.strptime(data_str, '%Y-%m-%dT%H:%M:%S')
+        if datetime.now() >= data_jogo:
+            return jsonify({'erro': 'Jogo já começou!'}), 400
+
+    # Busca outros bolões do usuário que contenham este jogo
+    participacoes = ParticipanteBolao.query.filter_by(usuario_id=current_user.id).all()
+    boloes_ids = [p.bolao_id for p in participacoes if p.bolao_id != bolao_origem_id]
+
+    # Filtra bolões que têm este jogo (mesma competicao_id ou time)
+    boloes_alvo = []
+    for bolao_id in boloes_ids:
+        bolao = Bolao.query.get(bolao_id)
+        if not bolao or bolao.status != 'ativo':
+            continue
+
+        # Verifica se o jogo pertence a este bolão
+        jogo_pertence = False
+        if bolao.tipo_bolao == 'campeonato_completo' and jogo.competicao_id == bolao.competicao_id:
+            jogo_pertence = True
+        elif bolao.tipo_bolao == 'time_campeonato' and jogo.competicao_id == bolao.competicao_id and \
+             (jogo.time_casa_id == bolao.time_especifico_id or jogo.time_fora_id == bolao.time_especifico_id):
+            jogo_pertence = True
+        elif bolao.tipo_bolao == 'time_ano_completo' and \
+             (jogo.time_casa_id == bolao.time_especifico_id or jogo.time_fora_id == bolao.time_especifico_id):
+            jogo_pertence = True
+
+        if jogo_pertence:
+            palpite_existente = Palpite.query.filter_by(
+                bolao_id=bolao_id,
+                usuario_id=current_user.id,
+                jogo_id=jogo_id
+            ).first()
+            boloes_alvo.append({
+                'bolao_id': bolao_id,
+                'nome': bolao.nome,
+                'tem_palpite': palpite_existente is not None,
+                'palpite_atual': f"{palpite_existente.gols_casa_palpite}x{palpite_existente.gols_fora_palpite}" if palpite_existente else None
+            })
+
+    if not boloes_alvo:
+        return jsonify({'sucesso': True, 'replicados': 0, 'mensagem': 'Nenhum outro bolão encontrado com este jogo.'})
+
+    # Se há palpites existentes e usuário ainda não confirmou → pede confirmação
+    com_palpite = [b for b in boloes_alvo if b['tem_palpite']]
+    if com_palpite and not confirmar:
+        return jsonify({
+            'requer_confirmacao': True,
+            'boloes_com_palpite': com_palpite,
+            'boloes_sem_palpite': [b for b in boloes_alvo if not b['tem_palpite']],
+            'total': len(boloes_alvo)
+        })
+
+    # Replica para todos
+    replicados = 0
+    timestamp_ms = int(time_module.time() * 1000)
+
+    for b in boloes_alvo:
+        hash_comprovante = gerar_hash_palpite(
+            current_user.id, jogo_id, gols_casa, gols_fora, timestamp_ms
+        )
+        palpite = Palpite.query.filter_by(
+            bolao_id=b['bolao_id'],
+            usuario_id=current_user.id,
+            jogo_id=jogo_id
+        ).first()
+
+        if palpite:
+            palpite.gols_casa_palpite = gols_casa
+            palpite.gols_fora_palpite = gols_fora
+            palpite.hash_comprovante = hash_comprovante
+            palpite.timestamp_preciso = timestamp_ms
+        else:
+            palpite = Palpite(
+                bolao_id=b['bolao_id'],
+                usuario_id=current_user.id,
+                jogo_id=jogo_id,
+                gols_casa_palpite=gols_casa,
+                gols_fora_palpite=gols_fora,
+                hash_comprovante=hash_comprovante,
+                timestamp_preciso=timestamp_ms
+            )
+            db.session.add(palpite)
+        replicados += 1
+
+    db.session.commit()
+    return jsonify({'sucesso': True, 'replicados': replicados, 'mensagem': f'Palpite replicado para {replicados} bolão(ões)!'})
+
+
 @bp.route('/migrar_criterios_desempate')
 def migrar_criterios_desempate():
     from sqlalchemy import text
