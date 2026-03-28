@@ -1005,6 +1005,7 @@ function filtrarJogos() {
 let _replicarPayload = null;
 
 function tentarReplicar(jogoId, bolaoId, golsCasa, golsFora) {
+    console.log('[REPLICAR] chamado:', jogoId, bolaoId, golsCasa, golsFora);
     fetch('/replicar_palpite', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -1012,6 +1013,7 @@ function tentarReplicar(jogoId, bolaoId, golsCasa, golsFora) {
     })
     .then(r => r.json())
     .then(data => {
+        console.log('[REPLICAR] resposta:', data);
         if (data.requer_confirmacao) {
             _replicarPayload = { jogoId, bolaoId, golsCasa, golsFora };
 
