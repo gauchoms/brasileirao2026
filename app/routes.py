@@ -1275,6 +1275,8 @@ def bolao_detalhes(bolao_id):
                 'pontos': p.pontos_obtidos,
                 'placar_exato': eh_placar_exato,
                 'acerto_resultado': eh_acerto_resultado,
+                'gols_vencedor_acerto': res_real != 'empate' and max(j.gols_casa, j.gols_fora) == max(p.gols_casa_palpite, p.gols_fora_palpite),
+                'gols_perdedor_acerto': res_real != 'empate' and min(j.gols_casa, j.gols_fora) == min(p.gols_casa_palpite, p.gols_fora_palpite),
             })
 
         ranking.append({

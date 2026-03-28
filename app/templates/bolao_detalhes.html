@@ -1101,29 +1101,46 @@ function mostrarMsgReplicar(jogoId, total) {
     }
 }
 
+// Critérios configurados neste bolão (vindos do servidor)
+const CRITERIOS_BOLAO = {{ criterios | tojson }};
+
 function abrirModalPontos(nome, detalhes) {
     document.getElementById('modal-titulo').textContent = '📊 ' + nome + ' — Detalhe de Pontuação';
 
-    // Totais por categoria
     const jogosComResultado = detalhes.filter(d => d.pontos !== undefined);
     const totalPontos = jogosComResultado.reduce((s, d) => s + d.pontos, 0);
-    const placares = jogosComResultado.filter(d => d.placar_exato).length;
-    const acertos = jogosComResultado.filter(d => d.acerto_resultado).length;
+    const placares   = jogosComResultado.filter(d => d.placar_exato).length;
+    const acertos    = jogosComResultado.filter(d => d.acerto_resultado).length;
+    const golsVenc   = jogosComResultado.filter(d => d.gols_vencedor_acerto).length;
+    const golsPerd   = jogosComResultado.filter(d => d.gols_perdedor_acerto).length;
 
-    document.getElementById('modal-totais').innerHTML = `
-        <div style="background:var(--fundo); padding:1rem; border-radius:8px; text-align:center;">
+    // Monta caixas dinamicamente com base nos critérios do bolão
+    const mapaLabel = {
+        placares_exatos:   { emoji: '🎯', label: 'Placares Exatos',   valor: placares,    cor: 'var(--amarelo)' },
+        acertos_resultado: { emoji: '✅', label: 'Acertos Resultado',  valor: acertos,     cor: '#3498db' },
+        gols_vencedor:     { emoji: '⚽', label: 'Gols do Vencedor',   valor: golsVenc,    cor: '#9b59b6' },
+        gols_perdedor:     { emoji: '❌', label: 'Gols do Perdedor',   valor: golsPerd,    cor: '#e67e22' },
+    };
+
+    const caixas = [
+        `<div style="background:var(--fundo); padding:1rem; border-radius:8px; text-align:center;">
             <div style="font-size:1.8rem; font-weight:700; color:var(--verde);">${totalPontos}</div>
             <div style="font-size:0.8rem; color:var(--texto-fraco);">Total de Pontos</div>
-        </div>
-        <div style="background:var(--fundo); padding:1rem; border-radius:8px; text-align:center;">
-            <div style="font-size:1.8rem; font-weight:700; color:var(--amarelo);">${placares}</div>
-            <div style="font-size:0.8rem; color:var(--texto-fraco);">🎯 Placares Exatos</div>
-        </div>
-        <div style="background:var(--fundo); padding:1rem; border-radius:8px; text-align:center;">
-            <div style="font-size:1.8rem; font-weight:700; color:#3498db;">${acertos}</div>
-            <div style="font-size:0.8rem; color:var(--texto-fraco);">✅ Acertos Resultado</div>
-        </div>
-    `;
+        </div>`
+    ];
+
+    CRITERIOS_BOLAO.forEach(c => {
+        const info = mapaLabel[c];
+        if (!info) return;
+        caixas.push(`
+            <div style="background:var(--fundo); padding:1rem; border-radius:8px; text-align:center;">
+                <div style="font-size:1.8rem; font-weight:700; color:${info.cor};">${info.valor}</div>
+                <div style="font-size:0.8rem; color:var(--texto-fraco);">${info.emoji} ${info.label}</div>
+            </div>`);
+    });
+
+    document.getElementById('modal-totais').style.gridTemplateColumns = `repeat(${caixas.length}, 1fr)`;
+    document.getElementById('modal-totais').innerHTML = caixas.join('');
 
     // Jogo a jogo
     if (detalhes.length === 0) {
@@ -1148,8 +1165,7 @@ function abrirModalPontos(nome, detalhes) {
         }).join('');
     }
 
-    const modal = document.getElementById('modal-pontos');
-    modal.style.display = 'flex';
+    document.getElementById('modal-pontos').style.display = 'flex';
 }
 
 function fecharModal() {
