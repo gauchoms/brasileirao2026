@@ -1229,6 +1229,8 @@ def bolao_detalhes(bolao_id):
 
         placares_exatos = 0
         acertos_resultado = 0
+        gols_vencedor_acertos = 0
+        gols_perdedor_acertos = 0
         timestamp_min = None
         detalhes = []
 
@@ -1242,6 +1244,17 @@ def bolao_detalhes(bolao_id):
 
             eh_placar_exato = (p.gols_casa_palpite == j.gols_casa and p.gols_fora_palpite == j.gols_fora)
             eh_acerto_resultado = (res_real == res_palpite)
+
+            # Gols vencedor/perdedor
+            if res_real != 'empate':
+                gols_v_real = max(j.gols_casa, j.gols_fora)
+                gols_p_real = min(j.gols_casa, j.gols_fora)
+                gols_v_palp = max(p.gols_casa_palpite, p.gols_fora_palpite)
+                gols_p_palp = min(p.gols_casa_palpite, p.gols_fora_palpite)
+                if gols_v_real == gols_v_palp:
+                    gols_vencedor_acertos += 1
+                if gols_p_real == gols_p_palp:
+                    gols_perdedor_acertos += 1
 
             if eh_placar_exato:
                 placares_exatos += 1
@@ -1269,6 +1282,8 @@ def bolao_detalhes(bolao_id):
             'pontos': part.pontos_totais,
             'placares_exatos': placares_exatos,
             'acertos_resultado': acertos_resultado,
+            'gols_vencedor': gols_vencedor_acertos,
+            'gols_perdedor': gols_perdedor_acertos,
             'timestamp_min': timestamp_min,
             'detalhes_json': json.dumps(detalhes, ensure_ascii=False),
         })
@@ -1282,8 +1297,15 @@ def bolao_detalhes(bolao_id):
                 keys.append(-item['placares_exatos'])
             elif c == 'acertos_resultado':
                 keys.append(-item['acertos_resultado'])
+            elif c == 'gols_vencedor':
+                keys.append(-item['gols_vencedor'])
+            elif c == 'gols_perdedor':
+                keys.append(-item['gols_perdedor'])
             elif c == 'palpite_antigo':
                 keys.append(item['timestamp_min'] or 9999999999999)
+        # palpite_antigo sempre ao final
+        if 'palpite_antigo' not in criterios:
+            keys.append(item['timestamp_min'] or 9999999999999)
         return tuple(keys)
 
     ranking.sort(key=sort_key)

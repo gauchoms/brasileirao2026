@@ -78,8 +78,13 @@
                         <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); width: 60px;">POS</th>
                         <th style="text-align: left; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_participante">PARTICIPANTE</th>
                         <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_pontos">PONTOS</th>
-                        <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate 1">🎯 Exatos</th>
-                        <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate 2">✅ Resultados</th>
+                        {% for c in criterios %}
+                            {% if c == 'placares_exatos' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Placares Exatos">🎯 Exatos</th>
+                            {% elif c == 'acertos_resultado' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Acertos de Resultado">✅ Result.</th>
+                            {% elif c == 'gols_vencedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Gols do Vencedor">⚽ Venc.</th>
+                            {% elif c == 'gols_perdedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Gols do Perdedor">❌ Perd.</th>
+                            {% endif %}
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
@@ -125,12 +130,13 @@
                                 {{ item.pontos }}
                             </div>
                         </td>
-                        <td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">
-                            {{ item.placares_exatos }}
-                        </td>
-                        <td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">
-                            {{ item.acertos_resultado }}
-                        </td>
+                        {% for c in criterios %}
+                            {% if c == 'placares_exatos' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.placares_exatos }}</td>
+                            {% elif c == 'acertos_resultado' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.acertos_resultado }}</td>
+                            {% elif c == 'gols_vencedor' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_vencedor }}</td>
+                            {% elif c == 'gols_perdedor' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_perdedor }}</td>
+                            {% endif %}
+                        {% endfor %}
                     </tr>
                     {% endfor %}
                 </tbody>

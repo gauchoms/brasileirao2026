@@ -253,39 +253,34 @@ function toggleBonusGols() {
                 🔀 Critérios de Desempate
             </h3>
             <p style="color: var(--texto-fraco); font-size: 0.85rem; margin-bottom: 1rem;">
-                Em caso de empate em pontos, defina a ordem de prioridade:
+                Marque os critérios desejados e defina a ordem de prioridade (1 = maior prioridade). O palpite enviado mais cedo é sempre o último recurso automático.
             </p>
             <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <span style="color: var(--verde); font-weight: 600; min-width: 28px;">1º</span>
-                    <select id="desempate_1" onchange="atualizarDesempate()"
-                        style="flex:1; padding: 0.7rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto);">
-                        <option value="placares_exatos">🎯 Mais Placares Exatos</option>
-                        <option value="acertos_resultado">✅ Mais Acertos de Resultado</option>
-                        <option value="palpite_antigo">⏱️ Palpite Enviado Mais Cedo</option>
-                    </select>
+                {% set criterios_opcoes = [
+                    ('placares_exatos', '🎯 Placar Exato'),
+                    ('acertos_resultado', '✅ Acerto de Resultado'),
+                    ('gols_vencedor', '⚽ Gols do Vencedor'),
+                    ('gols_perdedor', '❌ Gols do Perdedor')
+                ] %}
+                {% for valor, label in criterios_opcoes %}
+                <div style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: var(--cinza-medio); border-radius: 6px;">
+                    <input type="checkbox" id="check_{{ valor }}" name="criterio_check" value="{{ valor }}"
+                           onchange="atualizarDesempate()"
+                           {% if valor in ['placares_exatos', 'acertos_resultado'] %}checked{% endif %}
+                           style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="check_{{ valor }}" style="flex: 1; cursor: pointer; font-size: 0.95rem;">{{ label }}</label>
+                    <input type="number" id="ordem_{{ valor }}" min="1" max="4"
+                           value="{% if valor == 'placares_exatos' %}1{% elif valor == 'acertos_resultado' %}2{% else %}{% endif %}"
+                           placeholder="Ordem"
+                           onchange="atualizarDesempate()"
+                           {% if valor not in ['placares_exatos', 'acertos_resultado'] %}disabled{% endif %}
+                           style="width: 70px; padding: 0.5rem; text-align: center; background: var(--cinza-escuro); border: 1px solid var(--cinza-claro); border-radius: 4px; color: var(--texto);">
                 </div>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <span style="color: var(--amarelo); font-weight: 600; min-width: 28px;">2º</span>
-                    <select id="desempate_2" onchange="atualizarDesempate()"
-                        style="flex:1; padding: 0.7rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto);">
-                        <option value="acertos_resultado">✅ Mais Acertos de Resultado</option>
-                        <option value="placares_exatos">🎯 Mais Placares Exatos</option>
-                        <option value="palpite_antigo">⏱️ Palpite Enviado Mais Cedo</option>
-                    </select>
-                </div>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <span style="color: var(--texto-fraco); font-weight: 600; min-width: 28px;">3º</span>
-                    <select id="desempate_3" onchange="atualizarDesempate()"
-                        style="flex:1; padding: 0.7rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); border-radius: 6px; color: var(--texto);">
-                        <option value="palpite_antigo">⏱️ Palpite Enviado Mais Cedo</option>
-                        <option value="placares_exatos">🎯 Mais Placares Exatos</option>
-                        <option value="acertos_resultado">✅ Mais Acertos de Resultado</option>
-                    </select>
-                </div>
+                {% endfor %}
             </div>
-            <div id="aviso-desempate" style="display:none; color:#e74c3c; font-size:0.85rem; margin-top:0.8rem;">
-                ⚠️ Cada critério deve ser diferente!
+            <div id="aviso-desempate" style="display:none; color:#e74c3c; font-size:0.85rem; margin-top:0.8rem;"></div>
+            <div style="margin-top: 0.8rem; font-size: 0.8rem; color: var(--texto-fraco);">
+                ⏱️ Palpite enviado mais cedo — sempre último recurso automático
             </div>
             <input type="hidden" name="criterios_desempate" id="criterios_desempate" value="placares_exatos,acertos_resultado,palpite_antigo">
         </div>
@@ -326,18 +321,48 @@ function toggleBonusGols() {
 {% block scripts %}
 <script>
 function atualizarDesempate() {
-    const v1 = document.getElementById('desempate_1').value;
-    const v2 = document.getElementById('desempate_2').value;
-    const v3 = document.getElementById('desempate_3').value;
+    const criterios = ['placares_exatos', 'acertos_resultado', 'gols_vencedor', 'gols_perdedor'];
     const aviso = document.getElementById('aviso-desempate');
     const hidden = document.getElementById('criterios_desempate');
 
-    if (v1 === v2 || v1 === v3 || v2 === v3) {
+    // Habilita/desabilita input de ordem conforme checkbox
+    criterios.forEach(c => {
+        const check = document.getElementById('check_' + c);
+        const ordem = document.getElementById('ordem_' + c);
+        ordem.disabled = !check.checked;
+        if (!check.checked) ordem.value = '';
+    });
+
+    // Coleta marcados com ordem
+    const marcados = criterios
+        .filter(c => document.getElementById('check_' + c).checked)
+        .map(c => ({
+            valor: c,
+            ordem: parseInt(document.getElementById('ordem_' + c).value) || 99
+        }));
+
+    // Valida ordens duplicadas
+    const ordens = marcados.map(m => m.ordem).filter(o => o !== 99);
+    const temDuplicata = ordens.length !== new Set(ordens).size;
+
+    if (marcados.length === 0) {
         aviso.style.display = 'block';
-    } else {
-        aviso.style.display = 'none';
-        hidden.value = `${v1},${v2},${v3}`;
+        aviso.textContent = '⚠️ Marque pelo menos um critério ou será usado o padrão automático.';
+        hidden.value = 'placares_exatos,acertos_resultado,palpite_antigo';
+        return;
     }
+
+    if (temDuplicata) {
+        aviso.style.display = 'block';
+        aviso.textContent = '⚠️ Dois critérios têm a mesma ordem. Corrija antes de continuar.';
+        return;
+    }
+
+    aviso.style.display = 'none';
+
+    // Ordena pelos números e monta string
+    marcados.sort((a, b) => a.ordem - b.ordem);
+    hidden.value = marcados.map(m => m.valor).join(',') + ',palpite_antigo';
 }
 
 function mostrarCampos() {
