@@ -8,6 +8,44 @@ headers = {
     "x-apisports-key": Config.API_FOOTBALL_KEY
 }
 
+
+import cloudinary
+import cloudinary.uploader
+
+
+def configurar_cloudinary():
+    """Configura Cloudinary com as variáveis de ambiente."""
+    cloudinary.config(
+        cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.getenv('CLOUDINARY_API_KEY'),
+        api_secret=os.getenv('CLOUDINARY_API_SECRET')
+    )
+
+
+def upload_logo_cloudinary(api_id, logo_url_original):
+    """
+    Faz upload da logo de um time para o Cloudinary.
+    Usa o api_id como public_id para evitar duplicatas.
+    Retorna a URL do Cloudinary ou None em caso de erro.
+    """
+    if not logo_url_original:
+        return None
+    try:
+        configurar_cloudinary()
+        resultado = cloudinary.uploader.upload(
+            logo_url_original,
+            public_id=f"logos/teams/{api_id}",
+            overwrite=False,           # Não reprocessa se já existe
+            resource_type="image",
+            transformation=[
+                {"width": 120, "height": 120, "crop": "fit"}  # Padroniza tamanho
+            ]
+        )
+        return resultado.get("secure_url")
+    except Exception as e:
+        print(f"[CLOUDINARY] Erro ao fazer upload da logo {api_id}: {e}")
+        return None
+
 def get_jogos_brasileirao():
     url = f"{BASE_URL}/fixtures"
     params = {"league": 71, "season": 2026}
@@ -125,11 +163,15 @@ def importar_jogos_time_ano(time_api_id, ano):
                 if api_id not in times_cadastrados:
                     time = Time.query.filter_by(api_id=api_id).first()
                     if not time:
-                        time = Time(api_id=api_id, nome=nome, logo_url=logo, ativo=True)
+                        # Faz upload da logo para Cloudinary
+                        logo_cl = upload_logo_cloudinary(api_id, logo) if logo else None
+                        time = Time(api_id=api_id, nome=nome, logo_url=logo_cl or logo, ativo=True)
                         db.session.add(time)
                         db.session.flush()
                     elif logo and not time.logo_url:
-                        time.logo_url = logo
+                        # Time existe mas sem logo — envia ao Cloudinary
+                        logo_cl = upload_logo_cloudinary(api_id, logo)
+                        time.logo_url = logo_cl or logo
                     times_cadastrados[api_id] = time.id
 
             jogo_existente = Jogo.query.filter_by(api_id=jogo['api_id']).first()

@@ -788,11 +788,15 @@ def admin_importar_competicao(league_id, ano):
                 logo = jogo['logo_casa'] if key == 'time_casa_id' else jogo['logo_fora']
                 time = Time.query.filter_by(api_id=api_id).first()
                 if not time:
-                    time = Time(api_id=api_id, nome=nome, logo_url=logo)
+                    from app.api import upload_logo_cloudinary
+                    logo_cl = upload_logo_cloudinary(api_id, logo) if logo else None
+                    time = Time(api_id=api_id, nome=nome, logo_url=logo_cl or logo)
                     db.session.add(time)
                     db.session.flush()
                 elif logo and not time.logo_url:
-                    time.logo_url = logo
+                    from app.api import upload_logo_cloudinary
+                    logo_cl = upload_logo_cloudinary(api_id, logo)
+                    time.logo_url = logo_cl or logo
                 times_cadastrados[api_id] = time.id
         
         # Cadastra jogo
@@ -2489,6 +2493,62 @@ def migrar_criterios_desempate():
 
 
 
+
+
+@bp.route('/admin/migrar_logos_cloudinary')
+@admin_required
+def migrar_logos_cloudinary():
+    """
+    Processa todos os times que têm logo_url da API Football
+    e faz re-upload para o Cloudinary.
+    Processa em lotes de 20 para evitar timeout.
+    """
+    from app.api import upload_logo_cloudinary
+    from app.models import Time
+
+    offset = request.args.get('offset', 0, type=int)
+    lote = 20
+
+    # Times com logo_url que não seja do Cloudinary
+    times = Time.query.filter(
+        Time.logo_url.isnot(None),
+        Time.logo_url != '',
+        ~Time.logo_url.like('%cloudinary%')
+    ).offset(offset).limit(lote).all()
+
+    total_pendente = Time.query.filter(
+        Time.logo_url.isnot(None),
+        Time.logo_url != '',
+        ~Time.logo_url.like('%cloudinary%')
+    ).count()
+
+    atualizados = 0
+    erros = []
+
+    for time in times:
+        nova_url = upload_logo_cloudinary(time.api_id, time.logo_url)
+        if nova_url:
+            time.logo_url = nova_url
+            atualizados += 1
+        else:
+            erros.append(f"{time.nome} (api_id={time.api_id})")
+
+    db.session.commit()
+
+    proximo_offset = offset + lote
+    tem_mais = proximo_offset < total_pendente
+
+    return jsonify({
+        'sucesso': True,
+        'lote': lote,
+        'offset': offset,
+        'atualizados_agora': atualizados,
+        'total_pendente_restante': max(0, total_pendente - lote),
+        'erros': erros,
+        'proximo': f'/admin/migrar_logos_cloudinary?offset={proximo_offset}' if tem_mais else None,
+        'mensagem': f'✅ Pronto! Todos processados.' if not tem_mais else f'⏳ Rode o próximo: offset={proximo_offset}'
+    })
+
 @bp.route('/migrar_grupo_e_logos')
 @admin_required
 def migrar_grupo_e_logos():
@@ -2544,32 +2604,6 @@ def migrar_grupo_e_logos():
             resultados['erros'].append(f"{comp.nome}: {str(e)}")
 
     return jsonify({'sucesso': True, **resultados})
-
-@bp.route('/proxy/logo/<int:team_api_id>')
-def proxy_logo(team_api_id):
-    import requests
-    from flask import Response
-    
-    # Cache simples em memória (evita buscar toda hora)
-    cache_key = f'logo_{team_api_id}'
-    if not hasattr(proxy_logo, '_cache'):
-        proxy_logo._cache = {}
-    
-    if cache_key in proxy_logo._cache:
-        return Response(proxy_logo._cache[cache_key], mimetype='image/png')
-    
-    try:
-        url = f"https://media.api-sports.io/football/teams/{team_api_id}.png"
-        r = requests.get(url, timeout=5)
-        if r.status_code == 200:
-            proxy_logo._cache[cache_key] = r.content
-            return Response(r.content, mimetype='image/png')
-    except Exception:
-        pass
-    
-    return '', 404
-
-
 
 @bp.route('/migrar_reset_senha_render')
 def migrar_reset_senha_render():
