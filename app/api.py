@@ -9,12 +9,9 @@ headers = {
 }
 
 
-import cloudinary
-import cloudinary.uploader
-
-
 def configurar_cloudinary():
     """Configura Cloudinary com as variáveis de ambiente."""
+    import cloudinary
     cloudinary.config(
         cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
         api_key=os.getenv('CLOUDINARY_API_KEY'),
@@ -31,6 +28,7 @@ def upload_logo_cloudinary(api_id, logo_url_original):
     if not logo_url_original:
         return None
     try:
+        import cloudinary.uploader
         configurar_cloudinary()
         resultado = cloudinary.uploader.upload(
             logo_url_original,

@@ -2495,7 +2495,7 @@ def migrar_criterios_desempate():
 
 
 
-@bp.route('/admin/migrar_logos_cloudinary')
+@bp.route('/migrar_logos_cloudinary')
 @admin_required
 def migrar_logos_cloudinary():
     """
@@ -2545,7 +2545,7 @@ def migrar_logos_cloudinary():
         'atualizados_agora': atualizados,
         'total_pendente_restante': max(0, total_pendente - lote),
         'erros': erros,
-        'proximo': f'/admin/migrar_logos_cloudinary?offset={proximo_offset}' if tem_mais else None,
+        'proximo': f'/migrar_logos_cloudinary?offset={proximo_offset}' if tem_mais else None,
         'mensagem': f'✅ Pronto! Todos processados.' if not tem_mais else f'⏳ Rode o próximo: offset={proximo_offset}'
     })
 
