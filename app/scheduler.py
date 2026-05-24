@@ -163,54 +163,24 @@ def sincronizar_jogos_job(app):
                             for jogo in jogos:
                                 jogo_existente = Jogo.query.filter_by(api_id=jogo['api_id']).first()
                                 if jogo_existente:
-                                    # Atualiza placeholders se time real já disponível
-                                    from app.api import _api_id_placeholder, upload_logo_cloudinary
-                                    for attr, key, logo_key, ph_key in [
-                                        ('time_casa_id', 'time_casa_id', 'logo_casa', 'casa_placeholder'),
-                                        ('time_fora_id', 'time_fora_id', 'logo_fora', 'fora_placeholder')
-                                    ]:
-                                        if not jogo.get(ph_key):  # API já tem o time real
-                                            time_atual_id = getattr(jogo_existente, attr)
-                                            time_atual = Time.query.get(time_atual_id)
-                                            # Se o time atual ainda é placeholder
-                                            if time_atual and time_atual.api_id >= 9000000:
-                                                api_id_real = jogo[key]
-                                                logo = jogo.get(logo_key)
-                                                time_real = Time.query.filter_by(api_id=api_id_real).first()
-                                                if not time_real:
-                                                    logo_cl = upload_logo_cloudinary(api_id_real, logo) if logo else None
-                                                    time_real = Time(api_id=api_id_real, nome=jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora'], logo_url=logo_cl or logo, ativo=True)
-                                                    db.session.add(time_real)
-                                                    db.session.flush()
-                                                setattr(jogo_existente, attr, time_real.id)
-                                                print(f"[SCHEDULER] Placeholder substituído: {time_atual.nome} → {time_real.nome}")
                                     continue
 
-                                # Cadastra times (com suporte a placeholders)
+                                # Cadastra times se necessário
                                 for key in ['time_casa_id', 'time_fora_id']:
                                     api_id = jogo[key]
-                                    nome   = jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora']
-                                    logo   = jogo.get('logo_casa') if key == 'time_casa_id' else jogo.get('logo_fora')
-                                    is_ph  = jogo.get('casa_placeholder') if key == 'time_casa_id' else jogo.get('fora_placeholder')
+                                    nome = jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora']
                                     if api_id not in times_cadastrados:
-                                        if is_ph:
-                                            from app.api import garantir_time_placeholder
-                                            time_db = garantir_time_placeholder(nome)
-                                        else:
-                                            time_db = Time.query.filter_by(api_id=api_id).first()
-                                            if not time_db:
-                                                time_db = Time(api_id=api_id, nome=nome, logo_url=logo, ativo=True)
-                                                db.session.add(time_db)
-                                                db.session.flush()
-                                            elif logo and not time_db.logo_url:
-                                                time_db.logo_url = logo
+                                        time_db = Time.query.filter_by(api_id=api_id).first()
+                                        if not time_db:
+                                            time_db = Time(api_id=api_id, nome=nome, ativo=True)
+                                            db.session.add(time_db)
+                                            db.session.flush()
                                         times_cadastrados[api_id] = time_db.id
 
                                 novo_jogo = Jogo(
                                     api_id=jogo['api_id'],
                                     competicao_id=bolao.competicao_id,
                                     rodada=jogo['rodada'],
-                                    grupo=jogo.get('grupo', ''),
                                     time_casa_id=times_cadastrados[jogo['time_casa_id']],
                                     time_fora_id=times_cadastrados[jogo['time_fora_id']],
                                     data=jogo['data'],
@@ -231,6 +201,73 @@ def sincronizar_jogos_job(app):
         except Exception as e:
             print(f"[SCHEDULER] Erro geral na sincronização: {e}")
 
+
+
+
+def popular_grupos_job(app):
+    """
+    Atualiza o campo 'grupo' de todos os jogos de competições do tipo 'cup'
+    (formato copa: tem grupos A/B/C e fases eliminatórias).
+    Roda semanalmente junto com corrigir_horarios_job.
+    """
+    with app.app_context():
+        try:
+            from app.models import Competicao, Jogo
+            from app import db
+            import requests, os
+
+            print(f"[SCHEDULER] Populando grupos: {datetime.now(BRASILIA).strftime('%d/%m/%Y %H:%M')}")
+
+            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+            total_atualizados = 0
+
+            # Apenas competições do tipo 'cup' que têm api_league_id
+            competicoes = Competicao.query.filter(
+                Competicao.tipo == 'cup',
+                Competicao.api_league_id.isnot(None)
+            ).all()
+
+            for comp in competicoes:
+                try:
+                    jogos_comp = Jogo.query.filter_by(competicao_id=comp.id).all()
+                    if not jogos_comp:
+                        continue
+
+                    # Detecta seasons dos jogos
+                    seasons = set()
+                    for j in jogos_comp:
+                        if j.data:
+                            try: seasons.add(int(j.data[:4]))
+                            except: pass
+                    if not seasons:
+                        seasons = {comp.ano}
+
+                    for season in seasons:
+                        r = requests.get(
+                            "https://v3.football.api-sports.io/fixtures",
+                            headers=headers,
+                            params={"league": comp.api_league_id, "season": season},
+                            timeout=15
+                        )
+                        for f in r.json().get("response", []):
+                            grupo = f["league"].get("group") or ""
+                            if not grupo:
+                                continue
+                            jogo = Jogo.query.filter_by(api_id=f["fixture"]["id"]).first()
+                            if jogo and jogo.grupo != grupo:
+                                jogo.grupo = grupo
+                                total_atualizados += 1
+
+                    db.session.commit()
+
+                except Exception as e:
+                    print(f"[SCHEDULER] Erro grupos {comp.nome}: {e}")
+                    continue
+
+            print(f"[SCHEDULER] Grupos: {total_atualizados} atualizados em {len(competicoes)} competições cup ✅")
+
+        except Exception as e:
+            print(f"[SCHEDULER] Erro geral popular_grupos: {e}")
 
 def iniciar_scheduler(app):
     """
@@ -273,6 +310,17 @@ def iniciar_scheduler(app):
         args=[app],
         id='sincronizar_jogos',
         name='Sincronizar jogos novos',
+        replace_existing=True
+    )
+
+    # Job F: toda segunda-feira às 6h30, popula grupos de competições cup
+    from apscheduler.triggers.cron import CronTrigger as CronTriggerF
+    _scheduler.add_job(
+        func=popular_grupos_job,
+        trigger=CronTriggerF(day_of_week='mon', hour=6, minute=30, timezone=BRASILIA),
+        args=[app],
+        id='popular_grupos',
+        name='Popular grupos competições cup',
         replace_existing=True
     )
 

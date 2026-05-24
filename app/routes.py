@@ -2949,3 +2949,54 @@ def migrar_reset_senha_render():
         return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+@bp.route('/admin/popular_grupos/<int:competicao_id>')
+@admin_required
+def popular_grupos(competicao_id):
+    """Busca o campo grupo de cada jogo direto na API Football e salva no banco."""
+    import requests, os, threading
+    from flask import current_app
+    from app.models import Competicao, Jogo
+
+    comp = Competicao.query.get_or_404(competicao_id)
+    app = current_app._get_current_object()
+
+    def job():
+        with app.app_context():
+            from app.models import Competicao, Jogo
+            from app import db
+            import requests, os
+
+            comp = Competicao.query.get(competicao_id)
+            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+
+            seasons = set()
+            for j in Jogo.query.filter_by(competicao_id=comp.id).all():
+                if j.data:
+                    try: seasons.add(int(j.data[:4]))
+                    except: pass
+            if not seasons:
+                seasons = {comp.ano}
+
+            atualizados = 0
+            for season in seasons:
+                r = requests.get(
+                    "https://v3.football.api-sports.io/fixtures",
+                    headers=headers,
+                    params={"league": comp.api_league_id, "season": season},
+                    timeout=15
+                )
+                for f in r.json().get("response", []):
+                    grupo = f["league"].get("group") or ""
+                    if not grupo:
+                        continue
+                    jogo = Jogo.query.filter_by(api_id=f["fixture"]["id"]).first()
+                    if jogo and jogo.grupo != grupo:
+                        jogo.grupo = grupo
+                        atualizados += 1
+
+            db.session.commit()
+            print(f"[popular_grupos] {comp.nome}: {atualizados} grupos atualizados ✅")
+
+    threading.Thread(target=job, daemon=True).start()
+    return jsonify({"sucesso": True, "competicao": comp.nome, "mensagem": f"⏳ Populando grupos em background. Veja logs."})
+
