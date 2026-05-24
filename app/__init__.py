@@ -8,43 +8,6 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 
-
-# ── Emojis de bandeira por país ──────────────────────────────
-FLAG_EMOJIS = {
-    "Brazil": "🇧🇷", "Argentina": "🇦🇷", "France": "🇫🇷", "Germany": "🇩🇪",
-    "Spain": "🇪🇸", "England": "󠁧󠁢󠁥󠁮󠁧󠁿", "Portugal": "🇵🇹", "Italy": "🇮🇹",
-    "Netherlands": "🇳🇱", "Belgium": "🇧🇪", "Croatia": "🇭🇷", "Uruguay": "🇺🇾",
-    "Colombia": "🇨🇴", "Mexico": "🇲🇽", "Japan": "🇯🇵", "South Korea": "🇰🇷",
-    "Korea Republic": "🇰🇷", "Australia": "🇦🇺", "USA": "🇺🇸", "United States": "🇺🇸",
-    "Canada": "🇨🇦", "Morocco": "🇲🇦", "Senegal": "🇸🇳", "Nigeria": "🇳🇬",
-    "Ghana": "🇬🇭", "Cameroon": "🇨🇲", "South Africa": "🇿🇦", "Egypt": "🇪🇬",
-    "Tunisia": "🇹🇳", "Algeria": "🇩🇿", "Ivory Coast": "🇨🇮", "DR Congo": "🇨🇩",
-    "Saudi Arabia": "🇸🇦", "Iran": "🇮🇷", "IR Iran": "🇮🇷", "Qatar": "🇶🇦",
-    "United Arab Emirates": "🇦🇪", "Japan": "🇯🇵", "China": "🇨🇳",
-    "Switzerland": "🇨🇭", "Denmark": "🇩🇰", "Sweden": "🇸🇪", "Norway": "🇳🇴",
-    "Poland": "🇵🇱", "Serbia": "🇷🇸", "Turkey": "🇹🇷", "Ukraine": "🇺🇦",
-    "Russia": "🇷🇺", "Czech Republic": "🇨🇿", "Hungary": "🇭🇺", "Romania": "🇷🇴",
-    "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "Wales": "🏴󠁧󠁢󠁷󠁬󠁳󠁿", "Northern Ireland": "󠁧󠁢󠁮󠁩󠁲󠁿🇬🇧",
-    "Chile": "🇨🇱", "Peru": "🇵🇪", "Ecuador": "🇪🇨", "Paraguay": "🇵🇾",
-    "Bolivia": "🇧🇴", "Venezuela": "🇻🇪", "Panama": "🇵🇦", "Costa Rica": "🇨🇷",
-    "Honduras": "🇭🇳", "El Salvador": "🇸🇻", "Guatemala": "🇬🇹", "Haiti": "🇭🇹",
-    "Jamaica": "🇯🇲", "Trinidad and Tobago": "🇹🇹", "Trinidad & Tobago": "🇹🇹",
-    "Greece": "🇬🇷", "Austria": "🇦🇹", "Finland": "🇫🇮", "Slovakia": "🇸🇰",
-    "Slovenia": "🇸🇮", "Albania": "🇦🇱", "North Macedonia": "🇲🇰", "Kosovo": "🇽🇰",
-    "Bosnia and Herzegovina": "🇧🇦", "Bosnia": "🇧🇦", "Montenegro": "🇲🇪",
-    "Israel": "🇮🇱", "Lebanon": "🇱🇧", "Jordan": "🇯🇴", "Iraq": "🇮🇶",
-    "Palestine": "🇵🇸", "Kuwait": "🇰🇼", "Oman": "🇴🇲", "Bahrain": "🇧🇭",
-    "New Zealand": "🇳🇿", "Senegal": "🇸🇳", "Mali": "🇲🇱", "Togo": "🇹🇬",
-    "Rwanda": "🇷🇼", "Uganda": "🇺🇬", "Kenya": "🇰🇪", "Zimbabwe": "🇿🇼",
-    "Zambia": "🇿🇲", "Mozambique": "🇲🇿", "Angola": "🇦🇴", "Ethiopia": "🇪🇹",
-    "Sudan": "🇸🇩", "Cabo Verde": "🇨🇻", "Cape Verde": "🇨🇻",
-    "Argentina": "🇦🇷", "Ireland": "🇮🇪", "Republic of Ireland": "🇮🇪",
-}
-
-def flag_emoji(nome_pais):
-    """Retorna emoji de bandeira para seleções nacionais."""
-    return FLAG_EMOJIS.get(nome_pais, "")
-
 # ──────────────────────────────────────────────
 # Seleções nacionais conhecidas na API Football
 # (nomes em inglês, como vêm da API)
@@ -181,21 +144,29 @@ def create_app():
             return str(data).replace('T', ' ')[:16]
         return data_br.strftime('%d/%m às %H:%M')
 
-    # ── Filtro sort_rodadas (ordena rodadas numéricas e textuais) ──
+    # ── Filtro sort_rodadas (ordena rodadas: numéricas por número, textuais alfabético) ──
     def sort_rodadas(rodadas):
-        """Ordena rodadas: numéricas primeiro (por número), textuais depois (alfabético)."""
         def key(r):
-            try:
-                return (0, int(str(r)))
-            except (ValueError, TypeError):
-                return (1, str(r))
+            try: return (0, int(str(r)))
+            except: return (1, str(r))
         return sorted(rodadas, key=key)
     app.jinja_env.filters['sort_rodadas'] = sort_rodadas
+
+    # ── Filtro timestamp_to_date (ms → dd/mm às HH:MM) ──
+    def timestamp_to_date(ts):
+        if not ts: return '—'
+        try:
+            from datetime import datetime
+            import pytz
+            dt = datetime.fromtimestamp(int(ts), tz=pytz.timezone('America/Sao_Paulo'))
+            return dt.strftime('%d/%m às %H:%M')
+        except:
+            return '—'
+    app.jinja_env.filters['timestamp_to_date'] = timestamp_to_date
 
     # ── Globals do Jinja2 (disponíveis em todos os templates) ──
     app.jinja_env.globals['eh_selecao'] = eh_selecao
     app.jinja_env.globals['traduzir_pais'] = traduzir_pais
-    app.jinja_env.globals['flag_emoji'] = flag_emoji
 
     return app
 

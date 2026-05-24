@@ -85,10 +85,11 @@
                         <th style="text-align: left; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_participante">PARTICIPANTE</th>
                         <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_pontos">PONTOS</th>
                         {% for c in criterios %}
-                            {% if c == 'placares_exatos' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Placares Exatos">🎯 Exatos</th>
-                            {% elif c == 'acertos_resultado' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Acertos de Resultado">✅ Result.</th>
-                            {% elif c == 'gols_vencedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Gols do Vencedor">⚽ Venc.</th>
-                            {% elif c == 'gols_perdedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Gols do Perdedor">❌ Perd.</th>
+                            {% if c == 'placares_exatos' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Placares Exatos">🎯 Exatos</th>
+                            {% elif c == 'acertos_resultado' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Acertos de Resultado">✅ Result.</th>
+                            {% elif c == 'gols_vencedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Gols do Vencedor">⚽ Venc.</th>
+                            {% elif c == 'gols_perdedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Gols do Perdedor">❌ Perd.</th>
+                            {% elif c == 'palpite_antigo' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Palpite mais antigo vence">⏱️ 1º Palpite</th>
                             {% endif %}
                         {% endfor %}
                     </tr>
@@ -96,7 +97,11 @@
                 <tbody>
                     {% for item in ranking %}
                     {% set part = item.participante %}
-                    <tr style="border-bottom: 1px solid var(--cinza-medio);">
+                    {% set prox = ranking[loop.index] if loop.index < ranking|length else none %}
+                    {% set prev = ranking[loop.index - 2] if loop.index > 1 else none %}
+                    {% set empatado_acima = prev and prev.pontos == item.pontos %}
+                    <tr style="border-bottom: 1px solid var(--cinza-medio);
+                               {% if empatado_acima %}border-left: 3px solid var(--amarelo);{% endif %}">
                         <td style="text-align: center; padding: 1rem; font-weight: 600; font-size: 1.1rem;">
                             {% if loop.index == 1 %}
                                 <span style="color: var(--amarelo);">🥇</span>
@@ -137,10 +142,31 @@
                             </div>
                         </td>
                         {% for c in criterios %}
-                            {% if c == 'placares_exatos' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.placares_exatos }}</td>
-                            {% elif c == 'acertos_resultado' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.acertos_resultado }}</td>
-                            {% elif c == 'gols_vencedor' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_vencedor }}</td>
-                            {% elif c == 'gols_perdedor' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_perdedor }}</td>
+                            {% if c == 'placares_exatos' %}
+                                <td style="text-align: center; padding: 1rem;
+                                    {% if empatado_acima and item.placares_exatos != prev.placares_exatos %}color: var(--verde); font-weight: 700;
+                                    {% else %}color: var(--texto-fraco);{% endif %}">
+                                    {{ item.placares_exatos }}
+                                </td>
+                            {% elif c == 'acertos_resultado' %}
+                                <td style="text-align: center; padding: 1rem;
+                                    {% if empatado_acima and item.acertos_resultado != prev.acertos_resultado %}color: var(--verde); font-weight: 700;
+                                    {% else %}color: var(--texto-fraco);{% endif %}">
+                                    {{ item.acertos_resultado }}
+                                </td>
+                            {% elif c == 'gols_vencedor' %}
+                                <td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_vencedor }}</td>
+                            {% elif c == 'gols_perdedor' %}
+                                <td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_perdedor }}</td>
+                            {% elif c == 'palpite_antigo' %}
+                                <td style="text-align: center; padding: 1rem; color: var(--texto-fraco); font-size: 0.8rem;"
+                                    title="Quanto antes, melhor posição em caso de empate total">
+                                    {% if item.timestamp_min %}
+                                        {{ (item.timestamp_min / 1000)|int|timestamp_to_date }}
+                                    {% else %}
+                                        <span style="color: #e74c3c;" title="Ainda não palpitou">Sem palpite</span>
+                                    {% endif %}
+                                </td>
                             {% endif %}
                         {% endfor %}
                     </tr>
@@ -148,12 +174,29 @@
                 </tbody>
             </table></div>
             <!-- Legenda critérios de desempate -->
-            <div style="padding: 0.8rem 1rem; background: var(--cinza-medio); font-size: 0.8rem; color: var(--texto-fraco);">
-                🔀 Desempate:
+            <div style="padding: 1rem 1.2rem; background: var(--cinza-medio); font-size: 0.82rem; color: var(--texto-fraco);">
+                <span style="font-weight: 600; margin-right: 0.5rem;">🔀 Em caso de empate:</span>
                 {% for c in criterios %}
-                    {% if c == 'placares_exatos' %}🎯 Placares exatos{% elif c == 'acertos_resultado' %}✅ Acertos de resultado{% elif c == 'palpite_antigo' %}⏱️ Palpite mais antigo{% endif %}
-                    {% if not loop.last %} → {% endif %}
+                    <span style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                        <span style="background: var(--texto-fraco); color: var(--fundo); border-radius: 50%;
+                                     width: 16px; height: 16px; display: inline-flex; align-items: center;
+                                     justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0;">
+                            {{ loop.index }}
+                        </span>
+                        {% if c == 'placares_exatos' %}🎯 Mais placares exatos
+                        {% elif c == 'acertos_resultado' %}✅ Mais acertos de resultado
+                        {% elif c == 'gols_vencedor' %}⚽ Mais gols do vencedor
+                        {% elif c == 'gols_perdedor' %}❌ Mais gols do perdedor
+                        {% elif c == 'palpite_antigo' %}⏱️ Palpite mais antigo
+                        {% endif %}
+                    </span>
+                    {% if not loop.last %}
+                        <span style="margin: 0 0.4rem; color: var(--cinza-escuro);">›</span>
+                    {% endif %}
                 {% endfor %}
+                <span style="display: block; margin-top: 0.4rem; font-size: 0.75rem; opacity: 0.7;">
+                    💡 Borda amarela = empatado em pontos com o jogador acima
+                </span>
             </div>
         </div>
 
@@ -298,23 +341,12 @@
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem;">
                             <!-- LOGO/BANDEIRA -->
                           <!-- TIME CASA -->
-                            {% set flag_c = flag_emoji(jogo.time_casa.nome) %}
-                            {% if flag_c %}
-                                <span style="font-size: 3.5rem; line-height: 1;">{{ flag_c }}</span>
-                            {% elif jogo.time_casa.logo_url %}
-                                <img src="{{ jogo.time_casa.logo_url }}"
-                                    alt="{{ jogo.time_casa.nome }}"
-                                    style="width: 60px; height: 60px; object-fit: contain;"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div style="display:none; width:56px; height:56px; border-radius:50%; background:var(--cinza-medio);
-                                            align-items:center; justify-content:center; font-size:1.1rem; font-weight:700;">
-                                    {{ jogo.time_casa.nome[:3]|upper }}
-                                </div>
+                            {% if jogo.time_casa.logo_url %}
+                            <img src="{{ jogo.time_casa.logo_url }}" 
+                                alt="{{ jogo.time_casa.nome }}"
+                                style="width: 60px; height: 60px; object-fit: contain;">
                             {% else %}
-                                <div style="width:56px; height:56px; border-radius:50%; background:var(--cinza-medio);
-                                            display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:700;">
-                                    {{ jogo.time_casa.nome[:3]|upper }}
-                                </div>
+                            <span style="font-size: 2.5rem;">⚽</span>
                             {% endif %}
 
                             
@@ -363,23 +395,12 @@
                         <!-- TIME FORA -->
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem;">
                             <!-- LOGO TIME FORA -->
-                            {% set flag_f = flag_emoji(jogo.time_fora.nome) %}
-                            {% if flag_f %}
-                                <span style="font-size: 3.5rem; line-height: 1;">{{ flag_f }}</span>
-                            {% elif jogo.time_fora.logo_url %}
-                                <img src="{{ jogo.time_fora.logo_url }}"
-                                    alt="{{ jogo.time_fora.nome }}"
-                                    style="width: 60px; height: 60px; object-fit: contain;"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div style="display:none; width:56px; height:56px; border-radius:50%; background:var(--cinza-medio);
-                                            align-items:center; justify-content:center; font-size:1.1rem; font-weight:700;">
-                                    {{ jogo.time_fora.nome[:3]|upper }}
-                                </div>
+                            {% if jogo.time_fora.logo_url %}
+                            <img src="{{ jogo.time_fora.logo_url }}" 
+                                alt="{{ jogo.time_fora.nome }}"
+                                style="width: 60px; height: 60px; object-fit: contain;">
                             {% else %}
-                                <div style="width:56px; height:56px; border-radius:50%; background:var(--cinza-medio);
-                                            display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:700;">
-                                    {{ jogo.time_fora.nome[:3]|upper }}
-                                </div>
+                            <span style="font-size: 2.5rem;">⚽</span>
                             {% endif %}
                                                         
                             <!-- NOME DO TIME (TRADUZIDO SE FOR SELEÇÃO) -->
@@ -600,10 +621,11 @@
             <!-- Time Casa -->
             <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
                         background: {% if encerrado and jogo.gols_casa > jogo.gols_fora %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
-                {% set fkc = flag_emoji(jogo.time_casa.nome) %}
-                {% if fkc %}<span style="font-size:1.4rem;">{{ fkc }}</span>
-                {% elif jogo.time_casa.logo_url %}<img src="{{ jogo.time_casa.logo_url }}" style="width:22px; height:22px; object-fit:contain;" onerror="this.style.display='none'">
-                {% else %}<span style="font-size:0.75rem; font-weight:700;">{{ jogo.time_casa.nome[:3]|upper }}</span>{% endif %}
+                {% if jogo.time_casa.logo_url %}
+                    <img src="{{ jogo.time_casa.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
+                {% else %}
+                    <span style="font-size:1rem;">⚽</span>
+                {% endif %}
                 <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
                     {{ traduzir_pais(jogo.time_casa.nome) if eh_selecao(jogo.time_casa.nome) else jogo.time_casa.nome }}
                 </span>
@@ -619,10 +641,11 @@
             <!-- Time Fora -->
             <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
                         background: {% if encerrado and jogo.gols_fora > jogo.gols_casa %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
-                {% set fkf = flag_emoji(jogo.time_fora.nome) %}
-                {% if fkf %}<span style="font-size:1.4rem;">{{ fkf }}</span>
-                {% elif jogo.time_fora.logo_url %}<img src="{{ jogo.time_fora.logo_url }}" style="width:22px; height:22px; object-fit:contain;" onerror="this.style.display='none'">
-                {% else %}<span style="font-size:0.75rem; font-weight:700;">{{ jogo.time_fora.nome[:3]|upper }}</span>{% endif %}
+                {% if jogo.time_fora.logo_url %}
+                    <img src="{{ jogo.time_fora.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
+                {% else %}
+                    <span style="font-size:1rem;">⚽</span>
+                {% endif %}
                 <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
                     {{ traduzir_pais(jogo.time_fora.nome) if eh_selecao(jogo.time_fora.nome) else jogo.time_fora.nome }}
                 </span>

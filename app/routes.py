@@ -2545,6 +2545,32 @@ def migrar_grupo_e_logos():
 
     return jsonify({'sucesso': True, **resultados})
 
+@bp.route('/proxy/logo/<int:team_api_id>')
+def proxy_logo(team_api_id):
+    import requests
+    from flask import Response
+    
+    # Cache simples em memória (evita buscar toda hora)
+    cache_key = f'logo_{team_api_id}'
+    if not hasattr(proxy_logo, '_cache'):
+        proxy_logo._cache = {}
+    
+    if cache_key in proxy_logo._cache:
+        return Response(proxy_logo._cache[cache_key], mimetype='image/png')
+    
+    try:
+        url = f"https://media.api-sports.io/football/teams/{team_api_id}.png"
+        r = requests.get(url, timeout=5)
+        if r.status_code == 200:
+            proxy_logo._cache[cache_key] = r.content
+            return Response(r.content, mimetype='image/png')
+    except Exception:
+        pass
+    
+    return '', 404
+
+
+
 @bp.route('/migrar_reset_senha_render')
 def migrar_reset_senha_render():
     from sqlalchemy import text, inspect

@@ -19,10 +19,10 @@ class Jogo(db.Model):
     api_id = db.Column(db.Integer, unique=True, nullable=False)
     competicao_id = db.Column(db.Integer, db.ForeignKey('competicao.id'), nullable=False)
     rodada = db.Column(db.String(50), nullable=False)
-    grupo = db.Column(db.String(50), nullable=True, default='')
+    grupo = db.Column(db.String(50), nullable=True, default='')  # Fase de grupos (ex: "Group A")
     time_casa_id = db.Column(db.Integer, db.ForeignKey('time.id'), nullable=False)
     time_fora_id = db.Column(db.Integer, db.ForeignKey('time.id'), nullable=False)
-    competicao = db.relationship('Competicao', backref='jogos')  # ADICIONA ESTA LINHA
+    competicao = db.relationship('Competicao', backref='jogos')
     data = db.Column(db.String(50), nullable=True)
     gols_casa = db.Column(db.Integer, nullable=True)
     gols_fora = db.Column(db.Integer, nullable=True)
