@@ -203,19 +203,27 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 data-i18n="bd_meus_palpites_h2">Meus Palpites</h2>
             
-            <div class="filtros-container" style="display: flex; gap: 1rem;" >
+            <div class="filtros-container" style="display: flex; gap: 0.75rem; flex-wrap: wrap;" >
+                <!-- Ordenar Por -->
+                <select id="ordenar-por" onchange="ordenarJogos()"
+                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio);
+                           border-radius: 6px; color: var(--texto); font-size: 0.9rem;">
+                    <option value="data">📅 Por data</option>
+                    <option value="grupo">🗂️ Por grupo</option>
+                </select>
+
                 <!-- Filtro Status -->
-                <select id="filtro-status" onchange="filtrarJogos()" 
-                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                <select id="filtro-status" onchange="filtrarJogos()"
+                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio);
                            border-radius: 6px; color: var(--texto); font-size: 0.9rem;">
                     <option value="todos">Todos os jogos</option>
                     <option value="abertos">Pode palpitar</option>
                     <option value="encerrados">Já encerrados</option>
                 </select>
-                
+
                 <!-- Filtro Rodada -->
                 <select id="filtro-rodada" onchange="filtrarJogos()"
-                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio);
                            border-radius: 6px; color: var(--texto); font-size: 0.9rem;">
                     <option value="">Todas as rodadas</option>
                     {% set rodadas = [] %}
@@ -229,10 +237,10 @@
                         <option value="{{ rodada }}">{%- if rodada|string|int(-1) >= 0 %}Rodada {{ rodada }}{%- else %}{{ rodada }}{%- endif %}</option>
                     {% endfor %}
                 </select>
-                
-                <!-- Filtro Grupo/Fase -->
+
+                <!-- Filtro Grupo -->
                 <select id="filtro-grupo" onchange="filtrarJogos()"
-                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio);
                            border-radius: 6px; color: var(--texto); font-size: 0.9rem;">
                     <option value="">Todos os grupos</option>
                     {% set grupos_vistos = [] %}
@@ -255,34 +263,48 @@
         
         <div style="display: grid; gap: 1rem;" id="lista-jogos">
             {% for jogo in jogos %}
+            {# Derivar informações do jogo #}
             {% set rodada_label = jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') %}
             {% set grupo_label = jogo.grupo if jogo.grupo else '' %}
-            {% set fase_knockout = jogo.rodada in ['Round of 16', 'Quarter-finals', 'Semi-finals', '3rd Place Final', 'Final', 'Oitavas de Final', 'Quartas de Final', 'Semifinais', 'Final'] %}
+            {% set fase_knockout = jogo.rodada in ['Round of 16', 'Quarter-finals', 'Semi-finals', '3rd Place Final', 'Final'] %}
+            {% set eh_fase_grupos = 'Group Stage' in jogo.rodada or 'group' in jogo.rodada|lower %}
+            {# Rótulo do badge: grupo > fase > rodada formatada #}
+            {% if grupo_label %}
+                {% set badge_texto = grupo_label %}
+                {% set badge_cor = 'var(--verde)' %}
+                {% set badge_txt_cor = '#000' %}
+            {% elif fase_knockout %}
+                {% set mapa_fase = {'Round of 16': 'Oitavas', 'Quarter-finals': 'Quartas de Final', 'Semi-finals': 'Semifinal', '3rd Place Final': '3º Lugar', 'Final': 'Final'} %}
+                {% set badge_texto = '🏆 ' + (mapa_fase[jogo.rodada] if jogo.rodada in mapa_fase else jogo.rodada) %}
+                {% set badge_cor = 'var(--amarelo)' %}
+                {% set badge_txt_cor = '#000' %}
+            {% elif eh_fase_grupos %}
+                {% set badge_texto = 'Fase de Grupos • Rod. ' + rodada_label %}
+                {% set badge_cor = 'var(--cinza-medio)' %}
+                {% set badge_txt_cor = 'var(--texto-fraco)' %}
+            {% else %}
+                {% set badge_texto = 'Rodada ' + rodada_label if rodada_label|string|int(-1) >= 0 else rodada_label %}
+                {% set badge_cor = 'var(--cinza-medio)' %}
+                {% set badge_txt_cor = 'var(--texto-fraco)' %}
+            {% endif %}
                 <div class="card jogo-item"
                      data-status="{% if jogo.gols_casa is not none %}encerrados{% else %}abertos{% endif %}"
                      data-rodada="{{ rodada_label }}"
                      data-grupo="{{ grupo_label }}"
+                     data-dataiso="{{ jogo.data or '' }}"
+                     data-rodada-full="{{ jogo.rodada }}"
                      style="margin-bottom: 1rem;">
                     <!-- CABEÇALHO DO JOGO -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; 
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;
                                 padding-bottom: 0.8rem; border-bottom: 1px solid var(--cinza-medio);">
                         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                             <span style="font-size: 0.85rem; color: var(--texto-fraco); font-weight: 600;">
                                 {% if jogo.competicao %}{{ jogo.competicao.nome }}{% endif %}
                             </span>
-                            {% if grupo_label %}
-                                <span style="background: var(--verde); color: #000; font-size: 0.7rem; font-weight: 700;
-                                             padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px;">
-                                    {{ grupo_label }}
-                                </span>
-                            {% elif fase_knockout %}
-                                {% set fase_pt = {'Round of 16': 'Oitavas', 'Quarter-finals': 'Quartas de Final',
-                                                   'Semi-finals': 'Semifinal', '3rd Place Final': '3º Lugar', 'Final': 'Final'}[jogo.rodada] if jogo.rodada in ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'] else jogo.rodada %}
-                                <span style="background: var(--amarelo); color: #000; font-size: 0.7rem; font-weight: 700;
-                                             padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px;">
-                                    🏆 {{ fase_pt }}
-                                </span>
-                            {% endif %}
+                            <span style="background: {{ badge_cor }}; color: {{ badge_txt_cor }}; font-size: 0.7rem;
+                                         font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px;">
+                                {{ badge_texto }}
+                            </span>
                         </div>
                         <div style="font-size: 0.85rem; color: var(--texto-fraco);">
                             {% if jogo.data %}{{ jogo.data|brasilia }}{% endif %}
@@ -563,110 +585,132 @@
         </div>
     </div>
 
-    <!-- Tab: Chaveamento -->
+    <!-- Tab: Chaveamento (Copa do Mundo / torneios com fases eliminatórias) -->
     {% set fases_ko = ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'] %}
     {% set jogos_ko = jogos|selectattr('rodada', 'in', fases_ko)|list %}
     {% if jogos_ko|length > 0 %}
     <div id="content-chaveamento" style="display: none;">
         <h2 style="margin-bottom: 1.5rem;">🏆 Chaveamento</h2>
 
-        {# Macro para renderizar um card de jogo no chaveamento #}
-        {% macro card_ko(jogo) %}
+        {% macro card_jogo_ko(jogo) %}
         {% set encerrado = jogo.gols_casa is not none %}
-        {% set ph_casa = jogo.time_casa.api_id >= 9000000 %}
-        {% set ph_fora = jogo.time_fora.api_id >= 9000000 %}
-        <div style="background:var(--cinza-medio);border-radius:8px;overflow:hidden;min-width:190px;max-width:230px;flex-shrink:0;">
-            {# Time Casa #}
-            <div style="display:flex;align-items:center;gap:0.5rem;padding:0.55rem 0.75rem;
-                        background:{% if encerrado and jogo.gols_casa > jogo.gols_fora %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
-                {% if ph_casa %}
-                    <span style="font-size:1.1rem;opacity:0.4;">❓</span>
-                    <span style="font-size:0.82rem;font-style:italic;color:var(--texto-fraco);flex:1;">{{ jogo.time_casa.nome }}</span>
+        <div style="background: var(--cinza-medio); border-radius: 8px; overflow: hidden; min-width: 180px; max-width: 220px;">
+            <!-- Time Casa -->
+            <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
+                        background: {% if encerrado and jogo.gols_casa > jogo.gols_fora %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
+                {% if jogo.time_casa.logo_url %}
+                    <img src="{{ jogo.time_casa.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
                 {% else %}
-                    {% set flag_c = flag_emoji(jogo.time_casa.nome) %}
-                    {% if flag_c %}<span style="font-size:1.3rem;line-height:1;">{{ flag_c }}</span>
-                    {% elif jogo.time_casa.logo_url %}<img src="{{ jogo.time_casa.logo_url }}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">
-                    {% else %}<span style="font-size:0.7rem;font-weight:700;background:var(--cinza);padding:2px 4px;border-radius:3px;">{{ jogo.time_casa.nome[:3]|upper }}</span>{% endif %}
-                    <span style="font-size:0.85rem;font-weight:600;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
-                        {{ traduzir_pais(jogo.time_casa.nome) if eh_selecao(jogo.time_casa.nome) else jogo.time_casa.nome }}
-                    </span>
+                    <span style="font-size:1rem;">⚽</span>
                 {% endif %}
+                <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+                    {{ traduzir_pais(jogo.time_casa.nome) if eh_selecao(jogo.time_casa.nome) else jogo.time_casa.nome }}
+                </span>
                 {% if encerrado %}
-                <span style="font-size:1rem;font-weight:700;min-width:18px;text-align:right;
-                             color:{% if jogo.gols_casa > jogo.gols_fora %}var(--verde){% else %}var(--texto-fraco){% endif %};">
+                <span style="font-size: 0.95rem; font-weight: 700; min-width: 18px; text-align:right;
+                             color: {% if jogo.gols_casa > jogo.gols_fora %}var(--verde){% else %}var(--texto-fraco){% endif %};">
                     {{ jogo.gols_casa }}
-                </span>{% endif %}
-            </div>
-            {# Divisor #}
-            <div style="height:1px;background:rgba(255,255,255,0.08);"></div>
-            {# Time Fora #}
-            <div style="display:flex;align-items:center;gap:0.5rem;padding:0.55rem 0.75rem;
-                        background:{% if encerrado and jogo.gols_fora > jogo.gols_casa %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
-                {% if ph_fora %}
-                    <span style="font-size:1.1rem;opacity:0.4;">❓</span>
-                    <span style="font-size:0.82rem;font-style:italic;color:var(--texto-fraco);flex:1;">{{ jogo.time_fora.nome }}</span>
-                {% else %}
-                    {% set flag_f = flag_emoji(jogo.time_fora.nome) %}
-                    {% if flag_f %}<span style="font-size:1.3rem;line-height:1;">{{ flag_f }}</span>
-                    {% elif jogo.time_fora.logo_url %}<img src="{{ jogo.time_fora.logo_url }}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">
-                    {% else %}<span style="font-size:0.7rem;font-weight:700;background:var(--cinza);padding:2px 4px;border-radius:3px;">{{ jogo.time_fora.nome[:3]|upper }}</span>{% endif %}
-                    <span style="font-size:0.85rem;font-weight:600;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
-                        {{ traduzir_pais(jogo.time_fora.nome) if eh_selecao(jogo.time_fora.nome) else jogo.time_fora.nome }}
-                    </span>
+                </span>
                 {% endif %}
-                {% if encerrado %}
-                <span style="font-size:1rem;font-weight:700;min-width:18px;text-align:right;
-                             color:{% if jogo.gols_fora > jogo.gols_casa %}var(--verde){% else %}var(--texto-fraco){% endif %};">
-                    {{ jogo.gols_fora }}
-                </span>{% endif %}
             </div>
-            {# Data ou Pendente #}
+            <!-- Divisor -->
+            <div style="height: 1px; background: var(--cinza);"></div>
+            <!-- Time Fora -->
+            <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
+                        background: {% if encerrado and jogo.gols_fora > jogo.gols_casa %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
+                {% if jogo.time_fora.logo_url %}
+                    <img src="{{ jogo.time_fora.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
+                {% else %}
+                    <span style="font-size:1rem;">⚽</span>
+                {% endif %}
+                <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+                    {{ traduzir_pais(jogo.time_fora.nome) if eh_selecao(jogo.time_fora.nome) else jogo.time_fora.nome }}
+                </span>
+                {% if encerrado %}
+                <span style="font-size: 0.95rem; font-weight: 700; min-width: 18px; text-align:right;
+                             color: {% if jogo.gols_fora > jogo.gols_casa %}var(--verde){% else %}var(--texto-fraco){% endif %};">
+                    {{ jogo.gols_fora }}
+                </span>
+                {% endif %}
+            </div>
             {% if not encerrado %}
-            <div style="text-align:center;padding:0.3rem 0.5rem;font-size:0.72rem;color:var(--texto-fraco);border-top:1px solid rgba(255,255,255,0.05);">
-                {% if jogo.data %}{{ jogo.data|brasilia }}{% else %}Data a definir{% endif %}
+            <div style="text-align:center; padding: 0.3rem; font-size: 0.7rem; color: var(--texto-fraco);">
+                {{ jogo.data|brasilia }}
             </div>
             {% endif %}
         </div>
         {% endmacro %}
 
-        {# Legenda de fases #}
-        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:center;">
+        {% set oitavas   = jogos|selectattr('rodada', 'equalto', 'Round of 16')|list %}
+        {% set quartas   = jogos|selectattr('rodada', 'equalto', 'Quarter-finals')|list %}
+        {% set semis     = jogos|selectattr('rodada', 'equalto', 'Semi-finals')|list %}
+        {% set terceiro  = jogos|selectattr('rodada', 'equalto', '3rd Place Final')|list %}
+        {% set final_j   = jogos|selectattr('rodada', 'equalto', 'Final')|list %}
+
+        <!-- Legenda das fases -->
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
             {% for fase, label, cor in [
-                ('Round of 16','Oitavas','var(--cinza-medio)'),
-                ('Quarter-finals','Quartas','#1a4a6e'),
-                ('Semi-finals','Semifinal','#4a3a00'),
-                ('Final','Final','#2a4a00')
+                ('Round of 16',    'Oitavas de Final',   'var(--cinza-medio)'),
+                ('Quarter-finals', 'Quartas de Final',   'var(--cinza-medio)'),
+                ('Semi-finals',    'Semifinal',           'var(--amarelo)'),
+                ('Final',          'Final',               'var(--verde)')
             ] %}
-            {% set count = jogos|selectattr('rodada','equalto',fase)|list|length %}
-            {% if count > 0 %}
-            <span style="background:{{ cor }};color:var(--texto);padding:0.25rem 0.7rem;border-radius:4px;font-size:0.8rem;font-weight:600;">
-                {{ count }}× {{ label }}
+            {% if jogos|selectattr('rodada','equalto',fase)|list|length > 0 %}
+            <span style="background: {{ cor }}; color: {% if cor == 'var(--verde)' or cor == 'var(--amarelo)' %}#000{% else %}var(--texto){% endif %};
+                         padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                {{ jogos|selectattr('rodada','equalto',fase)|list|length }}x {{ label }}
             </span>
             {% endif %}
             {% endfor %}
-            <span style="font-size:0.75rem;color:var(--texto-fraco);margin-left:0.5rem;">
-                ❓ = time ainda não definido
-            </span>
         </div>
 
-        {# Seções por fase #}
-        {% for fase, label, cor_label in [
-            ('Round of 16',     'OITAVAS DE FINAL',  'var(--texto-fraco)'),
-            ('Quarter-finals',  'QUARTAS DE FINAL',  'var(--amarelo)'),
-            ('Semi-finals',     'SEMIFINAIS',         'var(--amarelo)'),
-            ('3rd Place Final', '3º LUGAR',           'var(--texto-fraco)'),
-            ('Final',           '🏆 FINAL',           'var(--verde)')
-        ] %}
-        {% set jogos_fase = jogos|selectattr('rodada','equalto',fase)|list %}
-        {% if jogos_fase|length > 0 %}
-        <div style="margin-bottom:2rem;">
-            <h3 style="color:{{ cor_label }};font-size:0.82rem;letter-spacing:1.5px;margin-bottom:0.9rem;font-weight:700;">{{ label }}</h3>
-            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
-                {% for jogo in jogos_fase %}{{ card_ko(jogo) }}{% endfor %}
+        <!-- OITAVAS -->
+        {% if oitavas|length > 0 %}
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">OITAVAS DE FINAL</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                {% for jogo in oitavas %}{{ card_jogo_ko(jogo) }}{% endfor %}
             </div>
         </div>
         {% endif %}
-        {% endfor %}
+
+        <!-- QUARTAS -->
+        {% if quartas|length > 0 %}
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">QUARTAS DE FINAL</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                {% for jogo in quartas %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- SEMIFINAIS -->
+        {% if semis|length > 0 %}
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">SEMIFINAIS</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                {% for jogo in semis %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 3º LUGAR + FINAL -->
+        {% if terceiro|length > 0 or final_j|length > 0 %}
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
+            {% if terceiro|length > 0 %}
+            <div>
+                <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">3º LUGAR</h3>
+                {% for jogo in terceiro %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+            {% endif %}
+            {% if final_j|length > 0 %}
+            <div>
+                <h3 style="color: var(--amarelo); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">🏆 FINAL</h3>
+                {% for jogo in final_j %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
 
     </div>
     {% endif %}
@@ -1124,44 +1168,52 @@ window.addEventListener('DOMContentLoaded', function() {
 
 function filtrarJogos() {
     const filtroStatus = document.getElementById('filtro-status').value;
-    const filtroRodada = document.getElementById('filtro-rodada').value;
+    const filtroRodada = document.getElementById('filtro-rodada') ? document.getElementById('filtro-rodada').value : '';
     const filtroGrupo  = document.getElementById('filtro-grupo') ? document.getElementById('filtro-grupo').value : '';
     const jogos = document.querySelectorAll('.jogo-item');
-    
+
     jogos.forEach(jogo => {
         let mostrar = true;
-        
-        // Filtro de status
-        if (filtroStatus !== 'todos' && jogo.dataset.status !== filtroStatus) {
-            mostrar = false;
-        }
-        
-        // Filtro de rodada
-        if (filtroRodada !== '' && jogo.dataset.rodada !== filtroRodada) {
-            mostrar = false;
-        }
-        
-        // Filtro de grupo/fase
+
+        if (filtroStatus !== 'todos' && jogo.dataset.status !== filtroStatus) mostrar = false;
+        if (filtroRodada !== '' && jogo.dataset.rodada !== filtroRodada) mostrar = false;
+
         if (filtroGrupo !== '') {
             if (filtroGrupo === '__knockout__') {
-                const fasesKnockout = ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'];
-                // data-rodada para fases eliminatórias fica como o rodada original
-                const rodadaOriginal = jogo.dataset.rodadaOriginal || jogo.dataset.rodada;
-                if (!fasesKnockout.some(f => rodadaOriginal.includes(f) || jogo.dataset.grupo === '')) {
-                    mostrar = false;
-                }
-                // Mostra apenas jogos sem grupo (= knockout)
-                if (jogo.dataset.grupo && jogo.dataset.grupo !== '') mostrar = false;
-                // mas se tem rodada de knockout deixa passar
-                const fasesKO = ['Round of 16','Quarter-finals','Semi-finals','3rd Place','Final'];
-                if (fasesKO.some(f => (jogo.dataset.rodadaFull||'').includes(f))) mostrar = true;
+                const fasesKO = ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'];
+                const rodada = jogo.dataset.rodadaFull || jogo.dataset.rodada || '';
+                const ehKO = fasesKO.some(f => rodada.includes(f));
+                if (!ehKO) mostrar = false;
             } else {
                 if (jogo.dataset.grupo !== filtroGrupo) mostrar = false;
             }
         }
-        
+
         jogo.style.display = mostrar ? 'block' : 'none';
     });
+}
+
+function ordenarJogos() {
+    const criterio = document.getElementById('ordenar-por').value;
+    const lista = document.getElementById('lista-jogos');
+    if (!lista) return;
+
+    const items = Array.from(lista.querySelectorAll('.jogo-item'));
+
+    items.sort((a, b) => {
+        if (criterio === 'grupo') {
+            const ga = a.dataset.grupo || 'zzz';
+            const gb = b.dataset.grupo || 'zzz';
+            if (ga !== gb) return ga.localeCompare(gb);
+            // Dentro do grupo, ordenar por data
+        }
+        // Por data: usa o atributo data-data se disponível, senão posição original
+        const da = a.dataset.dataiso || a.dataset.data || '';
+        const db = b.dataset.dataiso || b.dataset.data || '';
+        return da.localeCompare(db);
+    });
+
+    items.forEach(item => lista.appendChild(item));
 }
 // RÉPLICA DE PALPITE
 let _replicarPayload = null;
