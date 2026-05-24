@@ -7,6 +7,7 @@ import os
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from functools import wraps
+from app.utils import converter_utc_brasilia
 
 
 def admin_required(f):
@@ -1267,7 +1268,7 @@ def bolao_detalhes(bolao_id):
             detalhes.append({
                 'time_casa': j.time_casa.nome,
                 'time_fora': j.time_fora.nome,
-                'data': j.data[:16] if j.data else '',
+                'data': converter_utc_brasilia(j.data).strftime('%d/%m/%Y às %H:%M') if j.data else '',
                 'gols_casa_real': j.gols_casa,
                 'gols_fora_real': j.gols_fora,
                 'gols_casa_palpite': p.gols_casa_palpite,
@@ -1322,7 +1323,7 @@ def bolao_detalhes(bolao_id):
                          todos_palpites=todos_palpites,
                          ranking=ranking,
                          criterios=criterios,
-                         agora=datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+                         agora=datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'))
 
 
 @bp.route('/salvar_palpite', methods=['POST'])
@@ -1338,13 +1339,16 @@ def salvar_palpite():
     gols_casa = data.get('gols_casa')
     gols_fora = data.get('gols_fora')
     
-    # Verifica se jogo ainda não começou
+    # Verifica se jogo ainda não começou (comparação em UTC para evitar erro de fuso)
     jogo = Jogo.query.get_or_404(jogo_id)
     if jogo.data:
         from datetime import datetime
-        data_str = jogo.data.replace('+00:00', '').replace('Z', '')
-        data_jogo = datetime.strptime(data_str, '%Y-%m-%dT%H:%M:%S')
-        if datetime.now() >= data_jogo:
+        data_str = jogo.data.replace('+00:00', '').replace('Z', '').split('+')[0][:19]
+        try:
+            data_jogo_utc = datetime.strptime(data_str, '%Y-%m-%dT%H:%M:%S')
+        except ValueError:
+            data_jogo_utc = datetime.strptime(data_str[:16], '%Y-%m-%dT%H:%M')
+        if datetime.utcnow() >= data_jogo_utc:
             return jsonify({'erro': 'Jogo já começou! Palpites encerrados.'}), 400
     
     # Gera timestamp preciso (milissegundos)
@@ -2373,13 +2377,16 @@ def replicar_palpite():
     if gols_casa is None or gols_fora is None or not jogo_id:
         return jsonify({'erro': 'Dados incompletos'}), 400
 
-    # Verifica se o jogo ainda está aberto
+    # Verifica se o jogo ainda está aberto (comparação em UTC para evitar erro de fuso)
     jogo = Jogo.query.get_or_404(jogo_id)
     if jogo.data:
         from datetime import datetime
-        data_str = jogo.data.replace('+00:00', '').replace('Z', '')
-        data_jogo = datetime.strptime(data_str, '%Y-%m-%dT%H:%M:%S')
-        if datetime.now() >= data_jogo:
+        data_str = jogo.data.replace('+00:00', '').replace('Z', '').split('+')[0][:19]
+        try:
+            data_jogo_utc = datetime.strptime(data_str, '%Y-%m-%dT%H:%M:%S')
+        except ValueError:
+            data_jogo_utc = datetime.strptime(data_str[:16], '%Y-%m-%dT%H:%M')
+        if datetime.utcnow() >= data_jogo_utc:
             return jsonify({'erro': 'Jogo já começou!'}), 400
 
     # Busca outros bolões do usuário que contenham este jogo
