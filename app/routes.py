@@ -2510,21 +2510,35 @@ def checar_horarios(time_api_id):
     time_db = Time.query.filter_by(api_id=time_api_id).first()
     nome_time = time_db.nome if time_db else f"API ID {time_api_id}"
 
-    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-    r = requests.get(
-        "https://v3.football.api-sports.io/fixtures",
-        headers=headers,
-        params={"team": time_api_id, "season": 2025},
-        timeout=10
-    )
-    jogos_api = {f["fixture"]["id"]: f for f in r.json().get("response", [])}
-
+    # Detecta seasons a partir dos jogos no banco (ex: 2025 e 2026)
     if time_db:
         jogos_banco = Jogo.query.filter(
             (Jogo.time_casa_id == time_db.id) | (Jogo.time_fora_id == time_db.id)
         ).order_by(Jogo.data).all()
     else:
         jogos_banco = []
+
+    seasons = set()
+    for j in jogos_banco:
+        if j.data:
+            try:
+                seasons.add(int(j.data[:4]))
+            except:
+                pass
+    if not seasons:
+        seasons = {2026}
+
+    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+    jogos_api = {}
+    for season in seasons:
+        r = requests.get(
+            "https://v3.football.api-sports.io/fixtures",
+            headers=headers,
+            params={"team": time_api_id, "season": season},
+            timeout=10
+        )
+        for f in r.json().get("response", []):
+            jogos_api[f["fixture"]["id"]] = f
 
     linhas = []
     for j in jogos_banco:
@@ -2589,14 +2603,28 @@ def corrigir_horarios(time_api_id):
     if not time_db:
         return jsonify({"erro": "Time não encontrado no banco"}), 404
 
+    jogos_banco_all = Jogo.query.filter(
+        (Jogo.time_casa_id == time_db.id) | (Jogo.time_fora_id == time_db.id)
+    ).all()
+    seasons = set()
+    for j in jogos_banco_all:
+        if j.data:
+            try: seasons.add(int(j.data[:4]))
+            except: pass
+    if not seasons:
+        seasons = {2026}
+
     headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-    r = requests.get(
-        "https://v3.football.api-sports.io/fixtures",
-        headers=headers,
-        params={"team": time_api_id, "season": 2025},
-        timeout=10
-    )
-    jogos_api = {f["fixture"]["id"]: f["fixture"]["date"] for f in r.json().get("response", [])}
+    jogos_api = {}
+    for season in seasons:
+        r = requests.get(
+            "https://v3.football.api-sports.io/fixtures",
+            headers=headers,
+            params={"team": time_api_id, "season": season},
+            timeout=10
+        )
+        for f in r.json().get("response", []):
+            jogos_api[f["fixture"]["id"]] = f["fixture"]["date"]
 
     corrigidos = 0
     for jogo in Jogo.query.filter(
