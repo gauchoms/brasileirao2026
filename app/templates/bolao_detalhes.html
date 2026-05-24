@@ -298,12 +298,23 @@
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem;">
                             <!-- LOGO/BANDEIRA -->
                           <!-- TIME CASA -->
-                            {% if jogo.time_casa.logo_url %}
-                            <img src="{{ jogo.time_casa.logo_url }}" 
-                                alt="{{ jogo.time_casa.nome }}"
-                                style="width: 60px; height: 60px; object-fit: contain;">
+                            {% set flag_c = flag_emoji(jogo.time_casa.nome) %}
+                            {% if flag_c %}
+                                <span style="font-size: 3.5rem; line-height: 1;">{{ flag_c }}</span>
+                            {% elif jogo.time_casa.logo_url %}
+                                <img src="{{ jogo.time_casa.logo_url }}"
+                                    alt="{{ jogo.time_casa.nome }}"
+                                    style="width: 60px; height: 60px; object-fit: contain;"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div style="display:none; width:56px; height:56px; border-radius:50%; background:var(--cinza-medio);
+                                            align-items:center; justify-content:center; font-size:1.1rem; font-weight:700;">
+                                    {{ jogo.time_casa.nome[:3]|upper }}
+                                </div>
                             {% else %}
-                            <span style="font-size: 2.5rem;">⚽</span>
+                                <div style="width:56px; height:56px; border-radius:50%; background:var(--cinza-medio);
+                                            display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:700;">
+                                    {{ jogo.time_casa.nome[:3]|upper }}
+                                </div>
                             {% endif %}
 
                             
@@ -352,12 +363,23 @@
                         <!-- TIME FORA -->
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem;">
                             <!-- LOGO TIME FORA -->
-                            {% if jogo.time_fora.logo_url %}
-                            <img src="{{ jogo.time_fora.logo_url }}" 
-                                alt="{{ jogo.time_fora.nome }}"
-                                style="width: 60px; height: 60px; object-fit: contain;">
+                            {% set flag_f = flag_emoji(jogo.time_fora.nome) %}
+                            {% if flag_f %}
+                                <span style="font-size: 3.5rem; line-height: 1;">{{ flag_f }}</span>
+                            {% elif jogo.time_fora.logo_url %}
+                                <img src="{{ jogo.time_fora.logo_url }}"
+                                    alt="{{ jogo.time_fora.nome }}"
+                                    style="width: 60px; height: 60px; object-fit: contain;"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div style="display:none; width:56px; height:56px; border-radius:50%; background:var(--cinza-medio);
+                                            align-items:center; justify-content:center; font-size:1.1rem; font-weight:700;">
+                                    {{ jogo.time_fora.nome[:3]|upper }}
+                                </div>
                             {% else %}
-                            <span style="font-size: 2.5rem;">⚽</span>
+                                <div style="width:56px; height:56px; border-radius:50%; background:var(--cinza-medio);
+                                            display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:700;">
+                                    {{ jogo.time_fora.nome[:3]|upper }}
+                                </div>
                             {% endif %}
                                                         
                             <!-- NOME DO TIME (TRADUZIDO SE FOR SELEÇÃO) -->
@@ -578,11 +600,10 @@
             <!-- Time Casa -->
             <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
                         background: {% if encerrado and jogo.gols_casa > jogo.gols_fora %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
-                {% if jogo.time_casa.logo_url %}
-                    <img src="{{ jogo.time_casa.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
-                {% else %}
-                    <span style="font-size:1rem;">⚽</span>
-                {% endif %}
+                {% set fkc = flag_emoji(jogo.time_casa.nome) %}
+                {% if fkc %}<span style="font-size:1.4rem;">{{ fkc }}</span>
+                {% elif jogo.time_casa.logo_url %}<img src="{{ jogo.time_casa.logo_url }}" style="width:22px; height:22px; object-fit:contain;" onerror="this.style.display='none'">
+                {% else %}<span style="font-size:0.75rem; font-weight:700;">{{ jogo.time_casa.nome[:3]|upper }}</span>{% endif %}
                 <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
                     {{ traduzir_pais(jogo.time_casa.nome) if eh_selecao(jogo.time_casa.nome) else jogo.time_casa.nome }}
                 </span>
@@ -598,11 +619,10 @@
             <!-- Time Fora -->
             <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
                         background: {% if encerrado and jogo.gols_fora > jogo.gols_casa %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
-                {% if jogo.time_fora.logo_url %}
-                    <img src="{{ jogo.time_fora.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
-                {% else %}
-                    <span style="font-size:1rem;">⚽</span>
-                {% endif %}
+                {% set fkf = flag_emoji(jogo.time_fora.nome) %}
+                {% if fkf %}<span style="font-size:1.4rem;">{{ fkf }}</span>
+                {% elif jogo.time_fora.logo_url %}<img src="{{ jogo.time_fora.logo_url }}" style="width:22px; height:22px; object-fit:contain;" onerror="this.style.display='none'">
+                {% else %}<span style="font-size:0.75rem; font-weight:700;">{{ jogo.time_fora.nome[:3]|upper }}</span>{% endif %}
                 <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
                     {{ traduzir_pais(jogo.time_fora.nome) if eh_selecao(jogo.time_fora.nome) else jogo.time_fora.nome }}
                 </span>

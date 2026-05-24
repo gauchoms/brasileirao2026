@@ -8,6 +8,43 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 
+
+# ── Emojis de bandeira por país ──────────────────────────────
+FLAG_EMOJIS = {
+    "Brazil": "🇧🇷", "Argentina": "🇦🇷", "France": "🇫🇷", "Germany": "🇩🇪",
+    "Spain": "🇪🇸", "England": "󠁧󠁢󠁥󠁮󠁧󠁿", "Portugal": "🇵🇹", "Italy": "🇮🇹",
+    "Netherlands": "🇳🇱", "Belgium": "🇧🇪", "Croatia": "🇭🇷", "Uruguay": "🇺🇾",
+    "Colombia": "🇨🇴", "Mexico": "🇲🇽", "Japan": "🇯🇵", "South Korea": "🇰🇷",
+    "Korea Republic": "🇰🇷", "Australia": "🇦🇺", "USA": "🇺🇸", "United States": "🇺🇸",
+    "Canada": "🇨🇦", "Morocco": "🇲🇦", "Senegal": "🇸🇳", "Nigeria": "🇳🇬",
+    "Ghana": "🇬🇭", "Cameroon": "🇨🇲", "South Africa": "🇿🇦", "Egypt": "🇪🇬",
+    "Tunisia": "🇹🇳", "Algeria": "🇩🇿", "Ivory Coast": "🇨🇮", "DR Congo": "🇨🇩",
+    "Saudi Arabia": "🇸🇦", "Iran": "🇮🇷", "IR Iran": "🇮🇷", "Qatar": "🇶🇦",
+    "United Arab Emirates": "🇦🇪", "Japan": "🇯🇵", "China": "🇨🇳",
+    "Switzerland": "🇨🇭", "Denmark": "🇩🇰", "Sweden": "🇸🇪", "Norway": "🇳🇴",
+    "Poland": "🇵🇱", "Serbia": "🇷🇸", "Turkey": "🇹🇷", "Ukraine": "🇺🇦",
+    "Russia": "🇷🇺", "Czech Republic": "🇨🇿", "Hungary": "🇭🇺", "Romania": "🇷🇴",
+    "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "Wales": "🏴󠁧󠁢󠁷󠁬󠁳󠁿", "Northern Ireland": "󠁧󠁢󠁮󠁩󠁲󠁿🇬🇧",
+    "Chile": "🇨🇱", "Peru": "🇵🇪", "Ecuador": "🇪🇨", "Paraguay": "🇵🇾",
+    "Bolivia": "🇧🇴", "Venezuela": "🇻🇪", "Panama": "🇵🇦", "Costa Rica": "🇨🇷",
+    "Honduras": "🇭🇳", "El Salvador": "🇸🇻", "Guatemala": "🇬🇹", "Haiti": "🇭🇹",
+    "Jamaica": "🇯🇲", "Trinidad and Tobago": "🇹🇹", "Trinidad & Tobago": "🇹🇹",
+    "Greece": "🇬🇷", "Austria": "🇦🇹", "Finland": "🇫🇮", "Slovakia": "🇸🇰",
+    "Slovenia": "🇸🇮", "Albania": "🇦🇱", "North Macedonia": "🇲🇰", "Kosovo": "🇽🇰",
+    "Bosnia and Herzegovina": "🇧🇦", "Bosnia": "🇧🇦", "Montenegro": "🇲🇪",
+    "Israel": "🇮🇱", "Lebanon": "🇱🇧", "Jordan": "🇯🇴", "Iraq": "🇮🇶",
+    "Palestine": "🇵🇸", "Kuwait": "🇰🇼", "Oman": "🇴🇲", "Bahrain": "🇧🇭",
+    "New Zealand": "🇳🇿", "Senegal": "🇸🇳", "Mali": "🇲🇱", "Togo": "🇹🇬",
+    "Rwanda": "🇷🇼", "Uganda": "🇺🇬", "Kenya": "🇰🇪", "Zimbabwe": "🇿🇼",
+    "Zambia": "🇿🇲", "Mozambique": "🇲🇿", "Angola": "🇦🇴", "Ethiopia": "🇪🇹",
+    "Sudan": "🇸🇩", "Cabo Verde": "🇨🇻", "Cape Verde": "🇨🇻",
+    "Argentina": "🇦🇷", "Ireland": "🇮🇪", "Republic of Ireland": "🇮🇪",
+}
+
+def flag_emoji(nome_pais):
+    """Retorna emoji de bandeira para seleções nacionais."""
+    return FLAG_EMOJIS.get(nome_pais, "")
+
 # ──────────────────────────────────────────────
 # Seleções nacionais conhecidas na API Football
 # (nomes em inglês, como vêm da API)
@@ -158,6 +195,7 @@ def create_app():
     # ── Globals do Jinja2 (disponíveis em todos os templates) ──
     app.jinja_env.globals['eh_selecao'] = eh_selecao
     app.jinja_env.globals['traduzir_pais'] = traduzir_pais
+    app.jinja_env.globals['flag_emoji'] = flag_emoji
 
     return app
 
