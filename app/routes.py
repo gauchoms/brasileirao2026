@@ -2495,6 +2495,128 @@ def migrar_criterios_desempate():
 
 
 
+
+@bp.route('/admin/checar_horarios/<int:time_api_id>')
+@admin_required
+def checar_horarios(time_api_id):
+    """
+    Compara horários no banco vs API Football para um time.
+    Uso: /admin/checar_horarios/118  (118 = Grêmio na API Football)
+    """
+    import requests, os
+    from app.models import Jogo, Time
+    from app.utils import converter_utc_brasilia
+
+    time_db = Time.query.filter_by(api_id=time_api_id).first()
+    nome_time = time_db.nome if time_db else f"API ID {time_api_id}"
+
+    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+    r = requests.get(
+        "https://v3.football.api-sports.io/fixtures",
+        headers=headers,
+        params={"team": time_api_id, "season": 2025},
+        timeout=10
+    )
+    jogos_api = {f["fixture"]["id"]: f for f in r.json().get("response", [])}
+
+    if time_db:
+        jogos_banco = Jogo.query.filter(
+            (Jogo.time_casa_id == time_db.id) | (Jogo.time_fora_id == time_db.id)
+        ).order_by(Jogo.data).all()
+    else:
+        jogos_banco = []
+
+    linhas = []
+    for j in jogos_banco:
+        api = jogos_api.get(j.api_id)
+        data_api_raw = api["fixture"]["date"] if api else "não encontrado na API"
+        data_banco   = j.data or "nulo"
+
+        br_banco = converter_utc_brasilia(data_banco)
+        br_api   = converter_utc_brasilia(data_api_raw) if api else None
+
+        banco_fmt = br_banco.strftime("%d/%m/%Y %H:%M") if br_banco else data_banco
+        api_fmt   = br_api.strftime("%d/%m/%Y %H:%M")   if br_api   else data_api_raw
+
+        diferente = banco_fmt != api_fmt
+        cor   = "#e74c3c" if diferente else "#2ecc71"
+        icone = "⚠️" if diferente else "✅"
+
+        adv_id = j.time_fora_id if j.time_casa_id == (time_db.id if time_db else -1) else j.time_casa_id
+        adv = Time.query.get(adv_id)
+        adversario = adv.nome if adv else "?"
+
+        linhas.append(f"""
+        <tr style="border-bottom:1px solid #333;">
+            <td style="padding:0.5rem">{icone}</td>
+            <td style="padding:0.5rem">{j.api_id}</td>
+            <td style="padding:0.5rem">{adversario}</td>
+            <td style="padding:0.5rem;color:{cor}">{banco_fmt}</td>
+            <td style="padding:0.5rem;color:{cor}">{api_fmt}</td>
+            <td style="padding:0.5rem;font-weight:bold;color:{cor}">{"DIFERENTE" if diferente else "ok"}</td>
+        </tr>""")
+
+    html = f"""<html><body style="background:#1a1a2e;color:#eee;font-family:monospace;padding:2rem">
+    <h2>🔍 Horários: {nome_time} (api_id={time_api_id})</h2>
+    <p style="color:#aaa">{len(jogos_banco)} jogos no banco · {len(jogos_api)} na API Football · Fuso: Brasília (UTC-3)</p>
+    <a href="/admin/corrigir_horarios/{time_api_id}"
+       style="background:#e74c3c;color:#fff;padding:0.6rem 1.2rem;border-radius:4px;text-decoration:none;display:inline-block;margin-bottom:1rem">
+       ⚠️ Corrigir TODOS os horários diferentes agora
+    </a>
+    <table style="width:100%;border-collapse:collapse;margin-top:1rem">
+        <thead><tr style="border-bottom:2px solid #00a651">
+            <th style="padding:0.5rem;text-align:left"></th>
+            <th style="padding:0.5rem;text-align:left">API ID</th>
+            <th style="padding:0.5rem;text-align:left">Adversário</th>
+            <th style="padding:0.5rem;text-align:left">🗄️ Banco (Brasília)</th>
+            <th style="padding:0.5rem;text-align:left">🌐 API Football (Brasília)</th>
+            <th style="padding:0.5rem;text-align:left">Status</th>
+        </tr></thead>
+        <tbody>{"".join(linhas) if linhas else "<tr><td colspan=6 style='padding:1rem'>Nenhum jogo encontrado no banco para este time.</td></tr>"}</tbody>
+    </table>
+    </body></html>"""
+    return html
+
+
+@bp.route('/admin/corrigir_horarios/<int:time_api_id>')
+@admin_required
+def corrigir_horarios(time_api_id):
+    """Corrige horários no banco usando dados atuais da API Football."""
+    import requests, os
+    from app.models import Jogo, Time
+
+    time_db = Time.query.filter_by(api_id=time_api_id).first()
+    if not time_db:
+        return jsonify({"erro": "Time não encontrado no banco"}), 404
+
+    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+    r = requests.get(
+        "https://v3.football.api-sports.io/fixtures",
+        headers=headers,
+        params={"team": time_api_id, "season": 2025},
+        timeout=10
+    )
+    jogos_api = {f["fixture"]["id"]: f["fixture"]["date"] for f in r.json().get("response", [])}
+
+    corrigidos = 0
+    for jogo in Jogo.query.filter(
+        (Jogo.time_casa_id == time_db.id) | (Jogo.time_fora_id == time_db.id)
+    ).all():
+        if jogo.api_id in jogos_api:
+            nova_data = jogos_api[jogo.api_id]
+            if nova_data != jogo.data:
+                jogo.data = nova_data
+                corrigidos += 1
+
+    db.session.commit()
+    return jsonify({
+        "sucesso": True,
+        "time": time_db.nome,
+        "corrigidos": corrigidos,
+        "total_verificados": len(jogos_api),
+        "mensagem": f"✅ {corrigidos} horários corrigidos para {time_db.nome}"
+    })
+
 @bp.route('/migrar_logos_cloudinary')
 @admin_required
 def migrar_logos_cloudinary():
