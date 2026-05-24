@@ -144,6 +144,17 @@ def create_app():
             return str(data).replace('T', ' ')[:16]
         return data_br.strftime('%d/%m às %H:%M')
 
+    # ── Filtro sort_rodadas (ordena rodadas numéricas e textuais) ──
+    def sort_rodadas(rodadas):
+        """Ordena rodadas: numéricas primeiro (por número), textuais depois (alfabético)."""
+        def key(r):
+            try:
+                return (0, int(str(r)))
+            except (ValueError, TypeError):
+                return (1, str(r))
+        return sorted(rodadas, key=key)
+    app.jinja_env.filters['sort_rodadas'] = sort_rodadas
+
     # ── Globals do Jinja2 (disponíveis em todos os templates) ──
     app.jinja_env.globals['eh_selecao'] = eh_selecao
     app.jinja_env.globals['traduzir_pais'] = traduzir_pais

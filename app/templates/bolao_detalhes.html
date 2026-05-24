@@ -225,8 +225,10 @@
                             {% set _ = rodadas.append(rodada_num) %}
                         {% endif %}
                     {% endfor %}
-                    {% for rodada in rodadas|map('int')|sort %}
-                        <option value="{{ rodada }}">Rodada {{ rodada }}</option>
+                    {% for rodada in rodadas|sort_rodadas %}
+                        <option value="{{ rodada }}">
+                            {%- if rodada|string|int(-1) >= 0 %}Rodada {{ rodada }}{%- else %}{{ rodada }}{%- endif %}
+                        </option>
                     {% endfor %}
                 </select>
                 

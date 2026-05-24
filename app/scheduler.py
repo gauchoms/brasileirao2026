@@ -170,17 +170,21 @@ def sincronizar_jogos_job(app):
                                     api_id = jogo[key]
                                     nome = jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora']
                                     if api_id not in times_cadastrados:
+                                        logo = jogo.get('logo_casa') if key == 'time_casa_id' else jogo.get('logo_fora')
                                         time_db = Time.query.filter_by(api_id=api_id).first()
                                         if not time_db:
-                                            time_db = Time(api_id=api_id, nome=nome, ativo=True)
+                                            time_db = Time(api_id=api_id, nome=nome, logo_url=logo, ativo=True)
                                             db.session.add(time_db)
                                             db.session.flush()
+                                        elif logo and not time_db.logo_url:
+                                            time_db.logo_url = logo
                                         times_cadastrados[api_id] = time_db.id
 
                                 novo_jogo = Jogo(
                                     api_id=jogo['api_id'],
                                     competicao_id=bolao.competicao_id,
                                     rodada=jogo['rodada'],
+                                    grupo=jogo.get('grupo', ''),
                                     time_casa_id=times_cadastrados[jogo['time_casa_id']],
                                     time_fora_id=times_cadastrados[jogo['time_fora_id']],
                                     data=jogo['data'],
