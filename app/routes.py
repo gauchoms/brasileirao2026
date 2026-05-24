@@ -2650,68 +2650,24 @@ def corrigir_horarios(time_api_id):
 @admin_required
 def corrigir_horarios_todos():
     """
-    Corrige horários de TODOS os times buscando dados atualizados da API Football.
-    Itera por todas as competições e atualiza jogos com data diferente.
+    Dispara a correção de horários em background e retorna imediatamente.
+    O job roda em thread separada para não travar o Gunicorn.
     """
-    from app.models import Jogo, Time, Competicao
-    import requests, os
+    import threading
+    from flask import current_app
 
-    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-    total_corrigidos = 0
-    total_verificados = 0
-    erros = []
+    app = current_app._get_current_object()
 
-    # Itera por todas as competições cadastradas
-    competicoes = Competicao.query.filter(Competicao.api_league_id.isnot(None)).all()
+    def job_background():
+        from app.scheduler import corrigir_horarios_job
+        corrigir_horarios_job(app)
 
-    for comp in competicoes:
-        # Detecta seasons dos jogos desta competição no banco
-        jogos_comp = Jogo.query.filter_by(competicao_id=comp.id).all()
-        if not jogos_comp:
-            continue
-
-        seasons = set()
-        for j in jogos_comp:
-            if j.data:
-                try: seasons.add(int(j.data[:4]))
-                except: pass
-        if not seasons:
-            continue
-
-        # Busca todos os fixtures desta competição na API
-        jogos_api = {}
-        for season in seasons:
-            try:
-                r = requests.get(
-                    "https://v3.football.api-sports.io/fixtures",
-                    headers=headers,
-                    params={"league": comp.api_league_id, "season": season},
-                    timeout=15
-                )
-                for f in r.json().get("response", []):
-                    jogos_api[f["fixture"]["id"]] = f["fixture"]["date"]
-            except Exception as e:
-                erros.append(f"{comp.nome} season {season}: {str(e)}")
-                continue
-
-        # Corrige os jogos com data diferente
-        for jogo in jogos_comp:
-            total_verificados += 1
-            if jogo.api_id in jogos_api:
-                nova_data = jogos_api[jogo.api_id]
-                if nova_data != jogo.data:
-                    jogo.data = nova_data
-                    total_corrigidos += 1
-
-    db.session.commit()
+    t = threading.Thread(target=job_background, daemon=True)
+    t.start()
 
     return jsonify({
         "sucesso": True,
-        "total_verificados": total_verificados,
-        "total_corrigidos": total_corrigidos,
-        "competicoes_processadas": len(competicoes),
-        "erros": erros,
-        "mensagem": f"✅ {total_corrigidos} horários corrigidos em {total_verificados} jogos verificados"
+        "mensagem": "⏳ Correção iniciada em background. Acompanhe os logs do Render. Leva ~2-5 minutos."
     })
 
 @bp.route('/migrar_logos_cloudinary')
