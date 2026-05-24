@@ -96,6 +96,38 @@ TRADUCOES = {
 }
 
 
+
+FLAG_EMOJIS = {
+    "Brazil":"🇧🇷","Argentina":"🇦🇷","France":"🇫🇷","Germany":"🇩🇪",
+    "Spain":"🇪🇸","England":"🏴","Portugal":"🇵🇹","Italy":"🇮🇹",
+    "Netherlands":"🇳🇱","Belgium":"🇧🇪","Croatia":"🇭🇷","Uruguay":"🇺🇾",
+    "Colombia":"🇨🇴","Mexico":"🇲🇽","Japan":"🇯🇵","South Korea":"🇰🇷",
+    "Korea Republic":"🇰🇷","Australia":"🇦🇺","USA":"🇺🇸","United States":"🇺🇸",
+    "Canada":"🇨🇦","Morocco":"🇲🇦","Senegal":"🇸🇳","Nigeria":"🇳🇬",
+    "Ghana":"🇬🇭","Cameroon":"🇨🇲","South Africa":"🇿🇦","Egypt":"🇪🇬",
+    "Tunisia":"🇹🇳","Algeria":"🇩🇿","Saudi Arabia":"🇸🇦","Iran":"🇮🇷",
+    "IR Iran":"🇮🇷","Qatar":"🇶🇦","Switzerland":"🇨🇭","Denmark":"🇩🇰",
+    "Sweden":"🇸🇪","Poland":"🇵🇱","Serbia":"🇷🇸","Turkey":"🇹🇷",
+    "Ukraine":"🇺🇦","Czech Republic":"🇨🇿","Scotland":"🏴","Wales":"🏴",
+    "Chile":"🇨🇱","Peru":"🇵🇪","Ecuador":"🇪🇨","Paraguay":"🇵🇾",
+    "Bolivia":"🇧🇴","Venezuela":"🇻🇪","Panama":"🇵🇦","Costa Rica":"🇨🇷",
+    "Honduras":"🇭🇳","Greece":"🇬🇷","Austria":"🇦🇹","Romania":"🇷🇴",
+    "Hungary":"🇭🇺","Slovakia":"🇸🇰","Slovenia":"🇸🇮","Israel":"🇮🇱",
+    "Ivory Coast":"🇨🇮","Mali":"🇲🇱","Togo":"🇹🇬","Rwanda":"🇷🇼",
+    "Kenya":"🇰🇪","Angola":"🇦🇴","Cape Verde":"🇨🇻","Cabo Verde":"🇨🇻",
+    "New Zealand":"🇳🇿","Bosnia and Herzegovina":"🇧🇦","Bosnia":"🇧🇦",
+    "North Macedonia":"🇲🇰","Albania":"🇦🇱","Kosovo":"🇽🇰",
+    "Montenegro":"🇲🇪","Uzbekistan":"🇺🇿","Jordan":"🇯🇴",
+    "Iraq":"🇮🇶","Palestine":"🇵🇸","Kuwait":"🇰🇼",
+    "Trinidad and Tobago":"🇹🇹","Trinidad & Tobago":"🇹🇹",
+    "Jamaica":"🇯🇲","Haiti":"🇭🇹","El Salvador":"🇸🇻",
+    "Guatemala":"🇬🇹","Nicaragua":"🇳🇮",
+}
+
+def flag_emoji(nome_pais):
+    """Retorna emoji de bandeira para seleções nacionais."""
+    return FLAG_EMOJIS.get(nome_pais, "")
+
 def eh_selecao(nome):
     """Retorna True se o nome do time é uma seleção nacional."""
     return nome in SELECOES
@@ -167,6 +199,7 @@ def create_app():
     # ── Globals do Jinja2 (disponíveis em todos os templates) ──
     app.jinja_env.globals['eh_selecao'] = eh_selecao
     app.jinja_env.globals['traduzir_pais'] = traduzir_pais
+    app.jinja_env.globals['flag_emoji'] = flag_emoji
 
     return app
 
