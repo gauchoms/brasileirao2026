@@ -785,11 +785,14 @@ def admin_importar_competicao(league_id, ano):
             nome = jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora']
             
             if api_id not in times_cadastrados:
+                logo = jogo['logo_casa'] if key == 'time_casa_id' else jogo['logo_fora']
                 time = Time.query.filter_by(api_id=api_id).first()
                 if not time:
-                    time = Time(api_id=api_id, nome=nome)
+                    time = Time(api_id=api_id, nome=nome, logo_url=logo)
                     db.session.add(time)
                     db.session.flush()
+                elif logo and not time.logo_url:
+                    time.logo_url = logo
                 times_cadastrados[api_id] = time.id
         
         # Cadastra jogo
@@ -799,6 +802,7 @@ def admin_importar_competicao(league_id, ano):
                 api_id=jogo['api_id'],
                 competicao_id=competicao.id,
                 rodada=jogo['rodada'],
+                grupo=jogo.get('grupo', ''),
                 time_casa_id=times_cadastrados[jogo['time_casa_id']],
                 time_fora_id=times_cadastrados[jogo['time_fora_id']],
                 data=jogo['data'],
@@ -2482,6 +2486,64 @@ def migrar_criterios_desempate():
         return jsonify({'sucesso': True, 'mensagem': 'Coluna criterios_desempate adicionada!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+
+
+
+@bp.route('/migrar_grupo_e_logos')
+@admin_required
+def migrar_grupo_e_logos():
+    """
+    1. Adiciona coluna 'grupo' em jogo se não existir
+    2. Retroativamente busca logos e grupos na API e atualiza o banco
+    """
+    from sqlalchemy import text, inspect
+    from app.api import get_jogos_competicao, processar_jogos
+    from app.models import Competicao, Jogo, Time
+
+    resultados = {'colunas': [], 'logos_atualizados': 0, 'grupos_atualizados': 0, 'erros': []}
+
+    # 1. Adiciona coluna grupo se não existir
+    try:
+        inspector = inspect(db.engine)
+        cols = [c['name'] for c in inspector.get_columns('jogo')]
+        if 'grupo' not in cols:
+            db.session.execute(text("ALTER TABLE jogo ADD COLUMN grupo VARCHAR(50) DEFAULT ''"))
+            db.session.commit()
+            resultados['colunas'].append('grupo adicionada em jogo')
+        else:
+            resultados['colunas'].append('grupo já existia')
+    except Exception as e:
+        resultados['erros'].append(f"coluna grupo: {str(e)}")
+
+    # 2. Busca logos e grupos retroativamente por competição
+    competicoes = Competicao.query.all()
+    for comp in competicoes:
+        try:
+            if not comp.api_league_id:
+                continue
+            data = get_jogos_competicao(comp.api_league_id, comp.ano)
+            jogos = processar_jogos(data)
+            for j in jogos:
+                # Atualiza logo dos times
+                for key, logo_key in [('time_casa_id', 'logo_casa'), ('time_fora_id', 'logo_fora')]:
+                    t = Time.query.filter_by(api_id=j[key]).first()
+                    if t and j.get(logo_key) and not t.logo_url:
+                        t.logo_url = j[logo_key]
+                        resultados['logos_atualizados'] += 1
+                # Atualiza grupo do jogo
+                jogo_db = Jogo.query.filter_by(api_id=j['api_id']).first()
+                if jogo_db and j.get('grupo'):
+                    try:
+                        if not jogo_db.grupo:
+                            jogo_db.grupo = j['grupo']
+                            resultados['grupos_atualizados'] += 1
+                    except Exception:
+                        pass
+            db.session.commit()
+        except Exception as e:
+            resultados['erros'].append(f"{comp.nome}: {str(e)}")
+
+    return jsonify({'sucesso': True, **resultados})
 
 @bp.route('/migrar_reset_senha_render')
 def migrar_reset_senha_render():

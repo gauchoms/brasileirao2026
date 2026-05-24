@@ -55,6 +55,12 @@
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;" data-i18n="bd_meus_palpites">🎯 Meus Palpites</a>
         <a href="#" onclick="mostrarTab('todos-palpites'); return false;" id="tab-todos-palpites"
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;" data-i18n="bd_todos_palpites">📋 Todos os Palpites</a>
+        {% set fases_ko = ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'] %}
+        {% set tem_chaveamento = jogos|selectattr('rodada', 'in', fases_ko)|list|length > 0 %}
+        {% if tem_chaveamento %}
+        <a href="#" onclick="mostrarTab('chaveamento'); return false;" id="tab-chaveamento"
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">🏆 Chaveamento</a>
+        {% endif %}
         <a href="#" onclick="mostrarTab('regras'); return false;" id="tab-regras"
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;" data-i18n="bd_regras">📋 Regras</a>
         
@@ -223,29 +229,63 @@
                         <option value="{{ rodada }}">Rodada {{ rodada }}</option>
                     {% endfor %}
                 </select>
+                
+                <!-- Filtro Grupo/Fase -->
+                <select id="filtro-grupo" onchange="filtrarJogos()"
+                    style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio); 
+                           border-radius: 6px; color: var(--texto); font-size: 0.9rem;">
+                    <option value="">Todos os grupos</option>
+                    {% set grupos_vistos = [] %}
+                    {% for jogo in jogos %}
+                        {% if jogo.grupo and jogo.grupo not in grupos_vistos %}
+                            {% set _ = grupos_vistos.append(jogo.grupo) %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for g in grupos_vistos|sort %}
+                        <option value="{{ g }}">{{ g }}</option>
+                    {% endfor %}
+                    {% set fases = ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'] %}
+                    {% set tem_knockout = jogos|selectattr('rodada', 'in', fases)|list|length > 0 %}
+                    {% if tem_knockout %}
+                        <option value="__knockout__">🏆 Fase Eliminatória</option>
+                    {% endif %}
+                </select>
             </div>
         </div>
         
         <div style="display: grid; gap: 1rem;" id="lista-jogos">
             {% for jogo in jogos %}
-            
+            {% set rodada_label = jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') %}
+            {% set grupo_label = jogo.grupo if jogo.grupo else '' %}
+            {% set fase_knockout = jogo.rodada in ['Round of 16', 'Quarter-finals', 'Semi-finals', '3rd Place Final', 'Final', 'Oitavas de Final', 'Quartas de Final', 'Semifinais', 'Final'] %}
                 <div class="card jogo-item"
                      data-status="{% if jogo.gols_casa is not none %}encerrados{% else %}abertos{% endif %}"
-                     data-rodada="{{ jogo.rodada.replace('Regular Season - ', '').replace('Rodada ', '') }}"
+                     data-rodada="{{ rodada_label }}"
+                     data-grupo="{{ grupo_label }}"
                      style="margin-bottom: 1rem;">
                     <!-- CABEÇALHO DO JOGO -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; 
                                 padding-bottom: 0.8rem; border-bottom: 1px solid var(--cinza-medio);">
-                        <div style="font-size: 0.85rem; color: var(--texto-fraco); font-weight: 600;">
-                            {% if jogo.competicao %}
-                                {{ jogo.competicao.nome }}
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <span style="font-size: 0.85rem; color: var(--texto-fraco); font-weight: 600;">
+                                {% if jogo.competicao %}{{ jogo.competicao.nome }}{% endif %}
+                            </span>
+                            {% if grupo_label %}
+                                <span style="background: var(--verde); color: #000; font-size: 0.7rem; font-weight: 700;
+                                             padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px;">
+                                    {{ grupo_label }}
+                                </span>
+                            {% elif fase_knockout %}
+                                {% set fase_pt = {'Round of 16': 'Oitavas', 'Quarter-finals': 'Quartas de Final',
+                                                   'Semi-finals': 'Semifinal', '3rd Place Final': '3º Lugar', 'Final': 'Final'}[jogo.rodada] if jogo.rodada in ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'] else jogo.rodada %}
+                                <span style="background: var(--amarelo); color: #000; font-size: 0.7rem; font-weight: 700;
+                                             padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px;">
+                                    🏆 {{ fase_pt }}
+                                </span>
                             {% endif %}
                         </div>
                         <div style="font-size: 0.85rem; color: var(--texto-fraco);">
-                            {% if jogo.data %}
-                                {# Data já vem como string do banco #}
-                                {{ jogo.data|brasilia }}
-                            {% endif %}
+                            {% if jogo.data %}{{ jogo.data|brasilia }}{% endif %}
                         </div>
                     </div>
 
@@ -353,13 +393,7 @@
                                 class="btn-primary"
                                 id="btn-salvar-{{ jogo.id }}" data-i18n="bd_salvar_palpite">💾 Salvar Palpite</button>
                         
-                        <!-- REPLICAR EM OUTROS BOLÕES -->
-                        <div style="margin-top: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                            <input type="checkbox" id="replicar-{{ jogo.id }}" style="width:16px; height:16px; cursor:pointer;">
-                            <label for="replicar-{{ jogo.id }}" style="font-size: 0.85rem; color: var(--texto-fraco); cursor:pointer;">
-                                🔁 Replicar nos meus outros bolões
-                            </label>
-                        </div>
+
 
                         <!-- MENSAGEM DE FEEDBACK -->
                         <div id="msg-palpite-{{ jogo.id }}" style="display: none; margin-top: 0.5rem;"></div>
@@ -528,6 +562,137 @@
             {% endfor %}
         </div>
     </div>
+
+    <!-- Tab: Chaveamento (Copa do Mundo / torneios com fases eliminatórias) -->
+    {% set fases_ko = ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'] %}
+    {% set jogos_ko = jogos|selectattr('rodada', 'in', fases_ko)|list %}
+    {% if jogos_ko|length > 0 %}
+    <div id="content-chaveamento" style="display: none;">
+        <h2 style="margin-bottom: 1.5rem;">🏆 Chaveamento</h2>
+
+        {% macro card_jogo_ko(jogo) %}
+        {% set encerrado = jogo.gols_casa is not none %}
+        <div style="background: var(--cinza-medio); border-radius: 8px; overflow: hidden; min-width: 180px; max-width: 220px;">
+            <!-- Time Casa -->
+            <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
+                        background: {% if encerrado and jogo.gols_casa > jogo.gols_fora %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
+                {% if jogo.time_casa.logo_url %}
+                    <img src="{{ jogo.time_casa.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
+                {% else %}
+                    <span style="font-size:1rem;">⚽</span>
+                {% endif %}
+                <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+                    {{ traduzir_pais(jogo.time_casa.nome) if eh_selecao(jogo.time_casa.nome) else jogo.time_casa.nome }}
+                </span>
+                {% if encerrado %}
+                <span style="font-size: 0.95rem; font-weight: 700; min-width: 18px; text-align:right;
+                             color: {% if jogo.gols_casa > jogo.gols_fora %}var(--verde){% else %}var(--texto-fraco){% endif %};">
+                    {{ jogo.gols_casa }}
+                </span>
+                {% endif %}
+            </div>
+            <!-- Divisor -->
+            <div style="height: 1px; background: var(--cinza);"></div>
+            <!-- Time Fora -->
+            <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
+                        background: {% if encerrado and jogo.gols_fora > jogo.gols_casa %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
+                {% if jogo.time_fora.logo_url %}
+                    <img src="{{ jogo.time_fora.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
+                {% else %}
+                    <span style="font-size:1rem;">⚽</span>
+                {% endif %}
+                <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+                    {{ traduzir_pais(jogo.time_fora.nome) if eh_selecao(jogo.time_fora.nome) else jogo.time_fora.nome }}
+                </span>
+                {% if encerrado %}
+                <span style="font-size: 0.95rem; font-weight: 700; min-width: 18px; text-align:right;
+                             color: {% if jogo.gols_fora > jogo.gols_casa %}var(--verde){% else %}var(--texto-fraco){% endif %};">
+                    {{ jogo.gols_fora }}
+                </span>
+                {% endif %}
+            </div>
+            {% if not encerrado %}
+            <div style="text-align:center; padding: 0.3rem; font-size: 0.7rem; color: var(--texto-fraco);">
+                {{ jogo.data|brasilia }}
+            </div>
+            {% endif %}
+        </div>
+        {% endmacro %}
+
+        {% set oitavas   = jogos|selectattr('rodada', 'equalto', 'Round of 16')|list %}
+        {% set quartas   = jogos|selectattr('rodada', 'equalto', 'Quarter-finals')|list %}
+        {% set semis     = jogos|selectattr('rodada', 'equalto', 'Semi-finals')|list %}
+        {% set terceiro  = jogos|selectattr('rodada', 'equalto', '3rd Place Final')|list %}
+        {% set final_j   = jogos|selectattr('rodada', 'equalto', 'Final')|list %}
+
+        <!-- Legenda das fases -->
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+            {% for fase, label, cor in [
+                ('Round of 16',    'Oitavas de Final',   'var(--cinza-medio)'),
+                ('Quarter-finals', 'Quartas de Final',   'var(--cinza-medio)'),
+                ('Semi-finals',    'Semifinal',           'var(--amarelo)'),
+                ('Final',          'Final',               'var(--verde)')
+            ] %}
+            {% if jogos|selectattr('rodada','equalto',fase)|list|length > 0 %}
+            <span style="background: {{ cor }}; color: {% if cor == 'var(--verde)' or cor == 'var(--amarelo)' %}#000{% else %}var(--texto){% endif %};
+                         padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                {{ jogos|selectattr('rodada','equalto',fase)|list|length }}x {{ label }}
+            </span>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- OITAVAS -->
+        {% if oitavas|length > 0 %}
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">OITAVAS DE FINAL</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                {% for jogo in oitavas %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- QUARTAS -->
+        {% if quartas|length > 0 %}
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">QUARTAS DE FINAL</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                {% for jogo in quartas %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- SEMIFINAIS -->
+        {% if semis|length > 0 %}
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">SEMIFINAIS</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                {% for jogo in semis %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 3º LUGAR + FINAL -->
+        {% if terceiro|length > 0 or final_j|length > 0 %}
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
+            {% if terceiro|length > 0 %}
+            <div>
+                <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">3º LUGAR</h3>
+                {% for jogo in terceiro %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+            {% endif %}
+            {% if final_j|length > 0 %}
+            <div>
+                <h3 style="color: var(--amarelo); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">🏆 FINAL</h3>
+                {% for jogo in final_j %}{{ card_jogo_ko(jogo) }}{% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+    {% endif %}
+
     <!-- Tab: Regras -->
 <div id="content-regras" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -768,6 +933,8 @@ function mostrarTab(tab) {
     document.getElementById('content-palpites').style.display = 'none';
     document.getElementById('content-todos-palpites').style.display = 'none';
     document.getElementById('content-regras').style.display = 'none';
+    const chaveEl = document.getElementById('content-chaveamento');
+    if (chaveEl) chaveEl.style.display = 'none';
     {% if eh_dono %}
     document.getElementById('content-participantes').style.display = 'none';
     {% endif %}
@@ -777,6 +944,8 @@ function mostrarTab(tab) {
     document.getElementById('tab-ranking').style.borderBottom = '3px solid transparent';
     document.getElementById('tab-regras').style.color = 'var(--texto-fraco)';
     document.getElementById('tab-regras').style.borderBottom = '3px solid transparent';
+    const tabChave = document.getElementById('tab-chaveamento');
+    if (tabChave) { tabChave.style.color = 'var(--texto-fraco)'; tabChave.style.borderBottom = '3px solid transparent'; }
     document.getElementById('tab-palpites').style.color = 'var(--texto-fraco)';
     document.getElementById('tab-palpites').style.borderBottom = '3px solid transparent';
     document.getElementById('tab-todos-palpites').style.color = 'var(--texto-fraco)';
@@ -978,21 +1147,39 @@ window.addEventListener('DOMContentLoaded', function() {
 function filtrarJogos() {
     const filtroStatus = document.getElementById('filtro-status').value;
     const filtroRodada = document.getElementById('filtro-rodada').value;
+    const filtroGrupo  = document.getElementById('filtro-grupo') ? document.getElementById('filtro-grupo').value : '';
     const jogos = document.querySelectorAll('.jogo-item');
     
     jogos.forEach(jogo => {
         let mostrar = true;
         
         // Filtro de status
-        if (filtroStatus !== 'todos') {
-            if (jogo.dataset.status !== filtroStatus) {
-                mostrar = false;
-            }
+        if (filtroStatus !== 'todos' && jogo.dataset.status !== filtroStatus) {
+            mostrar = false;
         }
         
         // Filtro de rodada
         if (filtroRodada !== '' && jogo.dataset.rodada !== filtroRodada) {
             mostrar = false;
+        }
+        
+        // Filtro de grupo/fase
+        if (filtroGrupo !== '') {
+            if (filtroGrupo === '__knockout__') {
+                const fasesKnockout = ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'];
+                // data-rodada para fases eliminatórias fica como o rodada original
+                const rodadaOriginal = jogo.dataset.rodadaOriginal || jogo.dataset.rodada;
+                if (!fasesKnockout.some(f => rodadaOriginal.includes(f) || jogo.dataset.grupo === '')) {
+                    mostrar = false;
+                }
+                // Mostra apenas jogos sem grupo (= knockout)
+                if (jogo.dataset.grupo && jogo.dataset.grupo !== '') mostrar = false;
+                // mas se tem rodada de knockout deixa passar
+                const fasesKO = ['Round of 16','Quarter-finals','Semi-finals','3rd Place','Final'];
+                if (fasesKO.some(f => (jogo.dataset.rodadaFull||'').includes(f))) mostrar = true;
+            } else {
+                if (jogo.dataset.grupo !== filtroGrupo) mostrar = false;
+            }
         }
         
         jogo.style.display = mostrar ? 'block' : 'none';
