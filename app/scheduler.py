@@ -170,21 +170,17 @@ def sincronizar_jogos_job(app):
                                     api_id = jogo[key]
                                     nome = jogo['time_casa'] if key == 'time_casa_id' else jogo['time_fora']
                                     if api_id not in times_cadastrados:
-                                        logo = jogo.get('logo_casa') if key == 'time_casa_id' else jogo.get('logo_fora')
                                         time_db = Time.query.filter_by(api_id=api_id).first()
                                         if not time_db:
-                                            time_db = Time(api_id=api_id, nome=nome, logo_url=logo, ativo=True)
+                                            time_db = Time(api_id=api_id, nome=nome, ativo=True)
                                             db.session.add(time_db)
                                             db.session.flush()
-                                        elif logo and not time_db.logo_url:
-                                            time_db.logo_url = logo
                                         times_cadastrados[api_id] = time_db.id
 
                                 novo_jogo = Jogo(
                                     api_id=jogo['api_id'],
                                     competicao_id=bolao.competicao_id,
                                     rodada=jogo['rodada'],
-                                    grupo=jogo.get('grupo', ''),
                                     time_casa_id=times_cadastrados[jogo['time_casa_id']],
                                     time_fora_id=times_cadastrados[jogo['time_fora_id']],
                                     data=jogo['data'],
@@ -205,6 +201,68 @@ def sincronizar_jogos_job(app):
         except Exception as e:
             print(f"[SCHEDULER] Erro geral na sincronização: {e}")
 
+
+
+
+def corrigir_horarios_job(app):
+    """
+    Roda toda segunda-feira às 6h (Brasília).
+    Corrige horários de todos os jogos comparando com a API Football.
+    Necessário porque CBF e outras ligas alteram datas/horários ao longo da temporada.
+    """
+    with app.app_context():
+        try:
+            from app.models import Jogo, Competicao
+            from app import db
+            import requests, os
+
+            print(f"[SCHEDULER] Corrigindo horários: {datetime.now(BRASILIA).strftime('%d/%m/%Y %H:%M')}")
+
+            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+            total_corrigidos = 0
+            total_verificados = 0
+
+            competicoes = Competicao.query.filter(Competicao.api_league_id.isnot(None)).all()
+
+            for comp in competicoes:
+                jogos_comp = Jogo.query.filter_by(competicao_id=comp.id).all()
+                if not jogos_comp:
+                    continue
+
+                seasons = set()
+                for j in jogos_comp:
+                    if j.data:
+                        try: seasons.add(int(j.data[:4]))
+                        except: pass
+
+                jogos_api = {}
+                for season in seasons:
+                    try:
+                        r = requests.get(
+                            "https://v3.football.api-sports.io/fixtures",
+                            headers=headers,
+                            params={"league": comp.api_league_id, "season": season},
+                            timeout=15
+                        )
+                        for f in r.json().get("response", []):
+                            jogos_api[f["fixture"]["id"]] = f["fixture"]["date"]
+                    except Exception as e:
+                        print(f"[SCHEDULER] Erro {comp.nome} season {season}: {e}")
+                        continue
+
+                for jogo in jogos_comp:
+                    total_verificados += 1
+                    if jogo.api_id in jogos_api:
+                        nova_data = jogos_api[jogo.api_id]
+                        if nova_data != jogo.data:
+                            jogo.data = nova_data
+                            total_corrigidos += 1
+
+            db.session.commit()
+            print(f"[SCHEDULER] Horários: {total_corrigidos} corrigidos em {total_verificados} verificados ✅")
+
+        except Exception as e:
+            print(f"[SCHEDULER] Erro ao corrigir horários: {e}")
 
 def iniciar_scheduler(app):
     """
@@ -247,6 +305,17 @@ def iniciar_scheduler(app):
         args=[app],
         id='sincronizar_jogos',
         name='Sincronizar jogos novos',
+        replace_existing=True
+    )
+
+    # Job E: toda segunda-feira às 6h, corrige horários alterados pela CBF/ligas
+    from apscheduler.triggers.cron import CronTrigger
+    _scheduler.add_job(
+        func=corrigir_horarios_job,
+        trigger=CronTrigger(day_of_week='mon', hour=6, minute=0, timezone=BRASILIA),
+        args=[app],
+        id='corrigir_horarios',
+        name='Corrigir horários semanalmente',
         replace_existing=True
     )
 
