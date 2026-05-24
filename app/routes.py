@@ -2498,17 +2498,24 @@ def migrar_criterios_desempate():
 
 
 @bp.route('/admin/checar_copa')
+@bp.route('/admin/checar_copa/<int:competicao_id>')
 @admin_required
-def checar_copa():
+def checar_copa(competicao_id=None):
     """Compara jogos da Copa do Mundo no banco vs API Football."""
     import requests, os
     from app.models import Jogo, Time, Competicao
     from app.utils import converter_utc_brasilia
 
-    # Busca competição Copa do Mundo no banco
-    copa = Competicao.query.filter(
-        Competicao.nome.ilike('%world cup%') | Competicao.nome.ilike('%copa do mundo%') | Competicao.nome.ilike('%mundial%')
-    ).first()
+    if competicao_id:
+        copa = Competicao.query.get_or_404(competicao_id)
+    else:
+        # Busca o torneio, excluindo qualificações
+        copa = Competicao.query.filter(
+            (Competicao.nome.ilike('%world cup%') | Competicao.nome.ilike('%copa do mundo%')) ,
+            ~Competicao.nome.ilike('%qualif%'),
+            ~Competicao.nome.ilike('%qualification%'),
+            ~Competicao.nome.ilike('%eliminat%')
+        ).order_by(Competicao.id.desc()).first()
 
     if not copa:
         return "<h2 style='font-family:monospace;color:#e74c3c;padding:2rem'>Copa do Mundo não encontrada no banco.<br>Importe primeiro em /admin/competicoes</h2>"
