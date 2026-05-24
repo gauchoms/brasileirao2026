@@ -4,7 +4,6 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from config import Config
 
-
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -15,58 +14,43 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
-    
+
     login_manager.init_app(app)
     login_manager.login_view = 'main.login'
     login_manager.login_message = 'Faça login para acessar esta página.'
 
     from app import routes
     app.register_blueprint(routes.bp)
-    # ADICIONAR AQUI DENTRO:
-    from app.helpers import (
-        traduzir_pais,
-        obter_logo_time,
-        obter_bandeira_selecao,
-        eh_selecao,
-        obter_logo_ou_bandeira
-    )
-    
-    # Disponibiliza funções nos templates
-    app.jinja_env.globals.update(
-        traduzir_pais=traduzir_pais,
-        obter_logo_time=obter_logo_time,
-        obter_bandeira_selecao=obter_bandeira_selecao,
-        eh_selecao=eh_selecao,
-        obter_logo_ou_bandeira=obter_logo_ou_bandeira
-    )
-    
-    from app import routes_projecoes
-    app.register_blueprint(routes_projecoes.bp_projecoes)
 
-    # ADICIONAR ESTAS 2 LINHAS:
     from app import routes_export
     app.register_blueprint(routes_export.bp_export)
 
-    
-    
     # Importa a função de conversão de timezone
     from app.utils import converter_utc_brasilia
-    
-    # Registra filtro Jinja2
+
+    # Filtro completo: "11/06/2026 às 16:00"
     @app.template_filter('brasilia')
     def brasilia_filter(data):
         if not data:
             return ''
         data_br = converter_utc_brasilia(data)
-        return data_br.strftime('%d/%m/%Y às %H:%M:%S')
+        if not data_br:
+            # fallback: retorna a string original sem o "T"
+            return str(data).replace('T', ' ')[:16]
+        return data_br.strftime('%d/%m/%Y às %H:%M')
 
-    # Scheduler de atualização automática
-    import os
-    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-        from app.scheduler import iniciar_scheduler
-        iniciar_scheduler(app)
+    # Filtro curto para cards compactos: "11/06 às 16:00"
+    @app.template_filter('brasilia_curto')
+    def brasilia_curto_filter(data):
+        if not data:
+            return ''
+        data_br = converter_utc_brasilia(data)
+        if not data_br:
+            return str(data).replace('T', ' ')[:16]
+        return data_br.strftime('%d/%m às %H:%M')
 
     return app
+
 
 @login_manager.user_loader
 def load_user(user_id):

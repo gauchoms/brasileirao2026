@@ -244,7 +244,7 @@
                         <div style="font-size: 0.85rem; color: var(--texto-fraco);">
                             {% if jogo.data %}
                                 {# Data já vem como string do banco #}
-                                {{ jogo.data[:16] if jogo.data|length > 16 else jogo.data }}
+                                {{ jogo.data|brasilia }}
                             {% endif %}
                         </div>
                     </div>
