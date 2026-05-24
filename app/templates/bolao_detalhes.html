@@ -85,11 +85,10 @@
                         <th style="text-align: left; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_participante">PARTICIPANTE</th>
                         <th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco);" data-i18n="bd_pontos">PONTOS</th>
                         {% for c in criterios %}
-                            {% if c == 'placares_exatos' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Placares Exatos">🎯 Exatos</th>
-                            {% elif c == 'acertos_resultado' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Acertos de Resultado">✅ Result.</th>
-                            {% elif c == 'gols_vencedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Gols do Vencedor">⚽ Venc.</th>
-                            {% elif c == 'gols_perdedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Gols do Perdedor">❌ Perd.</th>
-                            {% elif c == 'palpite_antigo' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Critério de desempate: Palpite mais antigo vence">⏱️ 1º Palpite</th>
+                            {% if c == 'placares_exatos' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Placares Exatos">🎯 Exatos</th>
+                            {% elif c == 'acertos_resultado' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Acertos de Resultado">✅ Result.</th>
+                            {% elif c == 'gols_vencedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Gols do Vencedor">⚽ Venc.</th>
+                            {% elif c == 'gols_perdedor' %}<th style="text-align: center; padding: 0.7rem; color: var(--texto-fraco); font-size: 0.8rem;" title="Gols do Perdedor">❌ Perd.</th>
                             {% endif %}
                         {% endfor %}
                     </tr>
@@ -97,11 +96,7 @@
                 <tbody>
                     {% for item in ranking %}
                     {% set part = item.participante %}
-                    {% set prox = ranking[loop.index] if loop.index < ranking|length else none %}
-                    {% set prev = ranking[loop.index - 2] if loop.index > 1 else none %}
-                    {% set empatado_acima = prev and prev.pontos == item.pontos %}
-                    <tr style="border-bottom: 1px solid var(--cinza-medio);
-                               {% if empatado_acima %}border-left: 3px solid var(--amarelo);{% endif %}">
+                    <tr style="border-bottom: 1px solid var(--cinza-medio);">
                         <td style="text-align: center; padding: 1rem; font-weight: 600; font-size: 1.1rem;">
                             {% if loop.index == 1 %}
                                 <span style="color: var(--amarelo);">🥇</span>
@@ -142,31 +137,10 @@
                             </div>
                         </td>
                         {% for c in criterios %}
-                            {% if c == 'placares_exatos' %}
-                                <td style="text-align: center; padding: 1rem;
-                                    {% if empatado_acima and item.placares_exatos != prev.placares_exatos %}color: var(--verde); font-weight: 700;
-                                    {% else %}color: var(--texto-fraco);{% endif %}">
-                                    {{ item.placares_exatos }}
-                                </td>
-                            {% elif c == 'acertos_resultado' %}
-                                <td style="text-align: center; padding: 1rem;
-                                    {% if empatado_acima and item.acertos_resultado != prev.acertos_resultado %}color: var(--verde); font-weight: 700;
-                                    {% else %}color: var(--texto-fraco);{% endif %}">
-                                    {{ item.acertos_resultado }}
-                                </td>
-                            {% elif c == 'gols_vencedor' %}
-                                <td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_vencedor }}</td>
-                            {% elif c == 'gols_perdedor' %}
-                                <td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_perdedor }}</td>
-                            {% elif c == 'palpite_antigo' %}
-                                <td style="text-align: center; padding: 1rem; color: var(--texto-fraco); font-size: 0.8rem;"
-                                    title="Quanto antes, melhor posição em caso de empate total">
-                                    {% if item.timestamp_min %}
-                                        {{ (item.timestamp_min / 1000)|int|timestamp_to_date }}
-                                    {% else %}
-                                        <span style="color: #e74c3c;" title="Ainda não palpitou">Sem palpite</span>
-                                    {% endif %}
-                                </td>
+                            {% if c == 'placares_exatos' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.placares_exatos }}</td>
+                            {% elif c == 'acertos_resultado' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.acertos_resultado }}</td>
+                            {% elif c == 'gols_vencedor' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_vencedor }}</td>
+                            {% elif c == 'gols_perdedor' %}<td style="text-align: center; padding: 1rem; color: var(--texto-fraco);">{{ item.gols_perdedor }}</td>
                             {% endif %}
                         {% endfor %}
                     </tr>
@@ -174,29 +148,12 @@
                 </tbody>
             </table></div>
             <!-- Legenda critérios de desempate -->
-            <div style="padding: 1rem 1.2rem; background: var(--cinza-medio); font-size: 0.82rem; color: var(--texto-fraco);">
-                <span style="font-weight: 600; margin-right: 0.5rem;">🔀 Em caso de empate:</span>
+            <div style="padding: 0.8rem 1rem; background: var(--cinza-medio); font-size: 0.8rem; color: var(--texto-fraco);">
+                🔀 Desempate:
                 {% for c in criterios %}
-                    <span style="display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <span style="background: var(--texto-fraco); color: var(--fundo); border-radius: 50%;
-                                     width: 16px; height: 16px; display: inline-flex; align-items: center;
-                                     justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0;">
-                            {{ loop.index }}
-                        </span>
-                        {% if c == 'placares_exatos' %}🎯 Mais placares exatos
-                        {% elif c == 'acertos_resultado' %}✅ Mais acertos de resultado
-                        {% elif c == 'gols_vencedor' %}⚽ Mais gols do vencedor
-                        {% elif c == 'gols_perdedor' %}❌ Mais gols do perdedor
-                        {% elif c == 'palpite_antigo' %}⏱️ Palpite mais antigo
-                        {% endif %}
-                    </span>
-                    {% if not loop.last %}
-                        <span style="margin: 0 0.4rem; color: var(--cinza-escuro);">›</span>
-                    {% endif %}
+                    {% if c == 'placares_exatos' %}🎯 Placares exatos{% elif c == 'acertos_resultado' %}✅ Acertos de resultado{% elif c == 'palpite_antigo' %}⏱️ Palpite mais antigo{% endif %}
+                    {% if not loop.last %} → {% endif %}
                 {% endfor %}
-                <span style="display: block; margin-top: 0.4rem; font-size: 0.75rem; opacity: 0.7;">
-                    💡 Borda amarela = empatado em pontos com o jogador acima
-                </span>
             </div>
         </div>
 
@@ -269,9 +226,7 @@
                         {% endif %}
                     {% endfor %}
                     {% for rodada in rodadas|sort_rodadas %}
-                        <option value="{{ rodada }}">
-                            {%- if rodada|string|int(-1) >= 0 %}Rodada {{ rodada }}{%- else %}{{ rodada }}{%- endif %}
-                        </option>
+                        <option value="{{ rodada }}">{%- if rodada|string|int(-1) >= 0 %}Rodada {{ rodada }}{%- else %}{{ rodada }}{%- endif %}</option>
                     {% endfor %}
                 </select>
                 
@@ -608,132 +563,110 @@
         </div>
     </div>
 
-    <!-- Tab: Chaveamento (Copa do Mundo / torneios com fases eliminatórias) -->
+    <!-- Tab: Chaveamento -->
     {% set fases_ko = ['Round of 16','Quarter-finals','Semi-finals','3rd Place Final','Final'] %}
     {% set jogos_ko = jogos|selectattr('rodada', 'in', fases_ko)|list %}
     {% if jogos_ko|length > 0 %}
     <div id="content-chaveamento" style="display: none;">
         <h2 style="margin-bottom: 1.5rem;">🏆 Chaveamento</h2>
 
-        {% macro card_jogo_ko(jogo) %}
+        {# Macro para renderizar um card de jogo no chaveamento #}
+        {% macro card_ko(jogo) %}
         {% set encerrado = jogo.gols_casa is not none %}
-        <div style="background: var(--cinza-medio); border-radius: 8px; overflow: hidden; min-width: 180px; max-width: 220px;">
-            <!-- Time Casa -->
-            <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
-                        background: {% if encerrado and jogo.gols_casa > jogo.gols_fora %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
-                {% if jogo.time_casa.logo_url %}
-                    <img src="{{ jogo.time_casa.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
+        {% set ph_casa = jogo.time_casa.api_id >= 9000000 %}
+        {% set ph_fora = jogo.time_fora.api_id >= 9000000 %}
+        <div style="background:var(--cinza-medio);border-radius:8px;overflow:hidden;min-width:190px;max-width:230px;flex-shrink:0;">
+            {# Time Casa #}
+            <div style="display:flex;align-items:center;gap:0.5rem;padding:0.55rem 0.75rem;
+                        background:{% if encerrado and jogo.gols_casa > jogo.gols_fora %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
+                {% if ph_casa %}
+                    <span style="font-size:1.1rem;opacity:0.4;">❓</span>
+                    <span style="font-size:0.82rem;font-style:italic;color:var(--texto-fraco);flex:1;">{{ jogo.time_casa.nome }}</span>
                 {% else %}
-                    <span style="font-size:1rem;">⚽</span>
+                    {% set flag_c = flag_emoji(jogo.time_casa.nome) %}
+                    {% if flag_c %}<span style="font-size:1.3rem;line-height:1;">{{ flag_c }}</span>
+                    {% elif jogo.time_casa.logo_url %}<img src="{{ jogo.time_casa.logo_url }}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">
+                    {% else %}<span style="font-size:0.7rem;font-weight:700;background:var(--cinza);padding:2px 4px;border-radius:3px;">{{ jogo.time_casa.nome[:3]|upper }}</span>{% endif %}
+                    <span style="font-size:0.85rem;font-weight:600;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+                        {{ traduzir_pais(jogo.time_casa.nome) if eh_selecao(jogo.time_casa.nome) else jogo.time_casa.nome }}
+                    </span>
                 {% endif %}
-                <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
-                    {{ traduzir_pais(jogo.time_casa.nome) if eh_selecao(jogo.time_casa.nome) else jogo.time_casa.nome }}
-                </span>
                 {% if encerrado %}
-                <span style="font-size: 0.95rem; font-weight: 700; min-width: 18px; text-align:right;
-                             color: {% if jogo.gols_casa > jogo.gols_fora %}var(--verde){% else %}var(--texto-fraco){% endif %};">
+                <span style="font-size:1rem;font-weight:700;min-width:18px;text-align:right;
+                             color:{% if jogo.gols_casa > jogo.gols_fora %}var(--verde){% else %}var(--texto-fraco){% endif %};">
                     {{ jogo.gols_casa }}
-                </span>
-                {% endif %}
+                </span>{% endif %}
             </div>
-            <!-- Divisor -->
-            <div style="height: 1px; background: var(--cinza);"></div>
-            <!-- Time Fora -->
-            <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
-                        background: {% if encerrado and jogo.gols_fora > jogo.gols_casa %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
-                {% if jogo.time_fora.logo_url %}
-                    <img src="{{ jogo.time_fora.logo_url }}" style="width:22px; height:22px; object-fit:contain;">
+            {# Divisor #}
+            <div style="height:1px;background:rgba(255,255,255,0.08);"></div>
+            {# Time Fora #}
+            <div style="display:flex;align-items:center;gap:0.5rem;padding:0.55rem 0.75rem;
+                        background:{% if encerrado and jogo.gols_fora > jogo.gols_casa %}rgba(0,200,100,0.15){% else %}transparent{% endif %};">
+                {% if ph_fora %}
+                    <span style="font-size:1.1rem;opacity:0.4;">❓</span>
+                    <span style="font-size:0.82rem;font-style:italic;color:var(--texto-fraco);flex:1;">{{ jogo.time_fora.nome }}</span>
                 {% else %}
-                    <span style="font-size:1rem;">⚽</span>
+                    {% set flag_f = flag_emoji(jogo.time_fora.nome) %}
+                    {% if flag_f %}<span style="font-size:1.3rem;line-height:1;">{{ flag_f }}</span>
+                    {% elif jogo.time_fora.logo_url %}<img src="{{ jogo.time_fora.logo_url }}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">
+                    {% else %}<span style="font-size:0.7rem;font-weight:700;background:var(--cinza);padding:2px 4px;border-radius:3px;">{{ jogo.time_fora.nome[:3]|upper }}</span>{% endif %}
+                    <span style="font-size:0.85rem;font-weight:600;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+                        {{ traduzir_pais(jogo.time_fora.nome) if eh_selecao(jogo.time_fora.nome) else jogo.time_fora.nome }}
+                    </span>
                 {% endif %}
-                <span style="font-size: 0.85rem; font-weight: 600; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
-                    {{ traduzir_pais(jogo.time_fora.nome) if eh_selecao(jogo.time_fora.nome) else jogo.time_fora.nome }}
-                </span>
                 {% if encerrado %}
-                <span style="font-size: 0.95rem; font-weight: 700; min-width: 18px; text-align:right;
-                             color: {% if jogo.gols_fora > jogo.gols_casa %}var(--verde){% else %}var(--texto-fraco){% endif %};">
+                <span style="font-size:1rem;font-weight:700;min-width:18px;text-align:right;
+                             color:{% if jogo.gols_fora > jogo.gols_casa %}var(--verde){% else %}var(--texto-fraco){% endif %};">
                     {{ jogo.gols_fora }}
-                </span>
-                {% endif %}
+                </span>{% endif %}
             </div>
+            {# Data ou Pendente #}
             {% if not encerrado %}
-            <div style="text-align:center; padding: 0.3rem; font-size: 0.7rem; color: var(--texto-fraco);">
-                {{ jogo.data|brasilia }}
+            <div style="text-align:center;padding:0.3rem 0.5rem;font-size:0.72rem;color:var(--texto-fraco);border-top:1px solid rgba(255,255,255,0.05);">
+                {% if jogo.data %}{{ jogo.data|brasilia }}{% else %}Data a definir{% endif %}
             </div>
             {% endif %}
         </div>
         {% endmacro %}
 
-        {% set oitavas   = jogos|selectattr('rodada', 'equalto', 'Round of 16')|list %}
-        {% set quartas   = jogos|selectattr('rodada', 'equalto', 'Quarter-finals')|list %}
-        {% set semis     = jogos|selectattr('rodada', 'equalto', 'Semi-finals')|list %}
-        {% set terceiro  = jogos|selectattr('rodada', 'equalto', '3rd Place Final')|list %}
-        {% set final_j   = jogos|selectattr('rodada', 'equalto', 'Final')|list %}
-
-        <!-- Legenda das fases -->
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+        {# Legenda de fases #}
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:center;">
             {% for fase, label, cor in [
-                ('Round of 16',    'Oitavas de Final',   'var(--cinza-medio)'),
-                ('Quarter-finals', 'Quartas de Final',   'var(--cinza-medio)'),
-                ('Semi-finals',    'Semifinal',           'var(--amarelo)'),
-                ('Final',          'Final',               'var(--verde)')
+                ('Round of 16','Oitavas','var(--cinza-medio)'),
+                ('Quarter-finals','Quartas','#1a4a6e'),
+                ('Semi-finals','Semifinal','#4a3a00'),
+                ('Final','Final','#2a4a00')
             ] %}
-            {% if jogos|selectattr('rodada','equalto',fase)|list|length > 0 %}
-            <span style="background: {{ cor }}; color: {% if cor == 'var(--verde)' or cor == 'var(--amarelo)' %}#000{% else %}var(--texto){% endif %};
-                         padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
-                {{ jogos|selectattr('rodada','equalto',fase)|list|length }}x {{ label }}
+            {% set count = jogos|selectattr('rodada','equalto',fase)|list|length %}
+            {% if count > 0 %}
+            <span style="background:{{ cor }};color:var(--texto);padding:0.25rem 0.7rem;border-radius:4px;font-size:0.8rem;font-weight:600;">
+                {{ count }}× {{ label }}
             </span>
             {% endif %}
             {% endfor %}
+            <span style="font-size:0.75rem;color:var(--texto-fraco);margin-left:0.5rem;">
+                ❓ = time ainda não definido
+            </span>
         </div>
 
-        <!-- OITAVAS -->
-        {% if oitavas|length > 0 %}
-        <div style="margin-bottom: 2rem;">
-            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">OITAVAS DE FINAL</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-                {% for jogo in oitavas %}{{ card_jogo_ko(jogo) }}{% endfor %}
+        {# Seções por fase #}
+        {% for fase, label, cor_label in [
+            ('Round of 16',     'OITAVAS DE FINAL',  'var(--texto-fraco)'),
+            ('Quarter-finals',  'QUARTAS DE FINAL',  'var(--amarelo)'),
+            ('Semi-finals',     'SEMIFINAIS',         'var(--amarelo)'),
+            ('3rd Place Final', '3º LUGAR',           'var(--texto-fraco)'),
+            ('Final',           '🏆 FINAL',           'var(--verde)')
+        ] %}
+        {% set jogos_fase = jogos|selectattr('rodada','equalto',fase)|list %}
+        {% if jogos_fase|length > 0 %}
+        <div style="margin-bottom:2rem;">
+            <h3 style="color:{{ cor_label }};font-size:0.82rem;letter-spacing:1.5px;margin-bottom:0.9rem;font-weight:700;">{{ label }}</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
+                {% for jogo in jogos_fase %}{{ card_ko(jogo) }}{% endfor %}
             </div>
         </div>
         {% endif %}
-
-        <!-- QUARTAS -->
-        {% if quartas|length > 0 %}
-        <div style="margin-bottom: 2rem;">
-            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">QUARTAS DE FINAL</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-                {% for jogo in quartas %}{{ card_jogo_ko(jogo) }}{% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- SEMIFINAIS -->
-        {% if semis|length > 0 %}
-        <div style="margin-bottom: 2rem;">
-            <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">SEMIFINAIS</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-                {% for jogo in semis %}{{ card_jogo_ko(jogo) }}{% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- 3º LUGAR + FINAL -->
-        {% if terceiro|length > 0 or final_j|length > 0 %}
-        <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
-            {% if terceiro|length > 0 %}
-            <div>
-                <h3 style="color: var(--texto-fraco); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">3º LUGAR</h3>
-                {% for jogo in terceiro %}{{ card_jogo_ko(jogo) }}{% endfor %}
-            </div>
-            {% endif %}
-            {% if final_j|length > 0 %}
-            <div>
-                <h3 style="color: var(--amarelo); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 1rem;">🏆 FINAL</h3>
-                {% for jogo in final_j %}{{ card_jogo_ko(jogo) }}{% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
+        {% endfor %}
 
     </div>
     {% endif %}
