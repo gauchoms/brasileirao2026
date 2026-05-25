@@ -57,6 +57,34 @@ def garantir_time_placeholder(nome_original):
         db.session.flush()
     return time
 
+
+def configurar_cloudinary():
+    import cloudinary
+    cloudinary.config(
+        cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.getenv('CLOUDINARY_API_KEY'),
+        api_secret=os.getenv('CLOUDINARY_API_SECRET')
+    )
+
+def upload_logo_cloudinary(api_id, logo_url_original):
+    """Faz upload da logo para Cloudinary. Retorna URL ou None."""
+    if not logo_url_original:
+        return None
+    try:
+        import cloudinary.uploader
+        configurar_cloudinary()
+        resultado = cloudinary.uploader.upload(
+            logo_url_original,
+            public_id=f"logos/teams/{api_id}",
+            overwrite=False,
+            resource_type="image",
+            transformation=[{"width": 120, "height": 120, "crop": "fit"}]
+        )
+        return resultado.get("secure_url")
+    except Exception as e:
+        print(f"[CLOUDINARY] Erro logo {api_id}: {e}")
+        return None
+
 def get_jogos_brasileirao():
     url = f"{BASE_URL}/fixtures"
     params = {"league": 71, "season": 2026}

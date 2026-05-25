@@ -204,6 +204,66 @@ def sincronizar_jogos_job(app):
 
 
 
+
+def corrigir_horarios_job(app):
+    """
+    Corrige horários de todos os jogos comparando com a API Football.
+    Roda toda segunda-feira às 6h (Brasília).
+    """
+    with app.app_context():
+        try:
+            from app.models import Jogo, Competicao
+            from app import db
+            import requests, os
+
+            print(f"[SCHEDULER] Corrigindo horários: {datetime.now(BRASILIA).strftime('%d/%m/%Y %H:%M')}")
+
+            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+            total_corrigidos = 0
+            total_verificados = 0
+
+            competicoes = Competicao.query.filter(Competicao.api_league_id.isnot(None)).all()
+
+            for comp in competicoes:
+                jogos_comp = Jogo.query.filter_by(competicao_id=comp.id).all()
+                if not jogos_comp:
+                    continue
+
+                seasons = set()
+                for j in jogos_comp:
+                    if j.data:
+                        try: seasons.add(int(j.data[:4]))
+                        except: pass
+
+                jogos_api = {}
+                for season in seasons:
+                    try:
+                        r = requests.get(
+                            "https://v3.football.api-sports.io/fixtures",
+                            headers=headers,
+                            params={"league": comp.api_league_id, "season": season},
+                            timeout=15
+                        )
+                        for f in r.json().get("response", []):
+                            jogos_api[f["fixture"]["id"]] = f["fixture"]["date"]
+                    except Exception as e:
+                        print(f"[SCHEDULER] Erro {comp.nome} season {season}: {e}")
+                        continue
+
+                for jogo in jogos_comp:
+                    total_verificados += 1
+                    if jogo.api_id in jogos_api:
+                        nova_data = jogos_api[jogo.api_id]
+                        if nova_data != jogo.data:
+                            jogo.data = nova_data
+                            total_corrigidos += 1
+
+            db.session.commit()
+            print(f"[SCHEDULER] Horários: {total_corrigidos} corrigidos em {total_verificados} verificados ✅")
+
+        except Exception as e:
+            print(f"[SCHEDULER] Erro ao corrigir horários: {e}")
+
 def popular_grupos_job(app):
     """
     Atualiza o campo 'grupo' de todos os jogos de competições do tipo 'cup'
@@ -313,6 +373,17 @@ def iniciar_scheduler(app):
         replace_existing=True
     )
 
+    # Job E: toda segunda-feira às 6h, corrige horários
+    from apscheduler.triggers.cron import CronTrigger
+    _scheduler.add_job(
+        func=corrigir_horarios_job,
+        trigger=CronTrigger(day_of_week='mon', hour=6, minute=0, timezone=BRASILIA),
+        args=[app],
+        id='corrigir_horarios',
+        name='Corrigir horários semanalmente',
+        replace_existing=True
+    )
+
     # Job F: toda segunda-feira às 6h30, popula grupos de competições cup
     from apscheduler.triggers.cron import CronTrigger as CronTriggerF
     _scheduler.add_job(
@@ -325,5 +396,6 @@ def iniciar_scheduler(app):
     )
 
     _scheduler.start()
+    print("[SCHEDULER] Iniciado com 6 jobs ativos ✅")
     print("[SCHEDULER] Iniciado com 3 jobs ativos ✅")
     return _scheduler

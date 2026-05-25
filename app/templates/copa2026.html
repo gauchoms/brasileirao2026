@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}Copa do Mundo 2026{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 2.5rem; padding: 2rem 0;">
+        <div style="font-size: 3rem; margin-bottom: 0.5rem;">🌍🏆</div>
+        <h1 style="font-size: 2rem; margin-bottom: 0.3rem;">Copa do Mundo 2026</h1>
+        <p style="color: var(--texto-fraco);">Estados Unidos · Canadá · México &nbsp;|&nbsp; 11 Jun — 19 Jul 2026</p>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: flex; border-bottom: 2px solid var(--cinza-medio); margin-bottom: 2rem; gap: 0; overflow-x: auto;">
+        {% for tab_id, tab_label in [('classificacao','🗂️ Classificação'),('proximos','📅 Próximos'),('resultados','✅ Resultados'),('artilheiros','⚽ Artilheiros')] %}
+        <a href="#" onclick="mostrarTab('{{ tab_id }}'); return false;" id="tab-{{ tab_id }}"
+           style="padding: 0.9rem 1.4rem; text-decoration: none; white-space: nowrap;
+                  color: {% if loop.first %}var(--texto){% else %}var(--texto-fraco){% endif %};
+                  border-bottom: {% if loop.first %}3px solid var(--verde){% else %}3px solid transparent{% endif %};
+                  font-weight: {% if loop.first %}600{% else %}400{% endif %}; font-size: 0.95rem;">
+            {{ tab_label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- CLASSIFICAÇÃO -->
+    <div id="content-classificacao">
+        {% if standings %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
+            {% for grupo in standings %}
+            <div style="background: var(--cinza); border-radius: 10px; overflow: hidden;">
+                <div style="background: var(--verde); color: #000; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5px;">
+                    {{ grupo.grupo }}
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--cinza-medio); color: var(--texto-fraco); font-size: 0.75rem;">
+                            <th style="text-align: left; padding: 0.5rem 0.8rem;">Time</th>
+                            <th style="text-align: center; padding: 0.5rem 0.4rem;" title="Jogos">J</th>
+                            <th style="text-align: center; padding: 0.5rem 0.4rem;" title="Vitórias">V</th>
+                            <th style="text-align: center; padding: 0.5rem 0.4rem;" title="Empates">E</th>
+                            <th style="text-align: center; padding: 0.5rem 0.4rem;" title="Derrotas">D</th>
+                            <th style="text-align: center; padding: 0.5rem 0.4rem;" title="Saldo de Gols">SG</th>
+                            <th style="text-align: center; padding: 0.5rem 0.8rem;" title="Pontos"><strong>Pts</strong></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in grupo.times %}
+                        {% set classificado = entry.rank <= 2 %}
+                        {% set melhor_terceiro = entry.rank == 3 %}
+                        <tr style="border-bottom: 1px solid var(--cinza-medio);
+                                   {% if classificado %}background: rgba(0,200,100,0.06);{% endif %}">
+                            <td style="padding: 0.6rem 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--texto-fraco); font-size: 0.75rem; min-width: 14px;">{{ entry.rank }}</span>
+                                {% if entry.team.logo %}
+                                <img src="{{ entry.team.logo }}" style="width: 20px; height: 20px; object-fit: contain;"
+                                     onerror="this.style.display='none'">
+                                {% endif %}
+                                <span style="{% if classificado %}font-weight: 600;{% endif %}">
+                                    {{ traduzir_pais(entry.team.name) if eh_selecao(entry.team.name) else entry.team.name }}
+                                </span>
+                                {% if classificado %}<span style="color: var(--verde); font-size: 0.65rem;">✓</span>{% endif %}
+                            </td>
+                            <td style="text-align: center; padding: 0.6rem 0.4rem; color: var(--texto-fraco);">{{ entry.all.played }}</td>
+                            <td style="text-align: center; padding: 0.6rem 0.4rem; color: var(--verde);">{{ entry.all.win }}</td>
+                            <td style="text-align: center; padding: 0.6rem 0.4rem; color: var(--texto-fraco);">{{ entry.all.draw }}</td>
+                            <td style="text-align: center; padding: 0.6rem 0.4rem; color: #e74c3c;">{{ entry.all.lose }}</td>
+                            <td style="text-align: center; padding: 0.6rem 0.4rem;">
+                                {% set sg = entry.goalsDiff %}
+                                <span style="color: {% if sg > 0 %}var(--verde){% elif sg < 0 %}#e74c3c{% else %}var(--texto-fraco){% endif %}">
+                                    {% if sg > 0 %}+{% endif %}{{ sg }}
+                                </span>
+                            </td>
+                            <td style="text-align: center; padding: 0.6rem 0.8rem;"><strong>{{ entry.points }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+        <p style="color: var(--texto-fraco); font-size: 0.8rem; margin-top: 1rem; text-align: center;">
+            ✓ = classificado para as oitavas de final
+        </p>
+        {% else %}
+        <div style="text-align: center; padding: 4rem; color: var(--texto-fraco);">
+            <p style="font-size: 2rem; margin-bottom: 1rem;">⏳</p>
+            <p>Classificação disponível a partir do início da fase de grupos (11/06/2026)</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- PRÓXIMOS JOGOS -->
+    <div id="content-proximos" style="display: none;">
+        {% if proximos %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for jogo in proximos %}
+            {% set ao_vivo = jogo.status in ['1H','2H','HT','ET','BT','P','LIVE'] %}
+            <div style="background: var(--cinza); border-radius: 8px; padding: 1rem 1.2rem;
+                        {% if ao_vivo %}border-left: 3px solid #e74c3c;{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <!-- Info -->
+                    <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 200px; flex: 1;">
+                        {% if ao_vivo %}
+                        <span style="background: #e74c3c; color: white; font-size: 0.65rem; font-weight: 700;
+                                     padding: 0.15rem 0.4rem; border-radius: 3px; animation: pulse 1.5s infinite;">AO VIVO</span>
+                        {% else %}
+                        <span style="font-size: 0.8rem; color: var(--texto-fraco);">{{ jogo.data }}</span>
+                        {% endif %}
+                        {% if jogo.grupo %}
+                        <span style="background: var(--verde); color: #000; font-size: 0.65rem; font-weight: 700;
+                                     padding: 0.1rem 0.4rem; border-radius: 3px;">{{ jogo.grupo }}</span>
+                        {% endif %}
+                    </div>
+                    <!-- Confronto -->
+                    <div style="display: flex; align-items: center; gap: 1rem; flex: 2; justify-content: center;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; flex: 1;">
+                            <span style="font-weight: 600; text-align: right;">
+                                {{ traduzir_pais(jogo.casa) if eh_selecao(jogo.casa) else jogo.casa }}
+                            </span>
+                            {% set flag_c = flag_emoji(jogo.casa) %}
+                            {% if flag_c %}<span style="font-size: 1.3rem;">{{ flag_c }}</span>
+                            {% elif jogo.logo_casa %}<img src="{{ jogo.logo_casa }}" style="width:24px;height:24px;object-fit:contain" onerror="this.style.display='none'">
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 1.1rem; font-weight: 700; min-width: 60px; text-align: center; color: var(--texto-fraco);">
+                            {% if jogo.gols_casa is not none %}
+                                <span style="color: var(--texto);">{{ jogo.gols_casa }} × {{ jogo.gols_fora }}</span>
+                            {% else %}
+                                ×
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                            {% set flag_f = flag_emoji(jogo.fora) %}
+                            {% if flag_f %}<span style="font-size: 1.3rem;">{{ flag_f }}</span>
+                            {% elif jogo.logo_fora %}<img src="{{ jogo.logo_fora }}" style="width:24px;height:24px;object-fit:contain" onerror="this.style.display='none'">
+                            {% endif %}
+                            <span style="font-weight: 600;">
+                                {{ traduzir_pais(jogo.fora) if eh_selecao(jogo.fora) else jogo.fora }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 4rem; color: var(--texto-fraco);">
+            <p>Nenhum jogo programado nos próximos dias</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- RESULTADOS -->
+    <div id="content-resultados" style="display: none;">
+        {% if resultados %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for jogo in resultados %}
+            <div style="background: var(--cinza); border-radius: 8px; padding: 1rem 1.2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 200px; flex: 1;">
+                        <span style="font-size: 0.8rem; color: var(--texto-fraco);">{{ jogo.data }}</span>
+                        {% if jogo.grupo %}
+                        <span style="background: var(--cinza-medio); color: var(--texto-fraco); font-size: 0.65rem;
+                                     padding: 0.1rem 0.4rem; border-radius: 3px;">{{ jogo.grupo }}</span>
+                        {% endif %}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; flex: 2; justify-content: center;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; flex: 1;">
+                            <span style="font-weight: {% if jogo.vencedor %}700{% else %}400{% endif %};">
+                                {{ traduzir_pais(jogo.casa) if eh_selecao(jogo.casa) else jogo.casa }}
+                            </span>
+                            {% set flag_c = flag_emoji(jogo.casa) %}
+                            {% if flag_c %}<span style="font-size: 1.3rem;">{{ flag_c }}</span>
+                            {% elif jogo.logo_casa %}<img src="{{ jogo.logo_casa }}" style="width:24px;height:24px;object-fit:contain" onerror="this.style.display='none'">
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 1.1rem; font-weight: 700; min-width: 60px; text-align: center;
+                                    background: var(--cinza-medio); padding: 0.3rem 0.8rem; border-radius: 6px;">
+                            {{ jogo.gols_casa }} × {{ jogo.gols_fora }}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                            {% set flag_f = flag_emoji(jogo.fora) %}
+                            {% if flag_f %}<span style="font-size: 1.3rem;">{{ flag_f }}</span>
+                            {% elif jogo.logo_fora %}<img src="{{ jogo.logo_fora }}" style="width:24px;height:24px;object-fit:contain" onerror="this.style.display='none'">
+                            {% endif %}
+                            <span style="font-weight: {% if jogo.vencedor == false %}700{% else %}400{% endif %};">
+                                {{ traduzir_pais(jogo.fora) if eh_selecao(jogo.fora) else jogo.fora }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 4rem; color: var(--texto-fraco);">
+            <p>Nenhum resultado ainda. A Copa começa em 11/06/2026!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ARTILHEIROS -->
+    <div id="content-artilheiros" style="display: none;">
+        {% if artilheiros %}
+        <div style="background: var(--cinza); border-radius: 10px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--verde); color: var(--texto-fraco); font-size: 0.8rem;">
+                        <th style="text-align: left; padding: 0.8rem 1rem;">#</th>
+                        <th style="text-align: left; padding: 0.8rem 1rem;">Jogador</th>
+                        <th style="text-align: center; padding: 0.8rem 1rem;">Seleção</th>
+                        <th style="text-align: center; padding: 0.8rem 1rem;" title="Gols">⚽ Gols</th>
+                        <th style="text-align: center; padding: 0.8rem 1rem;" title="Assistências">🅰️ Assist.</th>
+                        <th style="text-align: center; padding: 0.8rem 1rem;" title="Jogos">Jogos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in artilheiros %}
+                    {% set p = item.player %}
+                    {% set s = item.statistics[0] if item.statistics else {} %}
+                    <tr style="border-bottom: 1px solid var(--cinza-medio);">
+                        <td style="padding: 0.8rem 1rem; color: var(--texto-fraco); font-weight: 700;">
+                            {% if loop.index == 1 %}🥇
+                            {% elif loop.index == 2 %}🥈
+                            {% elif loop.index == 3 %}🥉
+                            {% else %}{{ loop.index }}{% endif %}
+                        </td>
+                        <td style="padding: 0.8rem 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                {% if p.photo %}
+                                <img src="{{ p.photo }}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;"
+                                     onerror="this.style.display='none'">
+                                {% endif %}
+                                <span style="font-weight: 600;">{{ p.name }}</span>
+                            </div>
+                        </td>
+                        <td style="text-align: center; padding: 0.8rem 1rem;">
+                            {% set time_nome = s.get('team', {}).get('name', '') if s else '' %}
+                            {% set flag = flag_emoji(time_nome) %}
+                            {% if flag %}<span style="font-size: 1.3rem;">{{ flag }}</span>
+                            {% elif time_nome %}{{ traduzir_pais(time_nome) if eh_selecao(time_nome) else time_nome }}
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center; padding: 0.8rem 1rem; font-size: 1.1rem; font-weight: 700; color: var(--verde);">
+                            {{ s.get('goals', {}).get('total', 0) if s else 0 }}
+                        </td>
+                        <td style="text-align: center; padding: 0.8rem 1rem; color: var(--amarelo);">
+                            {{ s.get('goals', {}).get('assists', 0) if s else 0 }}
+                        </td>
+                        <td style="text-align: center; padding: 0.8rem 1rem; color: var(--texto-fraco);">
+                            {{ s.get('games', {}).get('appearences', 0) if s else 0 }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 4rem; color: var(--texto-fraco);">
+            <p>Artilharia disponível após o início da Copa (11/06/2026)</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function mostrarTab(tab) {
+    ['classificacao','proximos','resultados','artilheiros'].forEach(t => {
+        const el = document.getElementById('content-' + t);
+        const tab_el = document.getElementById('tab-' + t);
+        if (el) el.style.display = t === tab ? 'block' : 'none';
+        if (tab_el) {
+            tab_el.style.color = t === tab ? 'var(--texto)' : 'var(--texto-fraco)';
+            tab_el.style.borderBottom = t === tab ? '3px solid var(--verde)' : '3px solid transparent';
+            tab_el.style.fontWeight = t === tab ? '600' : '400';
+        }
+    });
+}
+</script>
+{% endblock %}

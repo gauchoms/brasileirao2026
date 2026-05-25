@@ -2956,6 +2956,219 @@ def migrar_reset_senha_render():
         return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+
+
+@bp.route('/admin/popular_grupos_standings')
+@admin_required  
+def popular_grupos_standings():
+    """Busca /standings da Copa 2026 e popula jogo.grupo no banco."""
+    import requests, os, threading
+    from flask import current_app
+    app = current_app._get_current_object()
+
+    def job():
+        with app.app_context():
+            from app.models import Competicao, Jogo, Time
+            from app import db
+            import requests, os
+
+            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+            r = requests.get(
+                "https://v3.football.api-sports.io/standings",
+                headers=headers,
+                params={"league": 1, "season": 2026},
+                timeout=15
+            )
+            data = r.json()
+
+            # Montar mapeamento team_api_id → grupo
+            time_grupo = {}
+            for liga in data.get("response", []):
+                for grupo_list in liga.get("league", {}).get("standings", []):
+                    for entry in grupo_list:
+                        team_id = entry["team"]["id"]
+                        grupo   = entry.get("group", "")
+                        if grupo:
+                            time_grupo[team_id] = grupo
+
+            print(f"[STANDINGS] {len(time_grupo)} times com grupo mapeado")
+
+            copa = Competicao.query.filter_by(api_league_id=1, ano=2026).first()
+            if not copa:
+                print("[STANDINGS] Copa 2026 não encontrada")
+                return
+
+            atualizados = 0
+            for jogo in Jogo.query.filter_by(competicao_id=copa.id).all():
+                tc = jogo.time_casa
+                tf = jogo.time_fora
+                grupo = None
+                if tc and tc.api_id in time_grupo:
+                    grupo = time_grupo[tc.api_id]
+                elif tf and tf.api_id in time_grupo:
+                    grupo = time_grupo[tf.api_id]
+                if grupo and jogo.grupo != grupo:
+                    jogo.grupo = grupo
+                    atualizados += 1
+
+            db.session.commit()
+            print(f"[STANDINGS] {atualizados} jogos atualizados com grupo ✅")
+
+    threading.Thread(target=job, daemon=True).start()
+    return jsonify({"sucesso": True, "mensagem": "⏳ Populando grupos via standings em background"})
+
+
+@bp.route('/copa2026')
+def copa2026():
+    """Página pública com dados ao vivo da Copa do Mundo 2026."""
+    import requests, os
+    from app.utils import converter_utc_brasilia
+
+    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+
+    # Standings (classificação por grupo)
+    standings = []
+    try:
+        r = requests.get("https://v3.football.api-sports.io/standings",
+            headers=headers, params={"league": 1, "season": 2026}, timeout=10)
+        for liga in r.json().get("response", []):
+            for grupo_list in liga.get("league", {}).get("standings", []):
+                if grupo_list:
+                    grupo_nome = grupo_list[0].get("group", "")
+                    standings.append({
+                        "grupo": grupo_nome,
+                        "times": grupo_list
+                    })
+        standings.sort(key=lambda x: x["grupo"])
+    except Exception as e:
+        print(f"[copa2026] standings erro: {e}")
+
+    # Artilheiros
+    artilheiros = []
+    try:
+        r = requests.get("https://v3.football.api-sports.io/players/topscorers",
+            headers=headers, params={"league": 1, "season": 2026}, timeout=10)
+        artilheiros = r.json().get("response", [])[:10]
+    except Exception as e:
+        print(f"[copa2026] artilheiros erro: {e}")
+
+    # Próximos jogos
+    proximos = []
+    try:
+        r = requests.get("https://v3.football.api-sports.io/fixtures",
+            headers=headers, params={"league": 1, "season": 2026, "next": 12}, timeout=10)
+        for f in r.json().get("response", []):
+            data_br = converter_utc_brasilia(f["fixture"]["date"])
+            proximos.append({
+                "data":       data_br.strftime("%d/%m às %H:%M") if data_br else "?",
+                "rodada":     f["league"]["round"],
+                "grupo":      f["league"].get("group") or "",
+                "casa":       f["teams"]["home"]["name"],
+                "fora":       f["teams"]["away"]["name"],
+                "logo_casa":  f["teams"]["home"].get("logo",""),
+                "logo_fora":  f["teams"]["away"].get("logo",""),
+                "status":     f["fixture"]["status"]["short"],
+                "gols_casa":  f["goals"]["home"],
+                "gols_fora":  f["goals"]["away"],
+            })
+    except Exception as e:
+        print(f"[copa2026] próximos erro: {e}")
+
+    # Últimos resultados
+    resultados = []
+    try:
+        r = requests.get("https://v3.football.api-sports.io/fixtures",
+            headers=headers, params={"league": 1, "season": 2026, "last": 12}, timeout=10)
+        for f in r.json().get("response", []):
+            data_br = converter_utc_brasilia(f["fixture"]["date"])
+            resultados.append({
+                "data":       data_br.strftime("%d/%m %H:%M") if data_br else "?",
+                "grupo":      f["league"].get("group") or "",
+                "casa":       f["teams"]["home"]["name"],
+                "fora":       f["teams"]["away"]["name"],
+                "logo_casa":  f["teams"]["home"].get("logo",""),
+                "logo_fora":  f["teams"]["away"].get("logo",""),
+                "gols_casa":  f["goals"]["home"],
+                "gols_fora":  f["goals"]["away"],
+                "vencedor":   f["teams"]["home"]["winner"],
+            })
+    except Exception as e:
+        print(f"[copa2026] resultados erro: {e}")
+
+    return render_template("copa2026.html",
+        standings=standings,
+        artilheiros=artilheiros,
+        proximos=proximos,
+        resultados=resultados
+    )
+
+@bp.route('/admin/popular_grupos_copa')
+@admin_required
+def popular_grupos_copa():
+    """
+    Popula o campo grupo para todos os jogos da Copa do Mundo 2026.
+    Derivado do sorteio oficial (API Football não retorna esse campo).
+    """
+    from app.models import Competicao, Jogo, Time
+
+    # Mapeamento oficial: time → grupo (derivado do sorteio dez/2024)
+    TIME_GRUPO = {
+        "Mexico": "Group A", "South Africa": "Group A",
+        "South Korea": "Group A", "Czech Republic": "Group A",
+        "Canada": "Group B", "Switzerland": "Group B",
+        "Qatar": "Group B", "Bosnia & Herzegovina": "Group B",
+        "USA": "Group C", "Paraguay": "Group C",
+        "Australia": "Group C", "Türkiye": "Group C",
+        "Brazil": "Group D", "Morocco": "Group D",
+        "Haiti": "Group D", "Scotland": "Group D",
+        "Germany": "Group E", "Ecuador": "Group E",
+        "Ivory Coast": "Group E", "Curaçao": "Group E",
+        "Netherlands": "Group F", "Japan": "Group F",
+        "Sweden": "Group F", "Tunisia": "Group F",
+        "Spain": "Group G", "Uruguay": "Group G",
+        "Saudi Arabia": "Group G", "Cape Verde Islands": "Group G",
+        "Belgium": "Group H", "Egypt": "Group H",
+        "Iran": "Group H", "New Zealand": "Group H",
+        "France": "Group I", "Senegal": "Group I",
+        "Norway": "Group I", "Iraq": "Group I",
+        "England": "Group J", "Croatia": "Group J",
+        "Panama": "Group J", "Ghana": "Group J",
+        "Portugal": "Group K", "Uzbekistan": "Group K",
+        "Colombia": "Group K", "Congo DR": "Group K",
+        "Argentina": "Group L", "Algeria": "Group L",
+        "Austria": "Group L", "Jordan": "Group L",
+    }
+
+    copa = Competicao.query.filter(
+        Competicao.api_league_id == 1,
+        Competicao.ano == 2026
+    ).first()
+    if not copa:
+        return jsonify({"erro": "World Cup 2026 não encontrado"}), 404
+
+    atualizados = 0
+    nao_encontrados = []
+
+    for jogo in Jogo.query.filter_by(competicao_id=copa.id).all():
+        tc = jogo.time_casa.nome if jogo.time_casa else ""
+        grupo = TIME_GRUPO.get(tc)
+        if not grupo:
+            tf = jogo.time_fora.nome if jogo.time_fora else ""
+            grupo = TIME_GRUPO.get(tf)
+        if grupo and jogo.grupo != grupo:
+            jogo.grupo = grupo
+            atualizados += 1
+        elif not grupo:
+            nao_encontrados.append(f"{tc} × {jogo.time_fora.nome if jogo.time_fora else '?'}")
+
+    db.session.commit()
+    return jsonify({
+        "sucesso": True,
+        "atualizados": atualizados,
+        "nao_encontrados": nao_encontrados,
+        "mensagem": f"✅ {atualizados} jogos com grupo definido"
+    })
+
 @bp.route('/admin/popular_grupos/<int:competicao_id>')
 @admin_required
 def popular_grupos(competicao_id):
@@ -3006,4 +3219,17 @@ def popular_grupos(competicao_id):
 
     threading.Thread(target=job, daemon=True).start()
     return jsonify({"sucesso": True, "competicao": comp.nome, "mensagem": f"⏳ Populando grupos em background. Veja logs."})
+
+
+@bp.route('/admin/trocar_competicao/<int:bolao_id>/<int:nova_competicao_id>')
+@admin_required
+def trocar_competicao_bolao(bolao_id, nova_competicao_id):
+    """Troca a competição de um bolão."""
+    from app.models import Bolao, Competicao
+    bolao = Bolao.query.get_or_404(bolao_id)
+    nova  = Competicao.query.get_or_404(nova_competicao_id)
+    antiga = bolao.competicao.nome
+    bolao.competicao_id = nova_competicao_id
+    db.session.commit()
+    return jsonify({'sucesso': True, 'bolao': bolao.nome, 'de': antiga, 'para': nova.nome})
 
