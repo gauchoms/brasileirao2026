@@ -125,6 +125,86 @@ def calcular_pontos_palpite(palpite, jogo, regra):
     
     return pontos
 
+
+@bp.route('/copa2026')
+def copa2026():
+    """Página pública com dados ao vivo da Copa do Mundo 2026."""
+    import requests, os
+    from app.utils import converter_utc_brasilia
+
+    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+
+    standings = []
+    try:
+        r = requests.get("https://v3.football.api-sports.io/standings",
+            headers=headers, params={"league": 1, "season": 2026}, timeout=10)
+        for liga in r.json().get("response", []):
+            for grupo_list in liga.get("league", {}).get("standings", []):
+                if grupo_list:
+                    standings.append({
+                        "grupo": grupo_list[0].get("group", ""),
+                        "times": grupo_list
+                    })
+        standings.sort(key=lambda x: x["grupo"])
+    except Exception as e:
+        print(f"[copa2026] standings erro: {e}")
+
+    artilheiros = []
+    try:
+        r = requests.get("https://v3.football.api-sports.io/players/topscorers",
+            headers=headers, params={"league": 1, "season": 2026}, timeout=10)
+        artilheiros = r.json().get("response", [])[:10]
+    except Exception as e:
+        print(f"[copa2026] artilheiros erro: {e}")
+
+    proximos = []
+    try:
+        r = requests.get("https://v3.football.api-sports.io/fixtures",
+            headers=headers, params={"league": 1, "season": 2026, "next": 12}, timeout=10)
+        for f in r.json().get("response", []):
+            data_br = converter_utc_brasilia(f["fixture"]["date"])
+            proximos.append({
+                "data":      data_br.strftime("%d/%m às %H:%M") if data_br else "?",
+                "rodada":    f["league"]["round"],
+                "grupo":     f["league"].get("group") or "",
+                "casa":      f["teams"]["home"]["name"],
+                "fora":      f["teams"]["away"]["name"],
+                "logo_casa": f["teams"]["home"].get("logo",""),
+                "logo_fora": f["teams"]["away"].get("logo",""),
+                "status":    f["fixture"]["status"]["short"],
+                "gols_casa": f["goals"]["home"],
+                "gols_fora": f["goals"]["away"],
+            })
+    except Exception as e:
+        print(f"[copa2026] proximos erro: {e}")
+
+    resultados = []
+    try:
+        r = requests.get("https://v3.football.api-sports.io/fixtures",
+            headers=headers, params={"league": 1, "season": 2026, "last": 12}, timeout=10)
+        for f in r.json().get("response", []):
+            data_br = converter_utc_brasilia(f["fixture"]["date"])
+            resultados.append({
+                "data":      data_br.strftime("%d/%m %H:%M") if data_br else "?",
+                "grupo":     f["league"].get("group") or "",
+                "casa":      f["teams"]["home"]["name"],
+                "fora":      f["teams"]["away"]["name"],
+                "logo_casa": f["teams"]["home"].get("logo",""),
+                "logo_fora": f["teams"]["away"].get("logo",""),
+                "gols_casa": f["goals"]["home"],
+                "gols_fora": f["goals"]["away"],
+                "vencedor":  f["teams"]["home"]["winner"],
+            })
+    except Exception as e:
+        print(f"[copa2026] resultados erro: {e}")
+
+    return render_template("copa2026.html",
+        standings=standings,
+        artilheiros=artilheiros,
+        proximos=proximos,
+        resultados=resultados
+    )
+
 @bp.route('/admin/boloes')
 @admin_required
 def admin_boloes():
