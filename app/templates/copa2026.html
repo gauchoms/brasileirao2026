@@ -29,9 +29,11 @@
         {% if standings %}
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
             {% for grupo in standings %}
+            {% set eh_ranking_terceiros = 'third' in grupo.grupo|lower or 'terceiro' in grupo.grupo|lower or 'ranking' in grupo.grupo|lower %}
+            {% set threshold_classif = 8 if eh_ranking_terceiros else 2 %}
             <div style="background: var(--cinza); border-radius: 10px; overflow: hidden;">
-                <div style="background: var(--verde); color: #000; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5px;">
-                    {{ grupo.grupo }}
+                <div style="background: {% if eh_ranking_terceiros %}var(--amarelo){% else %}var(--verde){% endif %}; color: #000; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5px;">
+                    {% if eh_ranking_terceiros %}🏅 {{ grupo.grupo }}{% else %}{{ grupo.grupo }}{% endif %}
                 </div>
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                     <thead>
@@ -48,8 +50,8 @@
                     <tbody>
                         {% for entry in grupo.times %}
                         {% set classificado    = entry.rank <= 2 %}
-                        {% set melhor_terceiro = entry.rank == 3 %}
-                        {% set eliminado       = entry.rank == 4 %}
+                        {% set melhor_terceiro = not eh_ranking_terceiros and entry.rank == 3 %}
+                        {% set eliminado       = not classificado and not melhor_terceiro %}
                         {% if classificado %}
                             {% set row_bg = "rgba(0,200,100,0.07)" %}
                         {% elif melhor_terceiro %}
@@ -92,8 +94,8 @@
             {% endfor %}
         </div>
         <p style="color: var(--texto-fraco); font-size: 0.8rem; margin-top: 1rem; text-align: center;">
-            <span style="color: var(--verde);">✓</span> = classificado direto (1º e 2º) &nbsp;|&nbsp;
-            <span style="color: var(--amarelo);">?</span> = pode classificar como melhor 3º colocado (8 de 12 avançam) &nbsp;|&nbsp;
+            <span style="color: var(--verde);">✓</span> = classificado (1º e 2º por grupo; top 8 dos terceiros) &nbsp;|&nbsp;
+            <span style="color: var(--amarelo);">?</span> = 3º colocado — pode avançar &nbsp;|&nbsp;
             <span style="opacity:0.4;">riscado</span> = eliminado
         </p>
         {% else %}
