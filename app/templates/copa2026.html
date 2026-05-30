@@ -49,7 +49,7 @@
                     </thead>
                     <tbody>
                         {% for entry in grupo.times %}
-                        {% set classificado    = entry.rank <= 2 %}
+                        {% set classificado    = (entry.rank <= 8) if eh_ranking_terceiros else (entry.rank <= 2) %}
                         {% set melhor_terceiro = not eh_ranking_terceiros and entry.rank == 3 %}
                         {% set eliminado       = not classificado and not melhor_terceiro %}
                         {% if classificado %}
