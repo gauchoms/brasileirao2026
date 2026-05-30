@@ -47,20 +47,31 @@
                     </thead>
                     <tbody>
                         {% for entry in grupo.times %}
-                        {% set classificado = entry.rank <= 2 %}
+                        {% set classificado    = entry.rank <= 2 %}
                         {% set melhor_terceiro = entry.rank == 3 %}
-                        <tr style="border-bottom: 1px solid var(--cinza-medio);
-                                   {% if classificado %}background: rgba(0,200,100,0.06);{% endif %}">
+                        {% set eliminado       = entry.rank == 4 %}
+                        {% if classificado %}
+                            {% set row_bg = "rgba(0,200,100,0.07)" %}
+                        {% elif melhor_terceiro %}
+                            {% set row_bg = "rgba(255,215,0,0.08)" %}
+                        {% else %}
+                            {% set row_bg = "transparent" %}
+                        {% endif %}
+                        <tr style="border-bottom: 1px solid var(--cinza-medio); background: {{ row_bg }};">
                             <td style="padding: 0.6rem 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
                                 <span style="color: var(--texto-fraco); font-size: 0.75rem; min-width: 14px;">{{ entry.rank }}</span>
                                 {% if entry.team.logo %}
                                 <img src="{{ entry.team.logo }}" style="width: 20px; height: 20px; object-fit: contain;"
                                      onerror="this.style.display='none'">
                                 {% endif %}
-                                <span style="{% if classificado %}font-weight: 600;{% endif %}">
+                                <span style="{% if classificado %}font-weight: 600;{% elif eliminado %}color: var(--texto-fraco); text-decoration: line-through;{% endif %}">
                                     {{ traduzir_pais(entry.team.name) if eh_selecao(entry.team.name) else entry.team.name }}
                                 </span>
-                                {% if classificado %}<span style="color: var(--verde); font-size: 0.65rem;">✓</span>{% endif %}
+                                {% if classificado %}
+                                    <span style="color: var(--verde); font-size: 0.65rem;" title="Classificado direto">✓</span>
+                                {% elif melhor_terceiro %}
+                                    <span style="color: var(--amarelo); font-size: 0.65rem;" title="Pode classificar como melhor 3º">?</span>
+                                {% endif %}
                             </td>
                             <td style="text-align: center; padding: 0.6rem 0.4rem; color: var(--texto-fraco);">{{ entry.all.played }}</td>
                             <td style="text-align: center; padding: 0.6rem 0.4rem; color: var(--verde);">{{ entry.all.win }}</td>
@@ -81,7 +92,9 @@
             {% endfor %}
         </div>
         <p style="color: var(--texto-fraco); font-size: 0.8rem; margin-top: 1rem; text-align: center;">
-            ✓ = classificado para as oitavas de final
+            <span style="color: var(--verde);">✓</span> = classificado direto (1º e 2º) &nbsp;|&nbsp;
+            <span style="color: var(--amarelo);">?</span> = pode classificar como melhor 3º colocado (8 de 12 avançam) &nbsp;|&nbsp;
+            <span style="opacity:0.4;">riscado</span> = eliminado
         </p>
         {% else %}
         <div style="text-align: center; padding: 4rem; color: var(--texto-fraco);">
