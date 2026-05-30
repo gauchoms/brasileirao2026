@@ -337,6 +337,31 @@ def atualizar_resultados():
     })
 
 
+@bp.route('/cron/atualizar_resultados')
+def cron_atualizar_resultados():
+    """
+    Rota GET para ser chamada pelo Cron Job do Render.
+    Não requer login — protegida por token secreto na query string.
+    Uso: /cron/atualizar_resultados?token=SEU_TOKEN
+    """
+    import os
+    from app.scheduler import atualizar_resultados_job
+    from flask import current_app
+
+    token = request.args.get('token', '')
+    token_esperado = os.getenv('CRON_SECRET_TOKEN', 'trocar_por_token_seguro')
+
+    if token != token_esperado:
+        return jsonify({'erro': 'Token inválido'}), 403
+
+    app = current_app._get_current_object()
+
+    import threading
+    threading.Thread(target=atualizar_resultados_job, args=[app], daemon=True).start()
+
+    return jsonify({'sucesso': True, 'mensagem': 'Atualização iniciada em background'})
+
+
 
 @bp.route('/dashboard')
 def dashboard():
@@ -2496,141 +2521,6 @@ def migrar_criterios_desempate():
 
 
 
-
-@bp.route('/admin/checar_copa')
-@bp.route('/admin/checar_copa/<int:competicao_id>')
-@admin_required
-def checar_copa(competicao_id=None):
-    """Compara jogos da Copa do Mundo no banco vs API Football."""
-    import requests, os
-    from app.models import Jogo, Time, Competicao
-    from app.utils import converter_utc_brasilia
-
-    if competicao_id:
-        copa = Competicao.query.get_or_404(competicao_id)
-    else:
-        # Busca o torneio, excluindo qualificações
-        copa = Competicao.query.filter(
-            (Competicao.nome.ilike('%world cup%') | Competicao.nome.ilike('%copa do mundo%')) ,
-            ~Competicao.nome.ilike('%qualif%'),
-            ~Competicao.nome.ilike('%qualification%'),
-            ~Competicao.nome.ilike('%eliminat%')
-        ).order_by(Competicao.id.desc()).first()
-
-    if not copa:
-        return "<h2 style='font-family:monospace;color:#e74c3c;padding:2rem'>Copa do Mundo não encontrada no banco.<br>Importe primeiro em /admin/competicoes</h2>"
-
-    # Detecta season
-    jogos_banco = Jogo.query.filter_by(competicao_id=copa.id).order_by(Jogo.data).all()
-    seasons = set()
-    for j in jogos_banco:
-        if j.data:
-            try: seasons.add(int(j.data[:4]))
-            except: pass
-    if not seasons:
-        seasons = {2026}
-
-    # Busca na API Football
-    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-    jogos_api = {}
-    for season in seasons:
-        r = requests.get("https://v3.football.api-sports.io/fixtures",
-            headers=headers,
-            params={"league": copa.api_league_id, "season": season},
-            timeout=15)
-        for f in r.json().get("response", []):
-            jogos_api[f["fixture"]["id"]] = f
-
-    # Monta tabela
-    linhas = []
-    for j in jogos_banco:
-        api  = jogos_api.get(j.api_id)
-        data_banco = j.data or "nulo"
-        data_api   = api["fixture"]["date"] if api else "não encontrado"
-        br_banco   = converter_utc_brasilia(data_banco)
-        br_api     = converter_utc_brasilia(data_api) if api else None
-        b_fmt = br_banco.strftime("%d/%m %H:%M") if br_banco else data_banco
-        a_fmt = br_api.strftime("%d/%m %H:%M")   if br_api   else data_api
-        dif   = b_fmt != a_fmt
-        cor   = "#e74c3c" if dif else "#2ecc71"
-        rodada = j.rodada or (api["league"]["round"] if api else "?")
-        grupo  = j.grupo or (api["league"].get("group") or "—" if api else "—")
-        tc = j.time_casa.nome if j.time_casa else "?"
-        tf = j.time_fora.nome if j.time_fora else "?"
-        ph = "🔜" if (j.time_casa and j.time_casa.api_id >= 9000000) or (j.time_fora and j.time_fora.api_id >= 9000000) else ""
-        linhas.append(f"""<tr style="border-bottom:1px solid #333">
-            <td style="padding:0.4rem 0.6rem;font-size:0.75rem;color:#aaa">{rodada}</td>
-            <td style="padding:0.4rem 0.6rem;font-size:0.75rem;color:var(--verde)">{grupo}</td>
-            <td style="padding:0.4rem 0.6rem">{ph} {tc} × {tf}</td>
-            <td style="padding:0.4rem 0.6rem;color:{cor}">{b_fmt}</td>
-            <td style="padding:0.4rem 0.6rem;color:{cor}">{a_fmt}</td>
-            <td style="padding:0.4rem 0.6rem;font-size:0.8rem">{"⚠️" if dif else "✅"}</td>
-        </tr>""")
-
-    # Jogos na API mas não no banco
-    ids_banco = {j.api_id for j in jogos_banco}
-    extras = []
-    for api_id, f in jogos_api.items():
-        if api_id not in ids_banco:
-            rodada = f["league"]["round"]
-            grupo  = f["league"].get("group") or "—"
-            tc     = f["teams"]["home"]["name"]
-            tf     = f["teams"]["away"]["name"]
-            data   = converter_utc_brasilia(f["fixture"]["date"])
-            d_fmt  = data.strftime("%d/%m/%Y %H:%M") if data else "?"
-            extras.append(f"""<tr style="border-bottom:1px solid #333;background:rgba(255,150,0,0.08)">
-                <td style="padding:0.4rem 0.6rem;font-size:0.75rem;color:#aaa">{rodada}</td>
-                <td style="padding:0.4rem 0.6rem;font-size:0.75rem;color:var(--verde)">{grupo}</td>
-                <td style="padding:0.4rem 0.6rem">🆕 {tc} × {tf}</td>
-                <td style="padding:0.4rem 0.6rem;color:#ff9500">{d_fmt}</td>
-                <td style="padding:0.4rem 0.6rem;color:#ff9500">—</td>
-                <td style="padding:0.4rem 0.6rem;font-size:0.8rem">🆕 só na API</td>
-            </tr>""")
-
-    html = f"""<html><body style="background:#111;color:#eee;font-family:monospace;padding:1.5rem">
-    <h2>🌍 Copa do Mundo 2026 — {copa.nome} (league_id={copa.api_league_id})</h2>
-    <p style="color:#aaa">{len(jogos_banco)} jogos no banco · {len(jogos_api)} na API · {len(extras)} só na API (faltam importar)</p>
-    <div style="margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap">
-        <a href="/admin/corrigir_horarios_copa" style="background:#e74c3c;color:#fff;padding:0.5rem 1rem;border-radius:4px;text-decoration:none">⚠️ Corrigir horários diferentes</a>
-        <a href="/admin/importar_competicao/{copa.api_league_id}/2026" style="background:#ff9500;color:#000;padding:0.5rem 1rem;border-radius:4px;text-decoration:none">🆕 Importar jogos faltando</a>
-    </div>
-    <table style="width:100%;border-collapse:collapse">
-    <thead><tr style="border-bottom:2px solid #00a651">
-        <th style="padding:0.4rem 0.6rem;text-align:left;font-size:0.8rem">Rodada</th>
-        <th style="padding:0.4rem 0.6rem;text-align:left;font-size:0.8rem">Grupo</th>
-        <th style="padding:0.4rem 0.6rem;text-align:left">Jogo</th>
-        <th style="padding:0.4rem 0.6rem;text-align:left">🗄️ Banco</th>
-        <th style="padding:0.4rem 0.6rem;text-align:left">🌐 API</th>
-        <th style="padding:0.4rem 0.6rem;text-align:left">Status</th>
-    </tr></thead>
-    <tbody>{"".join(linhas)}{"".join(extras)}</tbody>
-    </table></body></html>"""
-    return html
-
-
-@bp.route('/admin/corrigir_horarios_copa')
-@admin_required
-def corrigir_horarios_copa():
-    """Corrige horários da Copa do Mundo em background."""
-    import threading
-    from flask import current_app
-    from app.models import Competicao
-
-    copa = Competicao.query.filter(
-        Competicao.nome.ilike('%world cup%') | Competicao.nome.ilike('%copa do mundo%') | Competicao.nome.ilike('%mundial%')
-    ).first()
-    if not copa:
-        return jsonify({"erro": "Copa não encontrada"}), 404
-
-    app = current_app._get_current_object()
-
-    def job():
-        from app.scheduler import corrigir_horarios_job
-        corrigir_horarios_job(app)
-
-    threading.Thread(target=job, daemon=True).start()
-    return jsonify({"sucesso": True, "mensagem": "⏳ Correção iniciada em background"})
-
 @bp.route('/admin/checar_horarios/<int:time_api_id>')
 @admin_required
 def checar_horarios(time_api_id):
@@ -2645,35 +2535,21 @@ def checar_horarios(time_api_id):
     time_db = Time.query.filter_by(api_id=time_api_id).first()
     nome_time = time_db.nome if time_db else f"API ID {time_api_id}"
 
-    # Detecta seasons a partir dos jogos no banco (ex: 2025 e 2026)
+    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+    r = requests.get(
+        "https://v3.football.api-sports.io/fixtures",
+        headers=headers,
+        params={"team": time_api_id, "season": 2025},
+        timeout=10
+    )
+    jogos_api = {f["fixture"]["id"]: f for f in r.json().get("response", [])}
+
     if time_db:
         jogos_banco = Jogo.query.filter(
             (Jogo.time_casa_id == time_db.id) | (Jogo.time_fora_id == time_db.id)
         ).order_by(Jogo.data).all()
     else:
         jogos_banco = []
-
-    seasons = set()
-    for j in jogos_banco:
-        if j.data:
-            try:
-                seasons.add(int(j.data[:4]))
-            except:
-                pass
-    if not seasons:
-        seasons = {2026}
-
-    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-    jogos_api = {}
-    for season in seasons:
-        r = requests.get(
-            "https://v3.football.api-sports.io/fixtures",
-            headers=headers,
-            params={"team": time_api_id, "season": season},
-            timeout=10
-        )
-        for f in r.json().get("response", []):
-            jogos_api[f["fixture"]["id"]] = f
 
     linhas = []
     for j in jogos_banco:
@@ -2738,28 +2614,14 @@ def corrigir_horarios(time_api_id):
     if not time_db:
         return jsonify({"erro": "Time não encontrado no banco"}), 404
 
-    jogos_banco_all = Jogo.query.filter(
-        (Jogo.time_casa_id == time_db.id) | (Jogo.time_fora_id == time_db.id)
-    ).all()
-    seasons = set()
-    for j in jogos_banco_all:
-        if j.data:
-            try: seasons.add(int(j.data[:4]))
-            except: pass
-    if not seasons:
-        seasons = {2026}
-
     headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-    jogos_api = {}
-    for season in seasons:
-        r = requests.get(
-            "https://v3.football.api-sports.io/fixtures",
-            headers=headers,
-            params={"team": time_api_id, "season": season},
-            timeout=10
-        )
-        for f in r.json().get("response", []):
-            jogos_api[f["fixture"]["id"]] = f["fixture"]["date"]
+    r = requests.get(
+        "https://v3.football.api-sports.io/fixtures",
+        headers=headers,
+        params={"team": time_api_id, "season": 2025},
+        timeout=10
+    )
+    jogos_api = {f["fixture"]["id"]: f["fixture"]["date"] for f in r.json().get("response", [])}
 
     corrigidos = 0
     for jogo in Jogo.query.filter(
@@ -2778,31 +2640,6 @@ def corrigir_horarios(time_api_id):
         "corrigidos": corrigidos,
         "total_verificados": len(jogos_api),
         "mensagem": f"✅ {corrigidos} horários corrigidos para {time_db.nome}"
-    })
-
-
-@bp.route('/admin/corrigir_horarios_todos')
-@admin_required
-def corrigir_horarios_todos():
-    """
-    Dispara a correção de horários em background e retorna imediatamente.
-    O job roda em thread separada para não travar o Gunicorn.
-    """
-    import threading
-    from flask import current_app
-
-    app = current_app._get_current_object()
-
-    def job_background():
-        from app.scheduler import corrigir_horarios_job
-        corrigir_horarios_job(app)
-
-    t = threading.Thread(target=job_background, daemon=True)
-    t.start()
-
-    return jsonify({
-        "sucesso": True,
-        "mensagem": "⏳ Correção iniciada em background. Acompanhe os logs do Render. Leva ~2-5 minutos."
     })
 
 @bp.route('/migrar_logos_cloudinary')
@@ -2863,16 +2700,16 @@ def migrar_logos_cloudinary():
 @admin_required
 def migrar_grupo_e_logos():
     """
-    1. Adiciona coluna 'grupo' em jogo se não existir (DDL, rápido)
-    2. Dispara re-sincronização de logos e grupos em background
+    1. Adiciona coluna 'grupo' em jogo se não existir
+    2. Retroativamente busca logos e grupos na API e atualiza o banco
     """
     from sqlalchemy import text, inspect
-    import threading
-    from flask import current_app
+    from app.api import get_jogos_competicao, processar_jogos
+    from app.models import Competicao, Jogo, Time
 
-    resultados = {'colunas': [], 'erros': []}
+    resultados = {'colunas': [], 'logos_atualizados': 0, 'grupos_atualizados': 0, 'erros': []}
 
-    # Passo 1: DDL é rápido, pode rodar inline
+    # 1. Adiciona coluna grupo se não existir
     try:
         inspector = inspect(db.engine)
         cols = [c['name'] for c in inspector.get_columns('jogo')]
@@ -2885,60 +2722,35 @@ def migrar_grupo_e_logos():
     except Exception as e:
         resultados['erros'].append(f"coluna grupo: {str(e)}")
 
-    # Passo 2: API calls pesadas → background
-    app = current_app._get_current_object()
-
-    def job_background():
-        with app.app_context():
-            try:
-                from app.api import get_jogos_competicao, processar_jogos, upload_logo_cloudinary
-                from app.models import Competicao, Jogo, Time
-                logos = 0
-                grupos = 0
-                for comp in Competicao.query.all():
-                    if not comp.api_league_id:
-                        continue
+    # 2. Busca logos e grupos retroativamente por competição
+    competicoes = Competicao.query.all()
+    for comp in competicoes:
+        try:
+            if not comp.api_league_id:
+                continue
+            data = get_jogos_competicao(comp.api_league_id, comp.ano)
+            jogos = processar_jogos(data)
+            for j in jogos:
+                # Atualiza logo dos times
+                for key, logo_key in [('time_casa_id', 'logo_casa'), ('time_fora_id', 'logo_fora')]:
+                    t = Time.query.filter_by(api_id=j[key]).first()
+                    if t and j.get(logo_key) and not t.logo_url:
+                        t.logo_url = j[logo_key]
+                        resultados['logos_atualizados'] += 1
+                # Atualiza grupo do jogo
+                jogo_db = Jogo.query.filter_by(api_id=j['api_id']).first()
+                if jogo_db and j.get('grupo'):
                     try:
-                        jogos_comp = Jogo.query.filter_by(competicao_id=comp.id).all()
-                        seasons = set()
-                        for j in jogos_comp:
-                            if j.data:
-                                try: seasons.add(int(j.data[:4]))
-                                except: pass
-                        if not seasons:
-                            seasons = {comp.ano}
-                        for season in seasons:
-                            data = get_jogos_competicao(comp.api_league_id, season)
-                            for jogo_raw in processar_jogos(data):
-                                # Logos
-                                for key, logo_key in [('time_casa_id','logo_casa'),('time_fora_id','logo_fora')]:
-                                    t = Time.query.filter_by(api_id=jogo_raw[key]).first()
-                                    if t and jogo_raw.get(logo_key) and not (t.logo_url or '').startswith('http'):
-                                        nova = upload_logo_cloudinary(t.api_id, jogo_raw[logo_key])
-                                        if nova:
-                                            t.logo_url = nova
-                                            logos += 1
-                                # Grupos
-                                jogo_db = Jogo.query.filter_by(api_id=jogo_raw['api_id']).first()
-                                if jogo_db and jogo_raw.get('grupo') and not jogo_db.grupo:
-                                    jogo_db.grupo = jogo_raw['grupo']
-                                    grupos += 1
-                            db.session.commit()
-                    except Exception as e:
-                        print(f"[BG] Erro {comp.nome}: {e}")
-                print(f"[BG] migrar_grupo_e_logos: {logos} logos, {grupos} grupos atualizados ✅")
-            except Exception as e:
-                print(f"[BG] Erro geral migrar_grupo_e_logos: {e}")
+                        if not jogo_db.grupo:
+                            jogo_db.grupo = j['grupo']
+                            resultados['grupos_atualizados'] += 1
+                    except Exception:
+                        pass
+            db.session.commit()
+        except Exception as e:
+            resultados['erros'].append(f"{comp.nome}: {str(e)}")
 
-    t = threading.Thread(target=job_background, daemon=True)
-    t.start()
-
-    return jsonify({
-        'sucesso': True,
-        **resultados,
-        'mensagem': '⏳ Logos e grupos sendo atualizados em background (~2-5 min). Veja logs do Render.'
-    })
-
+    return jsonify({'sucesso': True, **resultados})
 
 @bp.route('/migrar_reset_senha_render')
 def migrar_reset_senha_render():
@@ -2956,280 +2768,3 @@ def migrar_reset_senha_render():
         return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
-
-
-@bp.route('/admin/popular_grupos_standings')
-@admin_required  
-def popular_grupos_standings():
-    """Busca /standings da Copa 2026 e popula jogo.grupo no banco."""
-    import requests, os, threading
-    from flask import current_app
-    app = current_app._get_current_object()
-
-    def job():
-        with app.app_context():
-            from app.models import Competicao, Jogo, Time
-            from app import db
-            import requests, os
-
-            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-            r = requests.get(
-                "https://v3.football.api-sports.io/standings",
-                headers=headers,
-                params={"league": 1, "season": 2026},
-                timeout=15
-            )
-            data = r.json()
-
-            # Montar mapeamento team_api_id → grupo
-            time_grupo = {}
-            for liga in data.get("response", []):
-                for grupo_list in liga.get("league", {}).get("standings", []):
-                    for entry in grupo_list:
-                        team_id = entry["team"]["id"]
-                        grupo   = entry.get("group", "")
-                        if grupo:
-                            time_grupo[team_id] = grupo
-
-            print(f"[STANDINGS] {len(time_grupo)} times com grupo mapeado")
-
-            copa = Competicao.query.filter_by(api_league_id=1, ano=2026).first()
-            if not copa:
-                print("[STANDINGS] Copa 2026 não encontrada")
-                return
-
-            atualizados = 0
-            for jogo in Jogo.query.filter_by(competicao_id=copa.id).all():
-                tc = jogo.time_casa
-                tf = jogo.time_fora
-                grupo = None
-                if tc and tc.api_id in time_grupo:
-                    grupo = time_grupo[tc.api_id]
-                elif tf and tf.api_id in time_grupo:
-                    grupo = time_grupo[tf.api_id]
-                if grupo and jogo.grupo != grupo:
-                    jogo.grupo = grupo
-                    atualizados += 1
-
-            db.session.commit()
-            print(f"[STANDINGS] {atualizados} jogos atualizados com grupo ✅")
-
-    threading.Thread(target=job, daemon=True).start()
-    return jsonify({"sucesso": True, "mensagem": "⏳ Populando grupos via standings em background"})
-
-
-@bp.route('/copa2026')
-def copa2026():
-    """Página pública com dados ao vivo da Copa do Mundo 2026."""
-    import requests, os
-    from app.utils import converter_utc_brasilia
-
-    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-
-    # Standings (classificação por grupo)
-    standings = []
-    try:
-        r = requests.get("https://v3.football.api-sports.io/standings",
-            headers=headers, params={"league": 1, "season": 2026}, timeout=10)
-        for liga in r.json().get("response", []):
-            for grupo_list in liga.get("league", {}).get("standings", []):
-                if grupo_list:
-                    grupo_nome = grupo_list[0].get("group", "")
-                    standings.append({
-                        "grupo": grupo_nome,
-                        "times": grupo_list
-                    })
-        standings.sort(key=lambda x: x["grupo"])
-    except Exception as e:
-        print(f"[copa2026] standings erro: {e}")
-
-    # Artilheiros
-    artilheiros = []
-    try:
-        r = requests.get("https://v3.football.api-sports.io/players/topscorers",
-            headers=headers, params={"league": 1, "season": 2026}, timeout=10)
-        artilheiros = r.json().get("response", [])[:10]
-    except Exception as e:
-        print(f"[copa2026] artilheiros erro: {e}")
-
-    # Próximos jogos
-    proximos = []
-    try:
-        r = requests.get("https://v3.football.api-sports.io/fixtures",
-            headers=headers, params={"league": 1, "season": 2026, "next": 12}, timeout=10)
-        for f in r.json().get("response", []):
-            data_br = converter_utc_brasilia(f["fixture"]["date"])
-            proximos.append({
-                "data":       data_br.strftime("%d/%m às %H:%M") if data_br else "?",
-                "rodada":     f["league"]["round"],
-                "grupo":      f["league"].get("group") or "",
-                "casa":       f["teams"]["home"]["name"],
-                "fora":       f["teams"]["away"]["name"],
-                "logo_casa":  f["teams"]["home"].get("logo",""),
-                "logo_fora":  f["teams"]["away"].get("logo",""),
-                "status":     f["fixture"]["status"]["short"],
-                "gols_casa":  f["goals"]["home"],
-                "gols_fora":  f["goals"]["away"],
-            })
-    except Exception as e:
-        print(f"[copa2026] próximos erro: {e}")
-
-    # Últimos resultados
-    resultados = []
-    try:
-        r = requests.get("https://v3.football.api-sports.io/fixtures",
-            headers=headers, params={"league": 1, "season": 2026, "last": 12}, timeout=10)
-        for f in r.json().get("response", []):
-            data_br = converter_utc_brasilia(f["fixture"]["date"])
-            resultados.append({
-                "data":       data_br.strftime("%d/%m %H:%M") if data_br else "?",
-                "grupo":      f["league"].get("group") or "",
-                "casa":       f["teams"]["home"]["name"],
-                "fora":       f["teams"]["away"]["name"],
-                "logo_casa":  f["teams"]["home"].get("logo",""),
-                "logo_fora":  f["teams"]["away"].get("logo",""),
-                "gols_casa":  f["goals"]["home"],
-                "gols_fora":  f["goals"]["away"],
-                "vencedor":   f["teams"]["home"]["winner"],
-            })
-    except Exception as e:
-        print(f"[copa2026] resultados erro: {e}")
-
-    return render_template("copa2026.html",
-        standings=standings,
-        artilheiros=artilheiros,
-        proximos=proximos,
-        resultados=resultados
-    )
-
-@bp.route('/admin/popular_grupos_copa')
-@admin_required
-def popular_grupos_copa():
-    """
-    Popula o campo grupo para todos os jogos da Copa do Mundo 2026.
-    Derivado do sorteio oficial (API Football não retorna esse campo).
-    """
-    from app.models import Competicao, Jogo, Time
-
-    # Mapeamento oficial: time → grupo (derivado do sorteio dez/2024)
-    TIME_GRUPO = {
-        "Mexico": "Group A", "South Africa": "Group A",
-        "South Korea": "Group A", "Czech Republic": "Group A",
-        "Canada": "Group B", "Switzerland": "Group B",
-        "Qatar": "Group B", "Bosnia & Herzegovina": "Group B",
-        "USA": "Group C", "Paraguay": "Group C",
-        "Australia": "Group C", "Türkiye": "Group C",
-        "Brazil": "Group D", "Morocco": "Group D",
-        "Haiti": "Group D", "Scotland": "Group D",
-        "Germany": "Group E", "Ecuador": "Group E",
-        "Ivory Coast": "Group E", "Curaçao": "Group E",
-        "Netherlands": "Group F", "Japan": "Group F",
-        "Sweden": "Group F", "Tunisia": "Group F",
-        "Spain": "Group G", "Uruguay": "Group G",
-        "Saudi Arabia": "Group G", "Cape Verde Islands": "Group G",
-        "Belgium": "Group H", "Egypt": "Group H",
-        "Iran": "Group H", "New Zealand": "Group H",
-        "France": "Group I", "Senegal": "Group I",
-        "Norway": "Group I", "Iraq": "Group I",
-        "England": "Group J", "Croatia": "Group J",
-        "Panama": "Group J", "Ghana": "Group J",
-        "Portugal": "Group K", "Uzbekistan": "Group K",
-        "Colombia": "Group K", "Congo DR": "Group K",
-        "Argentina": "Group L", "Algeria": "Group L",
-        "Austria": "Group L", "Jordan": "Group L",
-    }
-
-    copa = Competicao.query.filter(
-        Competicao.api_league_id == 1,
-        Competicao.ano == 2026
-    ).first()
-    if not copa:
-        return jsonify({"erro": "World Cup 2026 não encontrado"}), 404
-
-    atualizados = 0
-    nao_encontrados = []
-
-    for jogo in Jogo.query.filter_by(competicao_id=copa.id).all():
-        tc = jogo.time_casa.nome if jogo.time_casa else ""
-        grupo = TIME_GRUPO.get(tc)
-        if not grupo:
-            tf = jogo.time_fora.nome if jogo.time_fora else ""
-            grupo = TIME_GRUPO.get(tf)
-        if grupo and jogo.grupo != grupo:
-            jogo.grupo = grupo
-            atualizados += 1
-        elif not grupo:
-            nao_encontrados.append(f"{tc} × {jogo.time_fora.nome if jogo.time_fora else '?'}")
-
-    db.session.commit()
-    return jsonify({
-        "sucesso": True,
-        "atualizados": atualizados,
-        "nao_encontrados": nao_encontrados,
-        "mensagem": f"✅ {atualizados} jogos com grupo definido"
-    })
-
-@bp.route('/admin/popular_grupos/<int:competicao_id>')
-@admin_required
-def popular_grupos(competicao_id):
-    """Busca o campo grupo de cada jogo direto na API Football e salva no banco."""
-    import requests, os, threading
-    from flask import current_app
-    from app.models import Competicao, Jogo
-
-    comp = Competicao.query.get_or_404(competicao_id)
-    app = current_app._get_current_object()
-
-    def job():
-        with app.app_context():
-            from app.models import Competicao, Jogo
-            from app import db
-            import requests, os
-
-            comp = Competicao.query.get(competicao_id)
-            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-
-            seasons = set()
-            for j in Jogo.query.filter_by(competicao_id=comp.id).all():
-                if j.data:
-                    try: seasons.add(int(j.data[:4]))
-                    except: pass
-            if not seasons:
-                seasons = {comp.ano}
-
-            atualizados = 0
-            for season in seasons:
-                r = requests.get(
-                    "https://v3.football.api-sports.io/fixtures",
-                    headers=headers,
-                    params={"league": comp.api_league_id, "season": season},
-                    timeout=15
-                )
-                for f in r.json().get("response", []):
-                    grupo = f["league"].get("group") or ""
-                    if not grupo:
-                        continue
-                    jogo = Jogo.query.filter_by(api_id=f["fixture"]["id"]).first()
-                    if jogo and jogo.grupo != grupo:
-                        jogo.grupo = grupo
-                        atualizados += 1
-
-            db.session.commit()
-            print(f"[popular_grupos] {comp.nome}: {atualizados} grupos atualizados ✅")
-
-    threading.Thread(target=job, daemon=True).start()
-    return jsonify({"sucesso": True, "competicao": comp.nome, "mensagem": f"⏳ Populando grupos em background. Veja logs."})
-
-
-@bp.route('/admin/trocar_competicao/<int:bolao_id>/<int:nova_competicao_id>')
-@admin_required
-def trocar_competicao_bolao(bolao_id, nova_competicao_id):
-    """Troca a competição de um bolão."""
-    from app.models import Bolao, Competicao
-    bolao = Bolao.query.get_or_404(bolao_id)
-    nova  = Competicao.query.get_or_404(nova_competicao_id)
-    antiga = bolao.competicao.nome
-    bolao.competicao_id = nova_competicao_id
-    db.session.commit()
-    return jsonify({'sucesso': True, 'bolao': bolao.nome, 'de': antiga, 'para': nova.nome})
-
