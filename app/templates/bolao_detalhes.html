@@ -1015,13 +1015,17 @@
                     <span style="color: var(--amarelo); font-weight: 600;">{{ pts_3x0 }} pontos</span>
                     <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_resultado_venc">(resultado + gols do vencedor)</span>
                 </div>
-                
+                {% set pts_2x0 = bolao.regra.pontos_resultado + bolao.regra.pontos_diferenca_gols %}
                 <div style="margin-bottom: 0.8rem;">
                     Seu palpite <strong>2x0</strong> → 
                     <span style="color: var(--amarelo); font-weight: 600;">{{ bolao.regra.pontos_resultado }} pontos</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_apenas_resultado">( resultado + acerto da diferença)</span>
+                </div>
+                <div style="margin-bottom: 0.8rem;">
+                    Seu palpite <strong>7x3</strong> → 
+                    <span style="color: var(--amarelo); font-weight: 600;">{{ bolao.regra.pontos_resultado }} pontos</span>
                     <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_apenas_resultado">(apenas resultado)</span>
                 </div>
-                
                 <div>
                     Seu palpite <strong>1x3</strong> → 
                     <span style="color: #e74c3c; font-weight: 600;" data-i18n="bd_zero_pts">0 pontos</span>
