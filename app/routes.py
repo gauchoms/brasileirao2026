@@ -1465,9 +1465,11 @@ def salvar_palpite():
             return jsonify({'erro': 'Jogo já começou! Palpites encerrados.'}), 400
 
     # Verificar inadimplência de cota
-    if bolao.controla_cotas and bolao.data_corte_cota:
+    from app.models import Bolao as BolaoModel
+    bolao_check = BolaoModel.query.get(bolao_id)
+    if bolao_check and bolao_check.controla_cotas and bolao_check.data_corte_cota:
         from datetime import datetime
-        if datetime.utcnow() > bolao.data_corte_cota:
+        if datetime.utcnow() > bolao_check.data_corte_cota:
             part = ParticipanteBolao.query.filter_by(
                 bolao_id=bolao_id, usuario_id=current_user.id
             ).first()
