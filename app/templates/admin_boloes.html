@@ -80,4 +80,19 @@ function toggleCotas(bolaoId, btn) {
     </div>
     
 </div>
+
+{% block scripts %}
+<script>
+function toggleCotas(bolaoId, btn) {
+    fetch(`/admin/toggle_controla_cotas/${bolaoId}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(d => {
+        if (d.sucesso) {
+            btn.textContent = `💰 Cotas ${d.controla_cotas ? 'ON' : 'OFF'}`;
+            btn.style.background = d.controla_cotas ? 'var(--verde)' : 'var(--cinza-medio)';
+            btn.style.color = d.controla_cotas ? '#000' : 'var(--texto-fraco)';
+        }
+    });
+}
+</script>
 {% endblock %}
