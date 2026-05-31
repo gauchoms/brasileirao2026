@@ -1426,17 +1426,9 @@ def bolao_detalhes(bolao_id):
 
     ranking.sort(key=sort_key)
     
-    # Palpites por jogo (para relatório do dono)
-    palpites_por_jogo = {}
-    if eh_dono:
-        from app.models import Palpite as PalpiteModel
-        todos_palpites_bolao = PalpiteModel.query.filter_by(bolao_id=bolao.id).all()
-        for p in todos_palpites_bolao:
-            palpites_por_jogo.setdefault(p.jogo_id, []).append(p)
-
     return render_template('bolao_detalhes.html', 
                          bolao=bolao, 
-                         regra=regra,  # ✅ ADICIONA REGRA
+                         regra=regra,
                          eh_dono=eh_dono,
                          jogos=jogos,
                          palpites_usuario=palpites_usuario,
@@ -1444,7 +1436,6 @@ def bolao_detalhes(bolao_id):
                          todos_palpites=todos_palpites,
                          ranking=ranking,
                          criterios=criterios,
-                         palpites_por_jogo=palpites_por_jogo,
                          agora=datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'))
 
 
@@ -3074,6 +3065,69 @@ def toggle_alertas_bolao(bolao_id):
     })
 
 
+
+
+@bp.route('/bolao/<int:bolao_id>/relatorio_palpites')
+@login_required
+def relatorio_palpites_bolao(bolao_id):
+    """Retorna JSON com palpites pendentes/feitos — carregado via AJAX."""
+    from app.models import Bolao, Jogo, Palpite, ParticipanteBolao
+    from app.utils import converter_utc_brasilia
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+    if bolao.dono_id != current_user.id:
+        return jsonify({'erro': 'Sem permissão'}), 403
+
+    jogo_id_filtro = request.args.get('jogo_id', type=int)
+    so_pendentes   = request.args.get('so_pendentes', '1')
+
+    # Jogos em aberto deste bolão
+    jogos = Jogo.query.filter_by(
+        competicao_id=bolao.competicao_id
+    ).filter(Jogo.gols_casa == None).order_by(Jogo.data).all()
+
+    if jogo_id_filtro:
+        jogos = [j for j in jogos if j.id == jogo_id_filtro]
+
+    # Palpites existentes (query única)
+    jogo_ids = [j.id for j in jogos]
+    palpites = Palpite.query.filter(
+        Palpite.bolao_id == bolao_id,
+        Palpite.jogo_id.in_(jogo_ids)
+    ).all() if jogo_ids else []
+
+    # Indexar por (usuario_id, jogo_id)
+    idx_palpites = {(p.usuario_id, p.jogo_id): p for p in palpites}
+
+    participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
+
+    resultado = []
+    for part in participantes:
+        for jogo in jogos:
+            palpite = idx_palpites.get((part.usuario_id, jogo.id))
+            pendente = palpite is None
+
+            if so_pendentes == '1' and not pendente:
+                continue
+
+            data_br = converter_utc_brasilia(jogo.data)
+            resultado.append({
+                'jogo_id':   jogo.id,
+                'jogo':      f"{jogo.time_casa.nome if jogo.time_casa else '?'} × {jogo.time_fora.nome if jogo.time_fora else '?'}",
+                'data':      data_br.strftime('%d/%m %H:%M') if data_br else '?',
+                'user_id':   part.usuario_id,
+                'usuario':   part.usuario.nome_completo or part.usuario.username,
+                'email':     part.usuario.email or '',
+                'pendente':  pendente,
+                'palpite':   f"{palpite.gols_casa_palpite} × {palpite.gols_fora_palpite}" if palpite else '—',
+            })
+
+    jogos_lista = [{'id': j.id,
+        'nome': f"{j.time_casa.nome if j.time_casa else '?'} × {j.time_fora.nome if j.time_fora else '?'}"}
+        for j in Jogo.query.filter_by(competicao_id=bolao.competicao_id)
+                     .filter(Jogo.gols_casa == None).order_by(Jogo.data).all()]
+
+    return jsonify({'sucesso': True, 'resultado': resultado, 'jogos': jogos_lista})
 
 @bp.route('/admin/relatorio_palpites')
 @admin_required
