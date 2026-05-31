@@ -118,3 +118,64 @@ def email_recuperar_senha(usuario, token):
     </div>
     """
     return enviar_email(usuario.email, "Redefinição de senha - Time Errei de Novo", html)
+
+
+def email_alerta_palpite(usuario, jogo, bolao, horas_restantes):
+    """Alerta para participante que ainda não palpitou em um jogo próximo."""
+    if not usuario.email:
+        return False
+
+    tc = jogo.time_casa.nome if jogo.time_casa else "?"
+    tf = jogo.time_fora.nome if jogo.time_fora else "?"
+
+    from app.utils import converter_utc_brasilia
+    data_br = converter_utc_brasilia(jogo.data)
+    data_fmt = data_br.strftime("%d/%m/%Y às %H:%M") if data_br else "Em breve"
+
+    if horas_restantes <= 1:
+        urgencia = "🚨 ÚLTIMA HORA"
+        cor_urgencia = "#e74c3c"
+        msg_tempo = "Falta menos de 1 hora!"
+    else:
+        urgencia = "⏰ LEMBRETE"
+        cor_urgencia = "#ff9500"
+        msg_tempo = "Faltam aproximadamente 24 horas."
+
+    link_bolao = f"https://erreidenovo.com.br/bolao/{bolao.id}"
+
+    html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: {cor_urgencia}; padding: 1rem 1.5rem; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 1.3rem;">{urgencia} — Você ainda não palpitou!</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 1.5rem; border-radius: 0 0 8px 8px; border: 1px solid #eee;">
+            <p>Olá <strong>{usuario.nome_completo or usuario.username}</strong>,</p>
+            <p>{msg_tempo} O jogo abaixo ainda não tem seu palpite no bolão <strong>{bolao.nome}</strong>:</p>
+
+            <div style="background: #1a3a6e; color: white; padding: 1.2rem; border-radius: 8px;
+                        text-align: center; margin: 1.2rem 0;">
+                <div style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;">
+                    {tc} × {tf}
+                </div>
+                <div style="color: #aac4ff; font-size: 0.9rem;">{data_fmt}</div>
+            </div>
+
+            <p style="text-align: center; margin-top: 1.5rem;">
+                <a href="{link_bolao}"
+                   style="display: inline-block; background: #00a651; color: white;
+                          padding: 0.8rem 2rem; border-radius: 6px; text-decoration: none;
+                          font-weight: bold; font-size: 1rem;">
+                    ⚽ Fazer meu palpite agora
+                </a>
+            </p>
+
+            <p style="color: #999; font-size: 0.8rem; margin-top: 1.5rem; text-align: center;">
+                Após o início do jogo não será mais possível palpitar.<br>
+                Para não receber estes alertas, o organizador do bolão pode desativá-los.
+            </p>
+        </div>
+    </div>
+    """
+
+    assunto = f"{urgencia} | {tc} × {tf} — {bolao.nome}"
+    return enviar_email(usuario.email, assunto, html)

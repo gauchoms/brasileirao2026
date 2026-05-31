@@ -204,130 +204,91 @@ def sincronizar_jogos_job(app):
 
 
 
-
-def corrigir_horarios_job(app):
+def enviar_alertas_palpites_job(app):
     """
-    Corrige horários de todos os jogos comparando com a API Football.
-    Roda toda segunda-feira às 6h (Brasília).
+    Roda a cada 30 minutos.
+    Para cada bolão com envia_alertas=True, verifica jogos nas próximas
+    24h e 1h e envia email para participantes que ainda não palpitaram.
     """
     with app.app_context():
         try:
-            from app.models import Jogo, Competicao
+            from app.models import Bolao, Jogo, Palpite, ParticipanteBolao
+            from app.email import email_alerta_palpite
             from app import db
-            import requests, os
+            from datetime import datetime, timedelta
 
-            print(f"[SCHEDULER] Corrigindo horários: {datetime.now(BRASILIA).strftime('%d/%m/%Y %H:%M')}")
+            agora = datetime.utcnow()
+            janela_24h_inicio = agora + timedelta(hours=23)
+            janela_24h_fim    = agora + timedelta(hours=25)
+            janela_1h_inicio  = agora + timedelta(minutes=30)
+            janela_1h_fim     = agora + timedelta(hours=2)
 
-            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-            total_corrigidos = 0
-            total_verificados = 0
+            enviados_24h = 0
+            enviados_1h  = 0
 
-            competicoes = Competicao.query.filter(Competicao.api_league_id.isnot(None)).all()
+            boloes = Bolao.query.filter_by(envia_alertas=True, status='ativo').all()
 
-            for comp in competicoes:
-                jogos_comp = Jogo.query.filter_by(competicao_id=comp.id).all()
-                if not jogos_comp:
-                    continue
+            for bolao in boloes:
+                # Jogos do bolão com alerta pendente
+                jogos = Jogo.query.join(
+                    Bolao, Bolao.competicao_id == Jogo.competicao_id
+                ).filter(
+                    Bolao.id == bolao.id,
+                    Jogo.gols_casa == None,
+                    Jogo.data != None
+                ).all()
 
-                seasons = set()
-                for j in jogos_comp:
-                    if j.data:
-                        try: seasons.add(int(j.data[:4]))
-                        except: pass
-
-                jogos_api = {}
-                for season in seasons:
+                for jogo in jogos:
                     try:
-                        r = requests.get(
-                            "https://v3.football.api-sports.io/fixtures",
-                            headers=headers,
-                            params={"league": comp.api_league_id, "season": season},
-                            timeout=15
-                        )
-                        for f in r.json().get("response", []):
-                            jogos_api[f["fixture"]["id"]] = f["fixture"]["date"]
-                    except Exception as e:
-                        print(f"[SCHEDULER] Erro {comp.nome} season {season}: {e}")
-                        continue
+                        data_str = jogo.data.replace('+00:00','').replace('Z','').split('+')[0][:19]
+                        try:
+                            data_utc = datetime.strptime(data_str, '%Y-%m-%dT%H:%M:%S')
+                        except:
+                            data_utc = datetime.strptime(data_str[:16], '%Y-%m-%dT%H:%M')
 
-                for jogo in jogos_comp:
-                    total_verificados += 1
-                    if jogo.api_id in jogos_api:
-                        nova_data = jogos_api[jogo.api_id]
-                        if nova_data != jogo.data:
-                            jogo.data = nova_data
-                            total_corrigidos += 1
+                        eh_24h = janela_24h_inicio <= data_utc <= janela_24h_fim
+                        eh_1h  = janela_1h_inicio  <= data_utc <= janela_1h_fim
+
+                        if not eh_24h and not eh_1h:
+                            continue
+
+                        # Participantes que ainda não palpitaram
+                        participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao.id).all()
+
+                        for part in participantes:
+                            ja_palpitou = Palpite.query.filter_by(
+                                bolao_id=bolao.id,
+                                usuario_id=part.usuario_id,
+                                jogo_id=jogo.id
+                            ).first()
+
+                            if ja_palpitou:
+                                continue
+
+                            if eh_24h and not jogo.alerta_24h_enviado:
+                                email_alerta_palpite(part.usuario, jogo, bolao, 24)
+                                enviados_24h += 1
+
+                            elif eh_1h and not jogo.alerta_1h_enviado:
+                                email_alerta_palpite(part.usuario, jogo, bolao, 1)
+                                enviados_1h += 1
+
+                        # Marcar como enviado (mesmo que alguns não tenham email)
+                        if eh_24h and not jogo.alerta_24h_enviado:
+                            jogo.alerta_24h_enviado = True
+                        if eh_1h and not jogo.alerta_1h_enviado:
+                            jogo.alerta_1h_enviado = True
+
+                    except Exception as e:
+                        print(f"[ALERTAS] Erro jogo {jogo.id}: {e}")
+                        continue
 
             db.session.commit()
-            print(f"[SCHEDULER] Horários: {total_corrigidos} corrigidos em {total_verificados} verificados ✅")
+            if enviados_24h or enviados_1h:
+                print(f"[ALERTAS] {enviados_24h} alertas 24h + {enviados_1h} alertas 1h enviados ✅")
 
         except Exception as e:
-            print(f"[SCHEDULER] Erro ao corrigir horários: {e}")
-
-def popular_grupos_job(app):
-    """
-    Atualiza o campo 'grupo' de todos os jogos de competições do tipo 'cup'
-    (formato copa: tem grupos A/B/C e fases eliminatórias).
-    Roda semanalmente junto com corrigir_horarios_job.
-    """
-    with app.app_context():
-        try:
-            from app.models import Competicao, Jogo
-            from app import db
-            import requests, os
-
-            print(f"[SCHEDULER] Populando grupos: {datetime.now(BRASILIA).strftime('%d/%m/%Y %H:%M')}")
-
-            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
-            total_atualizados = 0
-
-            # Apenas competições do tipo 'cup' que têm api_league_id
-            competicoes = Competicao.query.filter(
-                Competicao.tipo == 'cup',
-                Competicao.api_league_id.isnot(None)
-            ).all()
-
-            for comp in competicoes:
-                try:
-                    jogos_comp = Jogo.query.filter_by(competicao_id=comp.id).all()
-                    if not jogos_comp:
-                        continue
-
-                    # Detecta seasons dos jogos
-                    seasons = set()
-                    for j in jogos_comp:
-                        if j.data:
-                            try: seasons.add(int(j.data[:4]))
-                            except: pass
-                    if not seasons:
-                        seasons = {comp.ano}
-
-                    for season in seasons:
-                        r = requests.get(
-                            "https://v3.football.api-sports.io/fixtures",
-                            headers=headers,
-                            params={"league": comp.api_league_id, "season": season},
-                            timeout=15
-                        )
-                        for f in r.json().get("response", []):
-                            grupo = f["league"].get("group") or ""
-                            if not grupo:
-                                continue
-                            jogo = Jogo.query.filter_by(api_id=f["fixture"]["id"]).first()
-                            if jogo and jogo.grupo != grupo:
-                                jogo.grupo = grupo
-                                total_atualizados += 1
-
-                    db.session.commit()
-
-                except Exception as e:
-                    print(f"[SCHEDULER] Erro grupos {comp.nome}: {e}")
-                    continue
-
-            print(f"[SCHEDULER] Grupos: {total_atualizados} atualizados em {len(competicoes)} competições cup ✅")
-
-        except Exception as e:
-            print(f"[SCHEDULER] Erro geral popular_grupos: {e}")
+            print(f"[ALERTAS] Erro geral: {e}")
 
 def iniciar_scheduler(app):
     """
@@ -373,29 +334,17 @@ def iniciar_scheduler(app):
         replace_existing=True
     )
 
-    # Job E: toda segunda-feira às 6h, corrige horários
-    from apscheduler.triggers.cron import CronTrigger
+    # Job G: a cada 30 minutos, alertas de palpites pendentes
     _scheduler.add_job(
-        func=corrigir_horarios_job,
-        trigger=CronTrigger(day_of_week='mon', hour=6, minute=0, timezone=BRASILIA),
+        func=enviar_alertas_palpites_job,
+        trigger=IntervalTrigger(minutes=30),
         args=[app],
-        id='corrigir_horarios',
-        name='Corrigir horários semanalmente',
-        replace_existing=True
-    )
-
-    # Job F: toda segunda-feira às 6h30, popula grupos de competições cup
-    from apscheduler.triggers.cron import CronTrigger as CronTriggerF
-    _scheduler.add_job(
-        func=popular_grupos_job,
-        trigger=CronTriggerF(day_of_week='mon', hour=6, minute=30, timezone=BRASILIA),
-        args=[app],
-        id='popular_grupos',
-        name='Popular grupos competições cup',
+        id='alertas_palpites',
+        name='Alertas palpites pendentes',
         replace_existing=True
     )
 
     _scheduler.start()
-    print("[SCHEDULER] Iniciado com 6 jobs ativos ✅")
+    print("[SCHEDULER] Iniciado com 7 jobs ativos ✅")
     print("[SCHEDULER] Iniciado com 3 jobs ativos ✅")
     return _scheduler

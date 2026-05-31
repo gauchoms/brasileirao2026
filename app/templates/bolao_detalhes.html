@@ -851,7 +851,26 @@
     {% endif %}
 
     <!-- Tab: Regras -->
-<div id="content-regras" style="display: none;">
+    {% if eh_dono %}
+    <div style="background: var(--cinza); padding: 1.2rem 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;
+                display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <div style="font-weight: 600; margin-bottom: 0.3rem;">🔔 Alertas de palpites pendentes</div>
+            <div style="font-size: 0.85rem; color: var(--texto-fraco);">
+                Participantes recebem email 24h e 1h antes de cada jogo sem palpite
+            </div>
+        </div>
+        <button onclick="toggleAlertas()" id="btn-alertas"
+            style="padding: 0.6rem 1.2rem; border: none; border-radius: 6px; font-weight: 600;
+                   cursor: pointer; min-width: 80px;
+                   background: {% if bolao.envia_alertas %}var(--verde){% else %}var(--cinza-medio){% endif %};
+                   color: {% if bolao.envia_alertas %}#000{% else %}var(--texto-fraco){% endif %};">
+            {% if bolao.envia_alertas %}✅ Ativo{% else %}⭕ Inativo{% endif %}
+        </button>
+    </div>
+    {% endif %}
+
+    <div id="content-regras" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <h2 style="margin: 0;" data-i18n="bd_regras_h2">📋 Regras de Pontuação</h2>
         
@@ -1642,6 +1661,19 @@ function mostrarMensagem(texto, tipo) {
         box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:1000;font-weight:600;`;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 3000);
+}
+
+function toggleAlertas() {
+    fetch('/bolao/{{ bolao.id }}/toggle_alertas', {method: 'POST'})
+    .then(r => r.json())
+    .then(d => {
+        if (d.sucesso) {
+            const btn = document.getElementById('btn-alertas');
+            btn.textContent = d.envia_alertas ? '✅ Ativo' : '⭕ Inativo';
+            btn.style.background = d.envia_alertas ? 'var(--verde)' : 'var(--cinza-medio)';
+            btn.style.color = d.envia_alertas ? '#000' : 'var(--texto-fraco)';
+        }
+    });
 }
 </script>
 <style>

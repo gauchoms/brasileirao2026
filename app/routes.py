@@ -3047,6 +3047,48 @@ def corrigir_horarios_copa():
     threading.Thread(target=job, daemon=True).start()
     return jsonify({"sucesso": True, "mensagem": "⏳ Correção iniciada em background"})
 
+
+@bp.route('/bolao/<int:bolao_id>/toggle_alertas', methods=['POST'])
+@login_required
+def toggle_alertas_bolao(bolao_id):
+    """Dono ativa/desativa alertas de palpites pendentes."""
+    from app.models import Bolao
+    bolao = Bolao.query.get_or_404(bolao_id)
+    if bolao.dono_id != current_user.id and not current_user.is_admin:
+        return jsonify({'erro': 'Sem permissão'}), 403
+    bolao.envia_alertas = not bolao.envia_alertas
+    db.session.commit()
+    return jsonify({
+        'sucesso': True,
+        'envia_alertas': bolao.envia_alertas,
+        'mensagem': f"Alertas {'ativados' if bolao.envia_alertas else 'desativados'}"
+    })
+
+
+@bp.route('/migrar_alertas')
+@admin_required
+def migrar_alertas():
+    """Adiciona colunas de alertas ao banco."""
+    from sqlalchemy import text, inspect
+    resultados = []
+    with db.engine.connect() as conn:
+        inspector = inspect(db.engine)
+
+        for tabela, col, tipo, default in [
+            ('bolao',  'envia_alertas',      'BOOLEAN',  'FALSE'),
+            ('jogo',   'alerta_24h_enviado', 'BOOLEAN',  'FALSE'),
+            ('jogo',   'alerta_1h_enviado',  'BOOLEAN',  'FALSE'),
+        ]:
+            cols = [c['name'] for c in inspector.get_columns(tabela)]
+            if col not in cols:
+                conn.execute(text(f"ALTER TABLE {tabela} ADD COLUMN {col} {tipo} DEFAULT {default}"))
+                conn.commit()
+                resultados.append(f"{tabela}.{col} adicionada ✅")
+            else:
+                resultados.append(f"{tabela}.{col} já existia")
+
+    return jsonify({'sucesso': True, 'detalhes': resultados})
+
 @bp.route('/migrar_cotas')
 @admin_required
 def migrar_cotas():

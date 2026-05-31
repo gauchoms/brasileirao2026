@@ -26,6 +26,8 @@ class Jogo(db.Model):
     data = db.Column(db.String(50), nullable=True)
     gols_casa = db.Column(db.Integer, nullable=True)
     gols_fora = db.Column(db.Integer, nullable=True)
+    alerta_24h_enviado = db.Column(db.Boolean, default=False)
+    alerta_1h_enviado  = db.Column(db.Boolean, default=False)
 
 class Projecao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -142,6 +144,7 @@ class Bolao(db.Model):
     controla_cotas    = db.Column(db.Boolean, default=False)   # admin ativa
     valor_cota        = db.Column(db.Float, nullable=True)     # R$ definido pelo dono
     data_corte_cota   = db.Column(db.DateTime, nullable=True)  # após esta data, não-pagantes não palpitam
+    envia_alertas     = db.Column(db.Boolean, default=False)   # dono ativa alertas de palpites pendentes
     # Relacionamentos
     
     competicao = db.relationship('Competicao', backref='boloes')
