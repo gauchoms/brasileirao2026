@@ -1463,6 +1463,18 @@ def salvar_palpite():
             data_jogo_utc = datetime.strptime(data_str[:16], '%Y-%m-%dT%H:%M')
         if datetime.utcnow() >= data_jogo_utc:
             return jsonify({'erro': 'Jogo já começou! Palpites encerrados.'}), 400
+
+    # Verificar inadimplência de cota
+    if bolao.controla_cotas and bolao.data_corte_cota:
+        from datetime import datetime
+        if datetime.utcnow() > bolao.data_corte_cota:
+            part = ParticipanteBolao.query.filter_by(
+                bolao_id=bolao_id, usuario_id=current_user.id
+            ).first()
+            if part and not part.cota_paga and not part.liberado_manualmente:
+                return jsonify({
+                    'erro': '⚠️ Sua cota não foi paga. Entre em contato com o organizador do bolão.'
+                }), 403
     
     # Gera timestamp preciso (milissegundos)
     timestamp_ms = int(time.time() * 1000)
@@ -2049,6 +2061,109 @@ def corrigir_serie_a_uso():
         return jsonify({'sucesso': True, 'mensagem': 'Série A agora disponível para bolões'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+
+# ══════════════════════════════════════════════════════════════
+# CONTROLE DE COTAS
+# ══════════════════════════════════════════════════════════════
+
+@bp.route('/admin/toggle_controla_cotas/<int:bolao_id>', methods=['POST'])
+@admin_required
+def toggle_controla_cotas(bolao_id):
+    """Admin ativa/desativa controle de cotas em um bolão."""
+    from app.models import Bolao
+    bolao = Bolao.query.get_or_404(bolao_id)
+    bolao.controla_cotas = not bolao.controla_cotas
+    db.session.commit()
+    return jsonify({
+        'sucesso': True,
+        'controla_cotas': bolao.controla_cotas,
+        'mensagem': f"Controle de cotas {'ativado' if bolao.controla_cotas else 'desativado'} para {bolao.nome}"
+    })
+
+
+@bp.route('/bolao/<int:bolao_id>/configurar_cota', methods=['POST'])
+@login_required
+def configurar_cota(bolao_id):
+    """Dono do bolão define valor e data de corte."""
+    from app.models import Bolao
+    bolao = Bolao.query.get_or_404(bolao_id)
+
+    if bolao.dono_id != current_user.id:
+        return jsonify({'erro': 'Apenas o dono pode configurar cotas'}), 403
+    if not bolao.controla_cotas:
+        return jsonify({'erro': 'Controle de cotas não ativado para este bolão'}), 400
+
+    data = request.get_json()
+    valor = data.get('valor_cota')
+    data_corte_str = data.get('data_corte')
+
+    if valor is not None:
+        bolao.valor_cota = float(valor)
+
+    if data_corte_str:
+        from datetime import datetime
+        try:
+            bolao.data_corte_cota = datetime.strptime(data_corte_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            bolao.data_corte_cota = datetime.strptime(data_corte_str, '%Y-%m-%d')
+
+    db.session.commit()
+    return jsonify({'sucesso': True, 'mensagem': 'Configuração salva!'})
+
+
+@bp.route('/bolao/<int:bolao_id>/marcar_cota/<int:participante_id>', methods=['POST'])
+@login_required
+def marcar_cota(bolao_id, participante_id):
+    """Dono marca/desmarca cota paga de um participante."""
+    from app.models import Bolao, ParticipanteBolao
+    from datetime import datetime
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+    if bolao.dono_id != current_user.id:
+        return jsonify({'erro': 'Apenas o dono pode marcar cotas'}), 403
+
+    part = ParticipanteBolao.query.get_or_404(participante_id)
+    if part.bolao_id != bolao_id:
+        return jsonify({'erro': 'Participante não pertence a este bolão'}), 400
+
+    data = request.get_json()
+    pago = data.get('pago', not part.cota_paga)
+
+    part.cota_paga = pago
+    part.data_pagamento_cota = datetime.utcnow() if pago else None
+    if pago:
+        part.liberado_manualmente = False  # pagamento real cancela liberação manual
+
+    db.session.commit()
+    return jsonify({
+        'sucesso': True,
+        'cota_paga': part.cota_paga,
+        'usuario': part.usuario.username
+    })
+
+
+@bp.route('/bolao/<int:bolao_id>/liberar_participante/<int:participante_id>', methods=['POST'])
+@login_required
+def liberar_participante_cota(bolao_id, participante_id):
+    """Dono libera manualmente um participante inadimplente para palpitar."""
+    from app.models import Bolao, ParticipanteBolao
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+    if bolao.dono_id != current_user.id:
+        return jsonify({'erro': 'Apenas o dono pode liberar participantes'}), 403
+
+    part = ParticipanteBolao.query.get_or_404(participante_id)
+    data = request.get_json()
+    liberar = data.get('liberar', not part.liberado_manualmente)
+    part.liberado_manualmente = liberar
+
+    db.session.commit()
+    return jsonify({
+        'sucesso': True,
+        'liberado': part.liberado_manualmente,
+        'usuario': part.usuario.username
+    })
+
 @bp.route('/admin/toggle_dashboard_competicao', methods=['POST'])
 @admin_required
 def toggle_dashboard_competicao():
@@ -2774,6 +2889,212 @@ def migrar_logos_cloudinary():
         'erros': erros,
         'proximo': f'/migrar_logos_cloudinary?offset={proximo_offset}' if tem_mais else None,
         'mensagem': f'✅ Pronto! Todos processados.' if not tem_mais else f'⏳ Rode o próximo: offset={proximo_offset}'
+    })
+
+
+
+@bp.route('/admin/checar_copa')
+@bp.route('/admin/checar_copa/<int:competicao_id>')
+@admin_required
+def checar_copa(competicao_id=None):
+    """Compara jogos da Copa do Mundo no banco vs API Football."""
+    import requests, os
+    from app.models import Jogo, Time, Competicao
+    from app.utils import converter_utc_brasilia
+
+    if competicao_id:
+        copa = Competicao.query.get_or_404(competicao_id)
+    else:
+        copa = Competicao.query.filter(
+            (Competicao.nome.ilike('%world cup%') | Competicao.nome.ilike('%copa do mundo%')),
+            ~Competicao.nome.ilike('%qualif%'),
+            ~Competicao.nome.ilike('%qualification%'),
+        ).order_by(Competicao.id.desc()).first()
+
+    if not copa:
+        return "<h2>Copa não encontrada</h2>", 404
+
+    jogos_banco = Jogo.query.filter_by(competicao_id=copa.id).order_by(Jogo.data).all()
+    seasons = set()
+    for j in jogos_banco:
+        if j.data:
+            try: seasons.add(int(j.data[:4]))
+            except: pass
+    if not seasons: seasons = {2026}
+
+    headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+    jogos_api = {}
+    for season in seasons:
+        r = requests.get("https://v3.football.api-sports.io/fixtures",
+            headers=headers, params={"league": copa.api_league_id, "season": season}, timeout=15)
+        for f in r.json().get("response", []):
+            jogos_api[f["fixture"]["id"]] = f
+
+    linhas = []
+    for j in jogos_banco:
+        api = jogos_api.get(j.api_id)
+        data_api_raw = api["fixture"]["date"] if api else "não encontrado na API"
+        br_banco = converter_utc_brasilia(j.data)
+        br_api   = converter_utc_brasilia(data_api_raw) if api else None
+        b_fmt = br_banco.strftime("%d/%m %H:%M") if br_banco else j.data
+        a_fmt = br_api.strftime("%d/%m %H:%M")   if br_api   else data_api_raw
+        dif = b_fmt != a_fmt
+        cor = "#e74c3c" if dif else "#2ecc71"
+        grupo = j.grupo or (api["league"].get("group") or "—" if api else "—")
+        tc = j.time_casa.nome if j.time_casa else "?"
+        tf = j.time_fora.nome if j.time_fora else "?"
+        linhas.append(f'<tr style="border-bottom:1px solid #333"><td style="padding:0.4rem 0.6rem;font-size:0.75rem;color:#aaa">{j.rodada}</td><td style="padding:0.4rem 0.6rem;font-size:0.75rem;color:var(--verde)">{grupo}</td><td style="padding:0.4rem 0.6rem">{tc} × {tf}</td><td style="padding:0.4rem 0.6rem;color:{cor}">{b_fmt}</td><td style="padding:0.4rem 0.6rem;color:{cor}">{a_fmt}</td><td style="padding:0.4rem 0.6rem">{"⚠️" if dif else "✅"}</td></tr>')
+
+    html = f"""<html><body style="background:#111;color:#eee;font-family:monospace;padding:1.5rem">
+    <h2>🌍 {copa.nome} (league_id={copa.api_league_id})</h2>
+    <p style="color:#aaa">{len(jogos_banco)} no banco · {len(jogos_api)} na API</p>
+    <a href="/admin/corrigir_horarios_copa" style="background:#e74c3c;color:#fff;padding:0.5rem 1rem;border-radius:4px;text-decoration:none;margin-right:1rem">⚠️ Corrigir horários</a>
+    <a href="/admin/popular_grupos_standings" style="background:#ff9500;color:#000;padding:0.5rem 1rem;border-radius:4px;text-decoration:none">🗂️ Popular grupos</a>
+    <table style="width:100%;border-collapse:collapse;margin-top:1rem">
+    <thead><tr style="border-bottom:2px solid #00a651"><th style="padding:0.4rem 0.6rem;text-align:left">Rodada</th><th style="padding:0.4rem 0.6rem;text-align:left">Grupo</th><th style="padding:0.4rem 0.6rem;text-align:left">Jogo</th><th style="padding:0.4rem 0.6rem;text-align:left">🗄️ Banco</th><th style="padding:0.4rem 0.6rem;text-align:left">🌐 API</th><th style="padding:0.4rem 0.6rem;text-align:left">Status</th></tr></thead>
+    <tbody>{"".join(linhas)}</tbody></table></body></html>"""
+    return html
+
+
+@bp.route('/admin/popular_grupos_copa')
+@admin_required
+def popular_grupos_copa():
+    """Popula grupos dos jogos da Copa 2026 via mapeamento do sorteio oficial."""
+    from app.models import Competicao, Jogo, Time
+    TIME_GRUPO = {
+        "Mexico":"Group A","South Africa":"Group A","South Korea":"Group A","Czech Republic":"Group A",
+        "Canada":"Group B","Switzerland":"Group B","Qatar":"Group B","Bosnia & Herzegovina":"Group B",
+        "USA":"Group C","Paraguay":"Group C","Australia":"Group C","Türkiye":"Group C",
+        "Brazil":"Group D","Morocco":"Group D","Haiti":"Group D","Scotland":"Group D",
+        "Germany":"Group E","Ecuador":"Group E","Ivory Coast":"Group E","Curaçao":"Group E",
+        "Netherlands":"Group F","Japan":"Group F","Sweden":"Group F","Tunisia":"Group F",
+        "Spain":"Group G","Uruguay":"Group G","Saudi Arabia":"Group G","Cape Verde Islands":"Group G",
+        "Belgium":"Group H","Egypt":"Group H","Iran":"Group H","New Zealand":"Group H",
+        "France":"Group I","Senegal":"Group I","Norway":"Group I","Iraq":"Group I",
+        "England":"Group J","Croatia":"Group J","Panama":"Group J","Ghana":"Group J",
+        "Portugal":"Group K","Uzbekistan":"Group K","Colombia":"Group K","Congo DR":"Group K",
+        "Argentina":"Group L","Algeria":"Group L","Austria":"Group L","Jordan":"Group L",
+    }
+    copa = Competicao.query.filter_by(api_league_id=1, ano=2026).first()
+    if not copa:
+        return jsonify({"erro": "World Cup 2026 não encontrado"}), 404
+    atualizados = 0
+    nao_encontrados = []
+    for jogo in Jogo.query.filter_by(competicao_id=copa.id).all():
+        tc = jogo.time_casa.nome if jogo.time_casa else ""
+        tf = jogo.time_fora.nome if jogo.time_fora else ""
+        grupo = TIME_GRUPO.get(tc) or TIME_GRUPO.get(tf)
+        if grupo and jogo.grupo != grupo:
+            jogo.grupo = grupo
+            atualizados += 1
+        elif not grupo:
+            nao_encontrados.append(f"{tc} × {tf}")
+    db.session.commit()
+    return jsonify({"sucesso": True, "atualizados": atualizados, "nao_encontrados": nao_encontrados})
+
+
+@bp.route('/admin/popular_grupos_standings')
+@admin_required
+def popular_grupos_standings():
+    """Busca /standings da Copa 2026 e popula jogo.grupo no banco."""
+    import threading
+    from flask import current_app
+    app = current_app._get_current_object()
+    def job():
+        with app.app_context():
+            from app.models import Competicao, Jogo
+            from app import db
+            import requests, os
+            headers = {"x-apisports-key": os.getenv("API_FOOTBALL_KEY")}
+            r = requests.get("https://v3.football.api-sports.io/standings",
+                headers=headers, params={"league": 1, "season": 2026}, timeout=15)
+            time_grupo = {}
+            for liga in r.json().get("response", []):
+                for grupo_list in liga.get("league", {}).get("standings", []):
+                    for entry in grupo_list:
+                        if entry.get("group"):
+                            time_grupo[entry["team"]["id"]] = entry["group"]
+            print(f"[STANDINGS] {len(time_grupo)} times mapeados")
+            copa = Competicao.query.filter_by(api_league_id=1, ano=2026).first()
+            if not copa: return
+            atualizados = 0
+            for jogo in Jogo.query.filter_by(competicao_id=copa.id).all():
+                grupo = None
+                if jogo.time_casa and jogo.time_casa.api_id in time_grupo:
+                    grupo = time_grupo[jogo.time_casa.api_id]
+                elif jogo.time_fora and jogo.time_fora.api_id in time_grupo:
+                    grupo = time_grupo[jogo.time_fora.api_id]
+                if grupo and jogo.grupo != grupo:
+                    jogo.grupo = grupo
+                    atualizados += 1
+            db.session.commit()
+            print(f"[STANDINGS] {atualizados} jogos atualizados ✅")
+    threading.Thread(target=job, daemon=True).start()
+    return jsonify({"sucesso": True, "mensagem": "⏳ Populando grupos em background"})
+
+
+@bp.route('/admin/corrigir_horarios_copa')
+@admin_required
+def corrigir_horarios_copa():
+    import threading
+    from flask import current_app
+    app = current_app._get_current_object()
+    def job():
+        from app.scheduler import corrigir_horarios_job
+        corrigir_horarios_job(app)
+    threading.Thread(target=job, daemon=True).start()
+    return jsonify({"sucesso": True, "mensagem": "⏳ Correção iniciada em background"})
+
+@bp.route('/migrar_cotas')
+@admin_required
+def migrar_cotas():
+    """Adiciona colunas de controle de cotas ao banco. Seguro para rodar múltiplas vezes."""
+    from sqlalchemy import text, inspect
+
+    resultados = []
+    colunas_adicionadas = 0
+
+    with db.engine.connect() as conn:
+        inspector = inspect(db.engine)
+
+        # Colunas para a tabela bolao
+        cols_bolao = inspector.get_columns('bolao')
+        nomes_bolao = [c['name'] for c in cols_bolao]
+
+        for col, tipo, default in [
+            ('controla_cotas',  'BOOLEAN', 'FALSE'),
+            ('valor_cota',      'FLOAT',   'NULL'),
+            ('data_corte_cota', 'TIMESTAMP', 'NULL'),
+        ]:
+            if col not in nomes_bolao:
+                conn.execute(text(f"ALTER TABLE bolao ADD COLUMN {col} {tipo} DEFAULT {default}"))
+                conn.commit()
+                resultados.append(f"bolao.{col} adicionada")
+                colunas_adicionadas += 1
+            else:
+                resultados.append(f"bolao.{col} já existia")
+
+        # Colunas para a tabela participante_bolao
+        cols_part = inspector.get_columns('participante_bolao')
+        nomes_part = [c['name'] for c in cols_part]
+
+        for col, tipo, default in [
+            ('cota_paga',            'BOOLEAN',   'FALSE'),
+            ('data_pagamento_cota',  'TIMESTAMP', 'NULL'),
+            ('liberado_manualmente', 'BOOLEAN',   'FALSE'),
+        ]:
+            if col not in nomes_part:
+                conn.execute(text(f"ALTER TABLE participante_bolao ADD COLUMN {col} {tipo} DEFAULT {default}"))
+                conn.commit()
+                resultados.append(f"participante_bolao.{col} adicionada")
+                colunas_adicionadas += 1
+            else:
+                resultados.append(f"participante_bolao.{col} já existia")
+
+    return jsonify({
+        'sucesso': True,
+        'colunas_adicionadas': colunas_adicionadas,
+        'detalhes': resultados
     })
 
 @bp.route('/migrar_grupo_e_logos')

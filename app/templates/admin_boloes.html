@@ -1,6 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Gerenciar Bolões - Admin{% endblock %}
+{% block title %}Gerenciar Bolões - Admin
+<script>
+function toggleCotas(bolaoId, btn) {
+    fetch(`/admin/toggle_controla_cotas/${bolaoId}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(d => {
+        if (d.sucesso) {
+            btn.textContent = `💰 Cotas ${d.controla_cotas ? 'ON' : 'OFF'}`;
+            btn.style.background = d.controla_cotas ? 'var(--verde)' : 'var(--cinza-medio)';
+            btn.style.color = d.controla_cotas ? '#000' : 'var(--texto-fraco)';
+        }
+    });
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div style="max-width: 1200px; margin: 2rem auto;">
@@ -49,9 +63,15 @@
                         </a>
                         <a href="{{ url_for('main.editar_bolao', bolao_id=bolao.id) }}"
                            style="display: inline-block; padding: 0.5rem 1rem; background: #ff9500; color: white; 
-                                  text-decoration: none; border-radius: 4px; font-weight: 600;">
+                                  text-decoration: none; border-radius: 4px; font-weight: 600; margin-right: 0.5rem;">
                             ⚙️ Editar
                         </a>
+                        <button onclick="toggleCotas({{ bolao.id }}, this)"
+                            style="padding: 0.5rem 1rem; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;
+                                   background: {% if bolao.controla_cotas %}var(--verde){% else %}var(--cinza-medio){% endif %};
+                                   color: {% if bolao.controla_cotas %}#000{% else %}var(--texto-fraco){% endif %};">
+                            💰 Cotas {% if bolao.controla_cotas %}ON{% else %}OFF{% endif %}
+                        </button>
                     </td>
                 </tr>
                 {% endfor %}

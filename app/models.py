@@ -137,6 +137,11 @@ class Bolao(db.Model):
     data_pagamento = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(20), default='ativo')  # ativo, encerrado
     data_criacao = db.Column(db.DateTime, default=db.func.now())
+
+    # ── Controle de Cotas ──────────────────────────────────────
+    controla_cotas    = db.Column(db.Boolean, default=False)   # admin ativa
+    valor_cota        = db.Column(db.Float, nullable=True)     # R$ definido pelo dono
+    data_corte_cota   = db.Column(db.DateTime, nullable=True)  # após esta data, não-pagantes não palpitam
     # Relacionamentos
     
     competicao = db.relationship('Competicao', backref='boloes')
@@ -167,7 +172,13 @@ class ParticipanteBolao(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     data_entrada = db.Column(db.DateTime, default=db.func.now())
     pontos_totais = db.Column(db.Integer, default=0)
-     # Relacionamento
+
+    # ── Controle de Cota Individual ────────────────────────────
+    cota_paga           = db.Column(db.Boolean, default=False)
+    data_pagamento_cota = db.Column(db.DateTime, nullable=True)
+    liberado_manualmente = db.Column(db.Boolean, default=False)  # dono libera mesmo sem pagar
+
+    # Relacionamento
     usuario = db.relationship('Usuario', backref='participacoes')
 
 class SolicitacaoEntrada(db.Model):

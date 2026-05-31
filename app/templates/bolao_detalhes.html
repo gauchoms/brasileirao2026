@@ -61,6 +61,24 @@
         <a href="#" onclick="mostrarTab('chaveamento'); return false;" id="tab-chaveamento"
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">🏆 Chaveamento</a>
         {% endif %}
+        {% if eh_dono and bolao.controla_cotas %}
+        <a href="#" onclick="mostrarTab('cotas'); return false;" id="tab-cotas"
+           style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;">
+            💰 Cotas
+            {% set inadimplentes = [] %}
+            {% for p in bolao.participantes %}
+                {% if not p.cota_paga and not p.liberado_manualmente %}
+                    {% set _ = inadimplentes.append(1) %}
+                {% endif %}
+            {% endfor %}
+            {% if inadimplentes|length > 0 %}
+            <span style="background:#e74c3c;color:#fff;border-radius:50%;font-size:0.65rem;
+                         padding:0.1rem 0.4rem;margin-left:0.3rem;font-weight:700;">
+                {{ inadimplentes|length }}
+            </span>
+            {% endif %}
+        </a>
+        {% endif %}
         <a href="#" onclick="mostrarTab('regras'); return false;" id="tab-regras"
            style="padding: 1rem 1.5rem; text-decoration: none; color: var(--texto-fraco); border-bottom: 3px solid transparent;" data-i18n="bd_regras">📋 Regras</a>
         
@@ -715,6 +733,123 @@
     </div>
     {% endif %}
 
+
+    <!-- Tab: Cotas (visível só para o dono se controla_cotas ativo) -->
+    {% if eh_dono and bolao.controla_cotas %}
+    <div id="content-cotas" style="display: none;">
+
+        <!-- Configuração -->
+        <div style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom: 1rem;">⚙️ Configuração das Cotas</h3>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                <div>
+                    <label style="display:block;font-size:0.8rem;color:var(--texto-fraco);margin-bottom:0.3rem;">VALOR DA COTA (R$)</label>
+                    <input type="number" id="valor-cota" step="0.01" min="0"
+                           value="{{ bolao.valor_cota or '' }}"
+                           placeholder="Ex: 30.00"
+                           style="padding:0.6rem 1rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);
+                                  border-radius:6px;color:var(--texto);font-size:1rem;width:140px;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8rem;color:var(--texto-fraco);margin-bottom:0.3rem;">DATA DE CORTE</label>
+                    <input type="datetime-local" id="data-corte-cota"
+                           value="{{ bolao.data_corte_cota.strftime('%Y-%m-%dT%H:%M') if bolao.data_corte_cota else '' }}"
+                           style="padding:0.6rem 1rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);
+                                  border-radius:6px;color:var(--texto);font-size:0.9rem;">
+                </div>
+                <button onclick="salvarConfigCota()"
+                    style="padding:0.6rem 1.5rem;background:var(--verde);color:#000;border:none;
+                           border-radius:6px;font-weight:600;cursor:pointer;">
+                    💾 Salvar
+                </button>
+            </div>
+            {% if bolao.data_corte_cota %}
+            <p style="margin-top:0.8rem;font-size:0.85rem;color:var(--texto-fraco);">
+                ⚠️ Após <strong>{{ bolao.data_corte_cota|brasilia }}</strong>, participantes sem cota paga (e não liberados manualmente) não conseguem palpitar.
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Lista de participantes -->
+        <div style="background: var(--cinza); border-radius: 8px; overflow: hidden;">
+            <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--cinza-medio); display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">👥 Participantes</h3>
+                <div style="font-size:0.85rem;color:var(--texto-fraco);">
+                    {% set pagos = bolao.participantes | selectattr('cota_paga') | list | length %}
+                    {{ pagos }}/{{ bolao.participantes.count() }} pagos
+                </div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="background:var(--cinza-medio);font-size:0.8rem;color:var(--texto-fraco);">
+                        <th style="text-align:left;padding:0.7rem 1rem;">Participante</th>
+                        <th style="text-align:center;padding:0.7rem;">Situação</th>
+                        <th style="text-align:center;padding:0.7rem;">Pago em</th>
+                        <th style="text-align:center;padding:0.7rem;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for part in bolao.participantes %}
+                    {% set status = 'pago' if part.cota_paga else ('liberado' if part.liberado_manualmente else 'pendente') %}
+                    <tr style="border-bottom:1px solid var(--cinza-medio);"
+                        id="row-part-{{ part.id }}">
+                        <td style="padding:0.8rem 1rem;">
+                            <div style="display:flex;align-items:center;gap:0.6rem;">
+                                <!-- Avatar -->
+                                <div style="width:32px;height:32px;border-radius:50%;background:var(--cinza-medio);
+                                            display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+                                    {% if part.usuario.avatar_tipo == 'sugerido' %}
+                                        {{ ['⚽','🏆','👟','🥅','🔥','⭐','⚡','💪','🎯','👊','🚀','💎'][((part.usuario.avatar_sugerido_id or 1) - 1) % 12] }}
+                                    {% else %}
+                                        👤
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div style="font-weight:600;">{{ part.usuario.nome_completo or part.usuario.username }}</div>
+                                    <div style="font-size:0.78rem;color:var(--texto-fraco);">@{{ part.usuario.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align:center;padding:0.8rem;">
+                            <span id="status-{{ part.id }}" style="
+                                padding:0.3rem 0.8rem;border-radius:20px;font-size:0.8rem;font-weight:600;
+                                background:{% if status == 'pago' %}rgba(0,200,100,0.15){% elif status == 'liberado' %}rgba(255,215,0,0.15){% else %}rgba(231,76,60,0.15){% endif %};
+                                color:{% if status == 'pago' %}var(--verde){% elif status == 'liberado' %}var(--amarelo){% else %}#e74c3c{% endif %};">
+                                {% if status == 'pago' %}✅ Pago{% elif status == 'liberado' %}🔓 Liberado{% else %}⏳ Pendente{% endif %}
+                            </span>
+                        </td>
+                        <td style="text-align:center;padding:0.8rem;font-size:0.82rem;color:var(--texto-fraco);">
+                            {{ part.data_pagamento_cota|brasilia if part.data_pagamento_cota else '—' }}
+                        </td>
+                        <td style="text-align:center;padding:0.8rem;">
+                            <div style="display:flex;gap:0.5rem;justify-content:center;">
+                                <button onclick="marcarCota({{ part.id }}, {{ 'true' if part.cota_paga else 'false' }})"
+                                    id="btn-pago-{{ part.id }}"
+                                    style="padding:0.35rem 0.8rem;border-radius:4px;font-size:0.8rem;font-weight:600;cursor:pointer;border:none;
+                                           background:{% if part.cota_paga %}#e74c3c{% else %}var(--verde){% endif %};
+                                           color:{% if part.cota_paga %}#fff{% else %}#000{% endif %};">
+                                    {% if part.cota_paga %}❌ Estornar{% else %}✅ Marcar pago{% endif %}
+                                </button>
+                                {% if not part.cota_paga %}
+                                <button onclick="liberarParticipante({{ part.id }}, {{ 'true' if part.liberado_manualmente else 'false' }})"
+                                    id="btn-lib-{{ part.id }}"
+                                    style="padding:0.35rem 0.8rem;border-radius:4px;font-size:0.8rem;font-weight:600;cursor:pointer;border:1px solid var(--amarelo);
+                                           background:{% if part.liberado_manualmente %}var(--amarelo){% else %}transparent{% endif %};
+                                           color:{% if part.liberado_manualmente %}#000{% else %}var(--amarelo){% endif %};">
+                                    {% if part.liberado_manualmente %}🔒 Revogar{% else %}🔓 Liberar{% endif %}
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    {% endif %}
+
     <!-- Tab: Regras -->
 <div id="content-regras" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -957,6 +1092,8 @@ function mostrarTab(tab) {
     document.getElementById('content-regras').style.display = 'none';
     const chaveEl = document.getElementById('content-chaveamento');
     if (chaveEl) chaveEl.style.display = 'none';
+    const cotasEl = document.getElementById('content-cotas');
+    if (cotasEl) cotasEl.style.display = 'none';
     {% if eh_dono %}
     document.getElementById('content-participantes').style.display = 'none';
     {% endif %}
@@ -968,6 +1105,8 @@ function mostrarTab(tab) {
     document.getElementById('tab-regras').style.borderBottom = '3px solid transparent';
     const tabChave = document.getElementById('tab-chaveamento');
     if (tabChave) { tabChave.style.color = 'var(--texto-fraco)'; tabChave.style.borderBottom = '3px solid transparent'; }
+    const tabCotas = document.getElementById('tab-cotas');
+    if (tabCotas) { tabCotas.style.color = 'var(--texto-fraco)'; tabCotas.style.borderBottom = '3px solid transparent'; }
     document.getElementById('tab-palpites').style.color = 'var(--texto-fraco)';
     document.getElementById('tab-palpites').style.borderBottom = '3px solid transparent';
     document.getElementById('tab-todos-palpites').style.color = 'var(--texto-fraco)';
@@ -1450,6 +1589,59 @@ function compartilharWhatsApp() {
     
     const urlWhatsApp = 'https://wa.me/?text=' + encodeURIComponent(texto);
     window.open(urlWhatsApp, '_blank');
+}
+
+function salvarConfigCota() {
+    const valor = document.getElementById('valor-cota').value;
+    const dataCorte = document.getElementById('data-corte-cota').value;
+    fetch('/bolao/{{ bolao.id }}/configurar_cota', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({valor_cota: valor, data_corte: dataCorte})
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.sucesso) {
+            mostrarMensagem('✅ Configuração salva!', 'verde');
+        } else {
+            mostrarMensagem('❌ ' + (d.erro || 'Erro'), 'vermelho');
+        }
+    });
+}
+
+function marcarCota(partId, jaEstaPago) {
+    fetch(`/bolao/{{ bolao.id }}/marcar_cota/${partId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pago: !jaEstaPago})
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.sucesso) location.reload();
+    });
+}
+
+function liberarParticipante(partId, jaEstaLiberado) {
+    fetch(`/bolao/{{ bolao.id }}/liberar_participante/${partId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({liberar: !jaEstaLiberado})
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.sucesso) location.reload();
+    });
+}
+
+function mostrarMensagem(texto, tipo) {
+    const el = document.getElementById('mensagem-flash') || document.createElement('div');
+    el.id = 'mensagem-flash';
+    el.textContent = texto;
+    el.style.cssText = `position:fixed;bottom:2rem;right:2rem;padding:1rem 1.5rem;border-radius:8px;
+        background:var(--cinza);border-left:3px solid var(--${tipo === 'verde' ? 'verde' : 'texto-fraco'});
+        box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:1000;font-weight:600;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
 }
 </script>
 <style>

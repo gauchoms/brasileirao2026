@@ -8,6 +8,48 @@ headers = {
     "x-apisports-key": Config.API_FOOTBALL_KEY
 }
 
+
+def configurar_cloudinary():
+    import cloudinary
+    cloudinary.config(cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+                      api_key=os.getenv('CLOUDINARY_API_KEY'),
+                      api_secret=os.getenv('CLOUDINARY_API_SECRET'))
+
+def upload_logo_cloudinary(api_id, logo_url_original):
+    if not logo_url_original: return None
+    try:
+        import cloudinary.uploader
+        configurar_cloudinary()
+        r = cloudinary.uploader.upload(logo_url_original,
+            public_id=f"logos/teams/{api_id}", overwrite=False, resource_type="image",
+            transformation=[{"width":120,"height":120,"crop":"fit"}])
+        return r.get("secure_url")
+    except Exception as e:
+        print(f"[CLOUDINARY] Erro logo {api_id}: {e}")
+        return None
+
+def _api_id_placeholder(nome):
+    return 9000000 + (hash(nome) % 999999)
+
+def _nome_placeholder_br(nome):
+    for en, pt in [('Winner','Vencedor'),('Runner-up','2º colocado'),('Group','Grupo')]:
+        nome = nome.replace(en, pt)
+    return nome
+
+def eh_placeholder(time):
+    return getattr(time, 'api_id', 0) >= 9000000
+
+def garantir_time_placeholder(nome_original):
+    from app.models import Time
+    from app import db
+    api_id = _api_id_placeholder(nome_original)
+    nome_br = _nome_placeholder_br(nome_original)
+    time = Time.query.filter_by(api_id=api_id).first()
+    if not time:
+        time = Time(api_id=api_id, nome=nome_br, logo_url=None, ativo=True)
+        db.session.add(time); db.session.flush()
+    return time
+
 def get_jogos_brasileirao():
     url = f"{BASE_URL}/fixtures"
     params = {"league": 71, "season": 2026}
