@@ -3119,7 +3119,7 @@ def relatorio_palpites_bolao(bolao_id):
                 'usuario':   part.usuario.nome_completo or part.usuario.username,
                 'email':     part.usuario.email or '',
                 'pendente':  pendente,
-                'palpite':   f"{palpite.gols_casa_palpite} × {palpite.gols_fora_palpite}" if palpite else '—',
+                # palpite omitido intencionalmente — dono só vê se palpitou ou não
             })
 
     jogos_lista = [{'id': j.id,

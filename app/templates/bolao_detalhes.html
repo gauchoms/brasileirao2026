@@ -1745,9 +1745,8 @@ function carregarRelatorio() {
                 <td style="padding:0.6rem;font-size:0.82rem;">${r.jogo}<br>
                     <span style="color:var(--texto-fraco);font-size:0.75rem;">${r.data}</span></td>
                 <td style="text-align:center;padding:0.6rem;">
-                    ${r.pendente ? '<span style="color:#e74c3c;font-weight:600;">⏳</span>' : '<span style="color:var(--verde);font-weight:600;">✅</span>'}
+                    ${r.pendente ? '<span style="color:#e74c3c;font-weight:600;">⏳ Pendente</span>' : '<span style="color:var(--verde);font-weight:600;">✅ Palpitou</span>'}
                 </td>
-                <td style="text-align:center;padding:0.6rem;color:var(--texto-fraco);">${r.palpite}</td>
                 <td style="text-align:center;padding:0.6rem;">
                     ${r.pendente && r.email ? `<button onclick="enviarLembreteOwner(${r.user_id},${r.jogo_id},{{ bolao.id }},this)"
                         style="padding:0.25rem 0.6rem;background:var(--amarelo);color:#000;border:none;border-radius:4px;font-size:0.75rem;font-weight:600;cursor:pointer;">📧</button>` : ''}
@@ -1761,7 +1760,6 @@ function carregarRelatorio() {
                     <th style="text-align:left;padding:0.6rem 1rem;">Participante</th>
                     <th style="text-align:left;padding:0.6rem;">Jogo</th>
                     <th style="text-align:center;padding:0.6rem;">Status</th>
-                    <th style="text-align:center;padding:0.6rem;">Palpite</th>
                     <th style="text-align:center;padding:0.6rem;">Ação</th>
                 </tr></thead>
                 <tbody>${rows}</tbody>
