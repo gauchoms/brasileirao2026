@@ -1095,6 +1095,91 @@
             </div>
             {% endfor %}
         </div>
+    <!-- Relatório de Palpites Pendentes (só para o dono) -->
+    {% if eh_dono %}
+    <div style="margin-top: 2rem; border-top: 2px solid var(--cinza-medio); padding-top: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0;">📊 Palpites Pendentes</h3>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                <select id="rel-jogo" onchange="filtrarRelatorio()"
+                    style="padding:0.5rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.85rem;">
+                    <option value="">Todos os jogos</option>
+                    {% for jogo in jogos %}
+                    {% if jogo.gols_casa is none %}
+                    <option value="{{ jogo.id }}">
+                        {{ jogo.time_casa.nome if jogo.time_casa else '?' }} × {{ jogo.time_fora.nome if jogo.time_fora else '?' }}
+                        ({{ jogo.data|brasilia_curto if jogo.data else '?' }})
+                    </option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                <select id="rel-status" onchange="filtrarRelatorio()"
+                    style="padding:0.5rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.85rem;">
+                    <option value="pendente">⏳ Só pendentes</option>
+                    <option value="todos">Todos</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="tabela-relatorio" style="background:var(--cinza-medio);border-radius:8px;overflow:hidden;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--cinza);color:var(--texto-fraco);font-size:0.78rem;">
+                        <th style="text-align:left;padding:0.6rem 1rem;">Participante</th>
+                        <th style="text-align:left;padding:0.6rem;">Jogo</th>
+                        <th style="text-align:center;padding:0.6rem;">Status</th>
+                        <th style="text-align:center;padding:0.6rem;">Palpite</th>
+                        <th style="text-align:center;padding:0.6rem;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="rel-tbody">
+                {% set jogos_abertos = jogos|selectattr('gols_casa', 'none')|list %}
+                {% for part in bolao.participantes %}
+                    {% for jogo in jogos_abertos %}
+                    {% set palpite_feito = none %}
+                    {% for p in (palpites_por_jogo[jogo.id] if jogo.id in palpites_por_jogo else []) %}
+                        {% if p.usuario_id == part.usuario_id %}{% set palpite_feito = p %}{% endif %}
+                    {% endfor %}
+                    <tr class="rel-row"
+                        data-jogo="{{ jogo.id }}"
+                        data-status="{% if palpite_feito %}palpitou{% else %}pendente{% endif %}"
+                        style="border-bottom:1px solid var(--cinza);">
+                        <td style="padding:0.6rem 1rem;">
+                            <div style="font-weight:600;">{{ part.usuario.nome_completo or part.usuario.username }}</div>
+                            <div style="font-size:0.75rem;color:var(--texto-fraco);">{{ part.usuario.email or 'sem email' }}</div>
+                        </td>
+                        <td style="padding:0.6rem;font-size:0.82rem;">
+                            {{ jogo.time_casa.nome if jogo.time_casa else '?' }} × {{ jogo.time_fora.nome if jogo.time_fora else '?' }}<br>
+                            <span style="color:var(--texto-fraco);font-size:0.75rem;">{{ jogo.data|brasilia_curto if jogo.data else '' }}</span>
+                        </td>
+                        <td style="text-align:center;padding:0.6rem;">
+                            {% if palpite_feito %}
+                            <span style="color:var(--verde);font-weight:600;">✅</span>
+                            {% else %}
+                            <span style="color:#e74c3c;font-weight:600;">⏳</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center;padding:0.6rem;color:var(--texto-fraco);">
+                            {% if palpite_feito %}{{ palpite_feito.gols_casa_palpite }} × {{ palpite_feito.gols_fora_palpite }}{% else %}—{% endif %}
+                        </td>
+                        <td style="text-align:center;padding:0.6rem;">
+                            {% if not palpite_feito and part.usuario.email %}
+                            <button onclick="enviarLembreteOwner({{ part.usuario_id }}, {{ jogo.id }}, {{ bolao.id }}, this)"
+                                style="padding:0.25rem 0.6rem;background:var(--amarelo);color:#000;border:none;
+                                       border-radius:4px;font-size:0.75rem;font-weight:600;cursor:pointer;">
+                                📧
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
     </div>
     {% endif %}
 
@@ -1675,6 +1760,33 @@ function toggleAlertas() {
         }
     });
 }
+
+function filtrarRelatorio() {
+    const jogoFiltro   = document.getElementById('rel-jogo').value;
+    const statusFiltro = document.getElementById('rel-status').value;
+    document.querySelectorAll('.rel-row').forEach(row => {
+        const jogoOk   = !jogoFiltro   || row.dataset.jogo   === jogoFiltro;
+        const statusOk = statusFiltro === 'todos' || row.dataset.status === statusFiltro;
+        row.style.display = jogoOk && statusOk ? '' : 'none';
+    });
+}
+
+function enviarLembreteOwner(userId, jogoId, bolaoId, btn) {
+    btn.disabled = true; btn.textContent = '⏳';
+    fetch('/admin/enviar_lembrete_individual', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: userId, jogo_id: jogoId, bolao_id: bolaoId})
+    })
+    .then(r => r.json())
+    .then(d => {
+        btn.textContent = d.sucesso ? '✅' : '❌';
+        btn.title = d.mensagem || d.erro;
+        setTimeout(() => { btn.disabled = false; btn.textContent = '📧'; }, 3000);
+    });
+}
+// Aplicar filtro inicial (só pendentes)
+document.addEventListener('DOMContentLoaded', () => filtrarRelatorio());
 </script>
 <style>
 @media (max-width: 768px) {

@@ -1426,6 +1426,14 @@ def bolao_detalhes(bolao_id):
 
     ranking.sort(key=sort_key)
     
+    # Palpites por jogo (para relatório do dono)
+    palpites_por_jogo = {}
+    if eh_dono:
+        from app.models import Palpite as PalpiteModel
+        todos_palpites_bolao = PalpiteModel.query.filter_by(bolao_id=bolao.id).all()
+        for p in todos_palpites_bolao:
+            palpites_por_jogo.setdefault(p.jogo_id, []).append(p)
+
     return render_template('bolao_detalhes.html', 
                          bolao=bolao, 
                          regra=regra,  # ✅ ADICIONA REGRA
@@ -1436,6 +1444,7 @@ def bolao_detalhes(bolao_id):
                          todos_palpites=todos_palpites,
                          ranking=ranking,
                          criterios=criterios,
+                         palpites_por_jogo=palpites_por_jogo,
                          agora=datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'))
 
 
