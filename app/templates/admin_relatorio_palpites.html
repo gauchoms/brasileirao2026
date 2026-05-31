@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Relatório de Palpites{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 2rem auto;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <h1 style="margin-bottom: 0.3rem;">📊 Relatório de Palpites</h1>
+            <p style="color: var(--texto-fraco); margin: 0;">{{ total }} registro(s) encontrado(s)</p>
+        </div>
+        <a href="/admin/gerenciar" style="color: var(--texto-fraco); text-decoration: none;">← Voltar</a>
+    </div>
+
+    <!-- Filtros -->
+    <form method="GET" style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+
+            <div>
+                <label style="display:block;font-size:0.78rem;color:var(--texto-fraco);margin-bottom:0.3rem;">BOLÃO</label>
+                <select name="bolao_id" style="width:100%;padding:0.6rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.9rem;">
+                    <option value="">Todos os bolões</option>
+                    {% for b in boloes %}
+                    <option value="{{ b.id }}" {% if filtros.bolao_id == b.id %}selected{% endif %}>{{ b.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.78rem;color:var(--texto-fraco);margin-bottom:0.3rem;">STATUS DO JOGO</label>
+                <select name="status" style="width:100%;padding:0.6rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.9rem;">
+                    <option value="abertos"   {% if filtros.status == 'abertos'   %}selected{% endif %}>⏳ Ainda não iniciados</option>
+                    <option value="encerrados"{% if filtros.status == 'encerrados'%}selected{% endif %}>✅ Encerrados</option>
+                    <option value="todos"     {% if filtros.status == 'todos'     %}selected{% endif %}>Todos</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.78rem;color:var(--texto-fraco);margin-bottom:0.3rem;">GRUPO</label>
+                <select name="grupo" style="width:100%;padding:0.6rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.9rem;">
+                    <option value="">Todos os grupos</option>
+                    {% for g in grupos %}
+                    <option value="{{ g }}" {% if filtros.grupo == g %}selected{% endif %}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.78rem;color:var(--texto-fraco);margin-bottom:0.3rem;">RODADA</label>
+                <input type="text" name="rodada" value="{{ filtros.rodada }}" placeholder="Ex: 1"
+                    style="width:100%;padding:0.6rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.9rem;">
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.78rem;color:var(--texto-fraco);margin-bottom:0.3rem;">DATA INÍCIO</label>
+                <input type="date" name="data_ini" value="{{ filtros.data_ini }}"
+                    style="width:100%;padding:0.6rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.9rem;">
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.78rem;color:var(--texto-fraco);margin-bottom:0.3rem;">DATA FIM</label>
+                <input type="date" name="data_fim" value="{{ filtros.data_fim }}"
+                    style="width:100%;padding:0.6rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.9rem;">
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.78rem;color:var(--texto-fraco);margin-bottom:0.3rem;">MOSTRAR</label>
+                <select name="so_pendentes" style="width:100%;padding:0.6rem;background:var(--cinza-medio);border:1px solid var(--cinza-medio);border-radius:6px;color:var(--texto);font-size:0.9rem;">
+                    <option value="1" {% if filtros.so_pendentes == '1' %}selected{% endif %}>⏳ Só pendentes</option>
+                    <option value="0" {% if filtros.so_pendentes == '0' %}selected{% endif %}>Todos (palpitou + pendente)</option>
+                </select>
+            </div>
+
+        </div>
+        <button type="submit"
+            style="padding:0.7rem 2rem;background:var(--verde);color:#000;border:none;border-radius:6px;font-weight:600;cursor:pointer;">
+            🔍 Filtrar
+        </button>
+        <a href="/admin/relatorio_palpites"
+            style="margin-left:1rem;color:var(--texto-fraco);text-decoration:none;font-size:0.9rem;">
+            Limpar filtros
+        </a>
+    </form>
+
+    <!-- Tabela resultado -->
+    {% if resultado %}
+    <div style="background: var(--cinza); border-radius: 8px; overflow: hidden;">
+        <div style="overflow-x: auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+            <thead>
+                <tr style="border-bottom:2px solid var(--verde);background:var(--cinza-escuro);">
+                    <th style="text-align:left;padding:0.8rem 1rem;color:var(--texto-fraco);">Jogo</th>
+                    <th style="text-align:left;padding:0.8rem;color:var(--texto-fraco);">Data</th>
+                    <th style="text-align:left;padding:0.8rem;color:var(--texto-fraco);">Grupo/Rod.</th>
+                    <th style="text-align:left;padding:0.8rem;color:var(--texto-fraco);">Bolão</th>
+                    <th style="text-align:left;padding:0.8rem;color:var(--texto-fraco);">Participante</th>
+                    <th style="text-align:left;padding:0.8rem;color:var(--texto-fraco);">Email</th>
+                    <th style="text-align:center;padding:0.8rem;color:var(--texto-fraco);">Status</th>
+                    <th style="text-align:center;padding:0.8rem;color:var(--texto-fraco);">Palpite</th>
+                    <th style="text-align:center;padding:0.8rem;color:var(--texto-fraco);">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in resultado %}
+            <tr style="border-bottom:1px solid var(--cinza-medio);{% if not r.palpitou %}background:rgba(231,76,60,0.04);{% endif %}">
+                <td style="padding:0.7rem 1rem;font-weight:600;">{{ r.jogo }}</td>
+                <td style="padding:0.7rem 0.8rem;color:var(--texto-fraco);white-space:nowrap;">{{ r.data }}</td>
+                <td style="padding:0.7rem 0.8rem;">
+                    {% if r.grupo %}
+                    <span style="background:var(--verde);color:#000;font-size:0.7rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:3px;">{{ r.grupo }}</span>
+                    {% else %}
+                    <span style="color:var(--texto-fraco);font-size:0.85rem;">{{ r.rodada }}</span>
+                    {% endif %}
+                </td>
+                <td style="padding:0.7rem 0.8rem;font-size:0.85rem;">{{ r.bolao }}</td>
+                <td style="padding:0.7rem 0.8rem;">
+                    <div style="font-weight:600;">{{ r.usuario }}</div>
+                    <div style="font-size:0.75rem;color:var(--texto-fraco);">@{{ r.username }}</div>
+                </td>
+                <td style="padding:0.7rem 0.8rem;font-size:0.82rem;color:var(--texto-fraco);">
+                    {{ r.email or '—' }}
+                </td>
+                <td style="text-align:center;padding:0.7rem;">
+                    {% if r.palpitou %}
+                    <span style="color:var(--verde);font-weight:600;">✅ Palpitou</span>
+                    {% else %}
+                    <span style="color:#e74c3c;font-weight:600;">⏳ Pendente</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;padding:0.7rem;color:var(--texto-fraco);">{{ r.palpite }}</td>
+                <td style="text-align:center;padding:0.7rem;">
+                    {% if not r.palpitou and r.email %}
+                    <button onclick="enviarLembrete({{ r.user_id }}, {{ r.jogo_id }}, {{ r.bolao_id }}, this)"
+                        style="padding:0.3rem 0.7rem;background:var(--amarelo);color:#000;border:none;
+                               border-radius:4px;font-size:0.78rem;font-weight:600;cursor:pointer;">
+                        📧 Lembrar
+                    </button>
+                    {% elif not r.palpitou %}
+                    <span style="font-size:0.75rem;color:var(--texto-fraco);">sem email</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:4rem;color:var(--texto-fraco);">
+        <p style="font-size:2rem;margin-bottom:1rem;">🎉</p>
+        <p>Nenhum registro encontrado com estes filtros.</p>
+    </div>
+    {% endif %}
+
+    <!-- Mensagem flash -->
+    <div id="msg-flash" style="display:none;position:fixed;bottom:2rem;right:2rem;padding:1rem 1.5rem;
+         border-radius:8px;background:var(--cinza);border-left:3px solid var(--verde);
+         box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:1000;font-weight:600;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function enviarLembrete(userId, jogoId, bolaoId, btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳...';
+    fetch('/admin/enviar_lembrete_individual', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: userId, jogo_id: jogoId, bolao_id: bolaoId})
+    })
+    .then(r => r.json())
+    .then(d => {
+        const msg = document.getElementById('msg-flash');
+        msg.textContent = d.mensagem || d.erro;
+        msg.style.borderLeftColor = d.sucesso ? 'var(--verde)' : '#e74c3c';
+        msg.style.display = 'block';
+        btn.textContent = d.sucesso ? '✅ Enviado' : '❌ Erro';
+        setTimeout(() => msg.style.display = 'none', 4000);
+    });
+}
+</script>
+{% endblock %}

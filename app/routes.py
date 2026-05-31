@@ -3065,6 +3065,151 @@ def toggle_alertas_bolao(bolao_id):
     })
 
 
+
+@bp.route('/admin/relatorio_palpites')
+@admin_required
+def relatorio_palpites():
+    """Relatório de palpites pendentes — visão admin por jogo/participante."""
+    from app.models import Bolao, Jogo, Palpite, ParticipanteBolao, Competicao
+    from app.utils import converter_utc_brasilia
+    from datetime import datetime
+
+    # ── Filtros ──────────────────────────────────────────────
+    bolao_id    = request.args.get('bolao_id',    type=int)
+    status      = request.args.get('status',      default='abertos')   # abertos|encerrados|todos
+    rodada      = request.args.get('rodada',      default='')
+    grupo       = request.args.get('grupo',       default='')
+    data_ini    = request.args.get('data_ini',    default='')
+    data_fim    = request.args.get('data_fim',    default='')
+    jogo_id     = request.args.get('jogo_id',     type=int)
+    so_pendentes = request.args.get('so_pendentes', default='1')
+
+    # ── Bolões disponíveis para o select ─────────────────────
+    boloes = Bolao.query.order_by(Bolao.nome).all()
+
+    # ── Jogos filtrados ───────────────────────────────────────
+    q = Jogo.query
+
+    if bolao_id:
+        bolao_obj = Bolao.query.get(bolao_id)
+        if bolao_obj:
+            q = q.filter_by(competicao_id=bolao_obj.competicao_id)
+    
+    if status == 'abertos':
+        q = q.filter(Jogo.gols_casa == None)
+    elif status == 'encerrados':
+        q = q.filter(Jogo.gols_casa != None)
+
+    if rodada:
+        q = q.filter(Jogo.rodada.contains(rodada))
+    if grupo:
+        q = q.filter(Jogo.grupo == grupo)
+    if jogo_id:
+        q = q.filter(Jogo.id == jogo_id)
+
+    jogos = q.order_by(Jogo.data).all()
+
+    # Filtrar por data
+    if data_ini:
+        try:
+            dt_ini = datetime.strptime(data_ini, '%Y-%m-%d')
+            jogos = [j for j in jogos if j.data and j.data[:10] >= data_ini]
+        except: pass
+    if data_fim:
+        try:
+            jogos = [j for j in jogos if j.data and j.data[:10] <= data_fim]
+        except: pass
+
+    # ── Montar resultado ──────────────────────────────────────
+    resultado = []
+
+    boloes_filtro = [Bolao.query.get(bolao_id)] if bolao_id else boloes
+
+    for jogo in jogos[:100]:  # limitar a 100 jogos por vez
+        data_br = converter_utc_brasilia(jogo.data)
+        data_fmt = data_br.strftime('%d/%m/%Y %H:%M') if data_br else '?'
+
+        tc = jogo.time_casa.nome if jogo.time_casa else '?'
+        tf = jogo.time_fora.nome if jogo.time_fora else '?'
+
+        for bolao_obj in boloes_filtro:
+            if not bolao_obj or bolao_obj.competicao_id != jogo.competicao_id:
+                continue
+
+            participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao_obj.id).all()
+
+            for part in participantes:
+                palpite = Palpite.query.filter_by(
+                    bolao_id=bolao_obj.id,
+                    usuario_id=part.usuario_id,
+                    jogo_id=jogo.id
+                ).first()
+
+                pendente = palpite is None
+
+                if so_pendentes == '1' and not pendente:
+                    continue
+
+                resultado.append({
+                    'jogo_id':    jogo.id,
+                    'jogo':       f"{tc} × {tf}",
+                    'data':       data_fmt,
+                    'rodada':     jogo.rodada.replace('Regular Season - ','').replace('Group Stage - ','Rod. '),
+                    'grupo':      jogo.grupo or '',
+                    'bolao':      bolao_obj.nome,
+                    'bolao_id':   bolao_obj.id,
+                    'usuario':    part.usuario.nome_completo or part.usuario.username,
+                    'username':   part.usuario.username,
+                    'email':      part.usuario.email or '',
+                    'palpitou':   not pendente,
+                    'palpite':    f"{palpite.gols_casa_palpite} × {palpite.gols_fora_palpite}" if palpite else '—',
+                    'user_id':    part.usuario_id,
+                })
+
+    # Grupos disponíveis para o filtro
+    grupos_disponiveis = sorted(set(
+        j.grupo for j in Jogo.query.filter(Jogo.grupo != '', Jogo.grupo != None).all()
+    ))
+
+    return render_template('admin_relatorio_palpites.html',
+        resultado=resultado,
+        boloes=boloes,
+        grupos=grupos_disponiveis,
+        filtros={
+            'bolao_id': bolao_id, 'status': status, 'rodada': rodada,
+            'grupo': grupo, 'data_ini': data_ini, 'data_fim': data_fim,
+            'jogo_id': jogo_id, 'so_pendentes': so_pendentes
+        },
+        total=len(resultado)
+    )
+
+
+@bp.route('/admin/enviar_lembrete_individual', methods=['POST'])
+@admin_required
+def enviar_lembrete_individual():
+    """Envia email de lembrete para um participante específico."""
+    from app.models import Jogo, Bolao
+    from app.email import email_alerta_palpite
+    from app.models import Usuario
+
+    data = request.get_json()
+    user_id  = data.get('user_id')
+    jogo_id  = data.get('jogo_id')
+    bolao_id = data.get('bolao_id')
+
+    usuario = Usuario.query.get_or_404(user_id)
+    jogo    = Jogo.query.get_or_404(jogo_id)
+    bolao   = Bolao.query.get_or_404(bolao_id)
+
+    if not usuario.email:
+        return jsonify({'erro': f'{usuario.username} não tem email cadastrado'}), 400
+
+    sucesso = email_alerta_palpite(usuario, jogo, bolao, 0)  # 0 = lembrete manual
+    return jsonify({
+        'sucesso': sucesso,
+        'mensagem': f"Email enviado para {usuario.email}" if sucesso else "Falha ao enviar"
+    })
+
 @bp.route('/migrar_alertas')
 @admin_required
 def migrar_alertas():
