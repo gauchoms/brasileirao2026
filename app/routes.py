@@ -2088,7 +2088,7 @@ def chartrace_data(bolao_id):
     from app.utils import converter_utc_brasilia
 
     bolao = Bolao.query.get_or_404(bolao_id)
-    regra = RegraPontuacao.query.filter_by(bolao_id=bolao_id).first()
+    regra = bolao.regra
 
     if not regra:
         return jsonify({"erro": "Bolão sem regra de pontuação"}), 400
