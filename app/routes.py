@@ -2068,6 +2068,102 @@ def corrigir_serie_a_uso():
 # CONTROLE DE COTAS
 # ══════════════════════════════════════════════════════════════
 
+
+# ══════════════════════════════════════════════════════════════
+# CHART RACE — STANDALONE
+# ══════════════════════════════════════════════════════════════
+
+@bp.route('/chartrace/<int:bolao_id>')
+def chartrace_page(bolao_id):
+    """Página standalone do chart race — compartilhável via WhatsApp."""
+    from app.models import Bolao
+    bolao = Bolao.query.get_or_404(bolao_id)
+    return render_template('chartrace.html', bolao=bolao)
+
+
+@bp.route('/chartrace/<int:bolao_id>/data')
+def chartrace_data(bolao_id):
+    """Retorna JSON com histórico de pontos jogo a jogo para o chart race."""
+    from app.models import Bolao, Jogo, Palpite, ParticipanteBolao, RegraPontuacao
+    from app.utils import converter_utc_brasilia
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+    regra = RegraPontuacao.query.filter_by(bolao_id=bolao_id).first()
+
+    if not regra:
+        return jsonify({"erro": "Bolão sem regra de pontuação"}), 400
+
+    # Participantes (até 30)
+    participantes_db = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
+    participantes = []
+    for part in participantes_db[:30]:
+        u = part.usuario
+        participantes.append({
+            "id":    u.id,
+            "nome":  (u.nome_completo or u.username)[:20],
+            "avatar": u.avatar_tipo,
+            "avatar_id": u.avatar_sugerido_id,
+        })
+
+    # Jogos encerrados ordenados por data e grupo
+    jogos = Jogo.query.filter(
+        Jogo.competicao_id == bolao.competicao_id,
+        Jogo.gols_casa != None
+    ).order_by(Jogo.data, Jogo.grupo).all()
+
+    if not jogos:
+        return jsonify({
+            "bolao": bolao.nome,
+            "participantes": participantes,
+            "keyframes": [],
+            "mensagem": "Nenhum jogo encerrado ainda"
+        })
+
+    # Indexar palpites por (usuario_id, jogo_id)
+    user_ids = [p["id"] for p in participantes]
+    todos_palpites = Palpite.query.filter(
+        Palpite.bolao_id == bolao_id,
+        Palpite.usuario_id.in_(user_ids)
+    ).all()
+    idx = {(p.usuario_id, p.jogo_id): p for p in todos_palpites}
+
+    # Construir keyframes: acumular pontos jogo a jogo
+    acumulado = {u["id"]: 0 for u in participantes}
+    keyframes = []
+
+    for jogo in jogos:
+        data_br = converter_utc_brasilia(jogo.data)
+        tc = jogo.time_casa.nome if jogo.time_casa else "?"
+        tf = jogo.time_fora.nome if jogo.time_fora else "?"
+        grupo = jogo.grupo or ""
+
+        label = f"{data_br.strftime('%d/%m %H:%M') if data_br else '?'}"
+        if grupo:
+            label += f" · {grupo}"
+        label += f" · {tc} {jogo.gols_casa}×{jogo.gols_fora} {tf}"
+
+        # Calcular pontos de cada participante neste jogo
+        pts_jogo = {}
+        for u in participantes:
+            palpite = idx.get((u["id"], jogo.id))
+            if palpite:
+                pts = calcular_pontos_palpite(palpite, jogo, regra)
+            else:
+                pts = 0
+            acumulado[u["id"]] += pts
+            pts_jogo[u["id"]] = acumulado[u["id"]]
+
+        keyframes.append({
+            "label": label,
+            "pts":   pts_jogo
+        })
+
+    return jsonify({
+        "bolao":         bolao.nome,
+        "participantes": participantes,
+        "keyframes":     keyframes
+    })
+
 @bp.route('/admin/toggle_controla_cotas/<int:bolao_id>', methods=['POST'])
 @admin_required
 def toggle_controla_cotas(bolao_id):
