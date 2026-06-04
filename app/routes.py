@@ -2105,11 +2105,30 @@ def chartrace_data(bolao_id):
             "avatar_id": u.avatar_sugerido_id,
         })
 
-    # Jogos encerrados ordenados por data e grupo
-    jogos = Jogo.query.filter(
-        Jogo.competicao_id == bolao.competicao_id,
-        Jogo.gols_casa != None
-    ).order_by(Jogo.data, Jogo.grupo).all()
+    # Jogos encerrados — lógica igual ao bolao_detalhes
+    from app.models import Competicao as CompModel
+    if bolao.tipo_bolao == 'campeonato_completo':
+        jogos = Jogo.query.filter(
+            Jogo.competicao_id == bolao.competicao_id,
+            Jogo.gols_casa != None
+        ).order_by(Jogo.data, Jogo.grupo).all()
+
+    elif bolao.tipo_bolao == 'time_campeonato':
+        jogos = Jogo.query.filter(
+            (Jogo.time_casa_id == bolao.time_especifico_id) | (Jogo.time_fora_id == bolao.time_especifico_id),
+            Jogo.competicao_id == bolao.competicao_id,
+            Jogo.gols_casa != None
+        ).order_by(Jogo.data).all()
+
+    elif bolao.tipo_bolao == 'time_ano_completo':
+        jogos = Jogo.query.join(CompModel).filter(
+            (Jogo.time_casa_id == bolao.time_especifico_id) | (Jogo.time_fora_id == bolao.time_especifico_id),
+            CompModel.ano == bolao.ano,
+            Jogo.gols_casa != None
+        ).order_by(Jogo.data).all()
+
+    else:
+        jogos = []
 
     if not jogos:
         return jsonify({
