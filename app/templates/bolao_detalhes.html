@@ -443,7 +443,7 @@
                     {% if jogo.id in palpites_usuario and palpites_usuario[jogo.id].hash_comprovante %}
                     <div style="margin-top: 0.8rem; text-align: center;">
                         <div style="font-size: 0.85rem; color: var(--texto-fraco); margin-bottom: 0.4rem;">
-                            Palpite salvo: <strong>{{ palpites_usuario[jogo.id].gols_casa_palpite }} × {{ palpites_usuario[jogo.id].gols_fora_palpite }}</strong>
+                            Seu palpite anteriormente salvo foi: <strong>{{ palpites_usuario[jogo.id].gols_casa_palpite }} × {{ palpites_usuario[jogo.id].gols_fora_palpite }}</strong>
                         </div>
                        <a href="/comprovante/{{ palpites_usuario[jogo.id].id }}" target="_blank"
                            style="display: inline-block; padding: 0.4rem 0.9rem; background: var(--cinza-medio); 
