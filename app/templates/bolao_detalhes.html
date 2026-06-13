@@ -946,7 +946,21 @@
                                font-size: 0.85rem; cursor: not-allowed; opacity: 0.5;">
                     📊 Baixar CSV (avançado)
                 </button>
-                
+                <!-- VOTAÇÃO (só bolão 15) -->
+                    {% if bolao.id == 15 %}
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cinza-medio);">
+                        <h3 style="color: var(--verde); margin-bottom: 0.5rem;">🗳️ Votação de Regras</h3>
+                        <p style="color: var(--texto-fraco); font-size: 0.85rem; margin-bottom: 1rem;">
+                            Participe da votação para definir o critério de pontuação do bolão.
+                        </p>
+                        <a href="{{ url_for('main.votacao_cenario', bolao_id=bolao.id) }}"
+                        style="display: inline-block; padding: 0.8rem 1.5rem;
+                                background: var(--verde); color: #000;
+                                text-decoration: none; border-radius: 6px; font-weight: 700;">
+                            🗳️ Ir para a Votação
+                        </a>
+                    </div>
+                    {% endif %}
                 <p style="color: var(--texto-fraco); font-size: 0.85rem; margin-top: 0.5rem;">
                     ⏳ Aguardando pelo menos 2 rodadas finalizadas para gerar vídeo...
                 </p>
