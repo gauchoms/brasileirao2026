@@ -276,24 +276,3 @@ class SnapshotPontuacao(db.Model):
     
     def __repr__(self):
         return f'<Snapshot {self.id} - Bolão {self.bolao_id} - {self.data_snapshot}>'
-
-
-class VotoCenario(db.Model):
-    """
-    Voto de participante na enquete de cenário de pontuação
-    """
-    __tablename__ = 'voto_cenario'
-
-    id = db.Column(db.Integer, primary_key=True)
-    bolao_id = db.Column(db.Integer, db.ForeignKey('bolao.id'), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    cenario = db.Column(db.String(10), nullable=False)  # 'C1', 'C2' ou 'C3'
-    data_voto = db.Column(db.DateTime, default=db.func.now())
-
-    # Garante um voto por usuário por bolão
-    __table_args__ = (
-        db.UniqueConstraint('bolao_id', 'usuario_id', name='uq_voto_cenario_bolao_usuario'),
-    )
-
-    bolao = db.relationship('Bolao', backref='votos_cenario')
-    usuario = db.relationship('Usuario', backref='votos_cenario')
