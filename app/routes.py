@@ -3536,7 +3536,9 @@ def migrar_reset_senha_render():
         return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
-    @bp.route('/bolao/<int:bolao_id>/votacao', methods=['GET'])
+
+
+@bp.route('/bolao/<int:bolao_id>/votacao', methods=['GET'])
 @login_required
 def votacao_cenario(bolao_id):
     from app.models import Bolao, ParticipanteBolao, VotoCenario
