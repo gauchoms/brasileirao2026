@@ -3536,3 +3536,71 @@ def migrar_reset_senha_render():
         return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+    @bp.route('/bolao/<int:bolao_id>/votacao', methods=['GET'])
+@login_required
+def votacao_cenario(bolao_id):
+    from app.models import Bolao, ParticipanteBolao, VotoCenario
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+
+    eh_participante = ParticipanteBolao.query.filter_by(
+        bolao_id=bolao_id, usuario_id=current_user.id
+    ).first()
+    if not eh_participante and not current_user.is_admin:
+        return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
+
+    meu_voto = VotoCenario.query.filter_by(
+        bolao_id=bolao_id, usuario_id=current_user.id
+    ).first()
+
+    lista_votos = VotoCenario.query.filter_by(bolao_id=bolao_id)\
+        .order_by(VotoCenario.data_voto).all()
+
+    votos = {'C1': 0, 'C2': 0, 'C3': 0}
+    for v in lista_votos:
+        if v.cenario in votos:
+            votos[v.cenario] += 1
+
+    return render_template('votacao_cenario.html',
+        bolao=bolao,
+        meu_voto=meu_voto,
+        lista_votos=lista_votos,
+        votos=votos,
+        total_votos=len(lista_votos)
+    )
+
+
+@bp.route('/bolao/<int:bolao_id>/votar_cenario', methods=['POST'])
+@login_required
+def votar_cenario(bolao_id):
+    from app.models import Bolao, ParticipanteBolao, VotoCenario
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+
+    eh_participante = ParticipanteBolao.query.filter_by(
+        bolao_id=bolao_id, usuario_id=current_user.id
+    ).first()
+    if not eh_participante and not current_user.is_admin:
+        return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
+
+    cenario = request.form.get('cenario')
+    if cenario not in ('C1', 'C2', 'C3'):
+        return redirect(url_for('main.votacao_cenario', bolao_id=bolao_id))
+
+    voto = VotoCenario.query.filter_by(
+        bolao_id=bolao_id, usuario_id=current_user.id
+    ).first()
+
+    if voto:
+        voto.cenario = cenario
+        voto.data_voto = datetime.utcnow()
+    else:
+        voto = VotoCenario(
+            bolao_id=bolao_id,
+            usuario_id=current_user.id,
+            cenario=cenario
+        )
+        db.session.add(voto)
+
+    db.session.commit()
+    return redirect(url_for('main.votacao_cenario', bolao_id=bolao_id))
