@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Votação de Regras — {{ bolao.nome }}{% endblock %}
+{% block content %}
+<div style="max-width: 1000px; margin: 2rem auto; padding: 0 1rem;">
+
+    <div style="margin-bottom: 1.5rem;">
+        <a href="{{ url_for('main.bolao_detalhes', bolao_id=bolao.id) }}"
+           style="color: var(--texto-fraco); text-decoration: none;">← Voltar para o bolão</a>
+    </div>
+
+    <h1 style="margin-bottom: 0.5rem;">🗳️ Votação de Regras</h1>
+    <p style="color: var(--texto-fraco); margin-bottom: 2rem; font-size: 0.95rem;">
+        Bolão: <strong>{{ bolao.nome }}</strong>
+    </p>
+
+    <!-- Mensagem de desculpas -->
+    <div style="background: rgba(255,215,0,0.08); border-left: 4px solid var(--amarelo);
+                padding: 1.2rem 1.5rem; border-radius: 8px; margin-bottom: 2rem; line-height: 1.8;">
+        <strong style="color: var(--amarelo);">📢 Uma mensagem do organizador</strong><br>
+        <span style="color: var(--texto-fraco); font-size: 0.93rem;">
+            Pessoal, quero ser transparente com vocês sobre as regras de pontuação do bolão.
+            Desde o início, a intenção era ter um sistema justo e claro, mas reconheço que as regras
+            não foram comunicadas da forma correta, e isso gerou dúvidas legítimas sobre como os pontos
+            estão sendo calculados. Peço desculpas por isso.<br><br>
+            Para resolver de vez, quero que a decisão seja de vocês. Abaixo estão 3 cenários com exemplos
+            práticos. A votação acontece aqui mesmo, no bolão — é identificada e cada um vota uma vez.
+        </span>
+    </div>
+
+    <!-- Resultado parcial -->
+    <div style="background: var(--cinza); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem;">📊 Resultado parcial — {{ total_votos }} voto{{ 's' if total_votos != 1 else '' }}</h3>
+        {% for c, label, cor in [('C1','Obrigatório acertar o resultado do jogo','#9b59b6'),('C2','Vinculado à seleção apostada (mandante/visitante)','#3498db'),('C3','Vencedor/perdedor (empate sem parciais)','#e74c3c')] %}
+        {% set votos_c = votos.get(c, 0) %}
+        {% set pct = ((votos_c / total_votos * 100) | round(0) | int) if total_votos > 0 else 0 %}
+        <div style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <span style="font-size: 0.9rem; font-weight: 600;">
+                    <span style="color: {{ cor }};">■</span> {{ c }} — {{ label }}
+                </span>
+                <span style="font-size: 0.85rem; color: var(--texto-fraco);">{{ votos_c }} voto{{ 's' if votos_c != 1 else '' }} ({{ pct }}%)</span>
+            </div>
+            <div style="background: var(--cinza-medio); border-radius: 4px; height: 10px; overflow: hidden;">
+                <div style="height: 100%; background: {{ cor }}; width: {{ pct }}%; border-radius: 4px; transition: width 0.5s;"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Seu voto atual -->
+    {% if meu_voto %}
+    <div style="background: rgba(0,166,81,0.1); border-left: 4px solid var(--verde);
+                padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        ✅ Você votou no <strong>{{ meu_voto.cenario }}</strong>. Pode alterar seu voto abaixo.
+    </div>
+    {% endif %}
+
+    <!-- Botões de voto -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+        {% for c, label, cor, desc in [
+            ('C1','Obrigatório acertar o resultado','#9b59b6','Para pontuar gols parciais, é obrigatório acertar o resultado do jogo (vitória ou empate). Empate cravado = 20pts. Empate acertado sem cravar = 12pts.'),
+            ('C2','Vinculado à seleção apostada','#3498db','Os gols são comparados pela seleção apostada: mandante com mandante, visitante com visitante. Independe de acertar o resultado.'),
+            ('C3','Vencedor/perdedor','#e74c3c','Os gols são comparados pelo papel no jogo (vencedor/perdedor). Em empate real, não existe vencedor nem perdedor — gols parciais não pontuam.')
+        ] %}
+        <form method="POST" action="{{ url_for('main.votar_cenario', bolao_id=bolao.id) }}">
+            <input type="hidden" name="cenario" value="{{ c }}">
+            <div style="background: var(--cinza); border-radius: 10px; padding: 1.3rem;
+                        border: 2px solid {% if meu_voto and meu_voto.cenario == c %}{{ cor }}{% else %}var(--cinza-medio){% endif %};
+                        height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 1rem; font-weight: 700; color: {{ cor }}; margin-bottom: 0.6rem;">{{ c }} — {{ label }}</div>
+                    <p style="font-size: 0.85rem; color: var(--texto-fraco); line-height: 1.6; margin-bottom: 1rem;">{{ desc }}</p>
+                </div>
+                <button type="submit"
+                    style="width: 100%; padding: 0.7rem; border: none; border-radius: 6px;
+                           font-weight: 700; font-size: 0.9rem; cursor: pointer;
+                           background: {% if meu_voto and meu_voto.cenario == c %}{{ cor }}{% else %}var(--cinza-medio){% endif %};
+                           color: {% if meu_voto and meu_voto.cenario == c %}#fff{% else %}var(--texto-fraco){% endif %};">
+                    {% if meu_voto and meu_voto.cenario == c %}✅ Seu voto atual{% else %}Votar no {{ c }}{% endif %}
+                </button>
+            </div>
+        </form>
+        {% endfor %}
+    </div>
+
+    <!-- Tabela comparativa -->
+    <h2 style="margin-bottom: 0.5rem;">📋 Comparativo dos Cenários</h2>
+    <p style="color: var(--texto-fraco); font-size: 0.85rem; margin-bottom: 1.5rem;">
+        Simulações com placares reais para ajudar na sua escolha.
+        Pontuação base: 10pts resultado · 4pts gols maior · 4pts gols menor · 2pts diferença
+    </p>
+
+    <div id="tabela-comp" style="overflow-x: auto;">
+        <!-- Renderizado pelo JS abaixo -->
+    </div>
+
+    <!-- Quem votou -->
+    {% if lista_votos %}
+    <div style="background: var(--cinza); border-radius: 8px; padding: 1.5rem; margin-top: 2rem;">
+        <h3 style="margin-bottom: 1rem;">👥 Votos registrados</h3>
+        <div style="display: grid; gap: 0.5rem;">
+            {% for v in lista_votos %}
+            <div style="display: flex; justify-content: space-between; align-items: center;
+                        padding: 0.6rem 1rem; background: var(--fundo); border-radius: 6px; font-size: 0.88rem;">
+                <span>{{ v.usuario.nome_completo or v.usuario.username }}</span>
+                <span style="font-weight: 700;
+                    color: {% if v.cenario == 'C1' %}#9b59b6{% elif v.cenario == 'C2' %}#3498db{% else %}#e74c3c{% endif %};">
+                    {{ v.cenario }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const R = {venc:10, gv:4, gp:4, dif:2};
+function res(a,b){return a>b?'M':a<b?'V':'E';}
+
+function c1(pr,pg,vr,vg){
+  const nr=res(pr,vr),np=res(pg,vg);
+  if(nr!==np) return {pts:0,det:['❌ errou resultado → 0pts']};
+  let pts=R.venc,det=['✅ resultado +10'];
+  if(nr==='E'){
+    if(pr===pg&&vr===vg){pts+=R.gv+R.gp+R.dif;det.push('✅ ambos gols +8','✅ diferença +2');}
+    else{pts+=R.dif;det.push('✅ diferença=0 +2');}
+    return {pts,det};
+  }
+  const maxR=Math.max(pr,vr),minR=Math.min(pr,vr),maxP=Math.max(pg,vg),minP=Math.min(pg,vg);
+  if(maxR===maxP){pts+=R.gv;det.push('✅ gols vencedor +4');}else det.push('❌ gols vencedor');
+  if(minR===minP){pts+=R.gp;det.push('✅ gols perdedor +4');}else det.push('❌ gols perdedor');
+  if((maxR-minR)===(maxP-minP)){pts+=R.dif;det.push('✅ diferença +2');}else det.push('❌ diferença');
+  return {pts,det};
+}
+
+function c2(pr,pg,vr,vg){
+  const nr=res(pr,vr),np=res(pg,vg);
+  let pts=0,det=[];
+  if(nr===np){pts+=R.venc;det.push('✅ resultado +10');}else det.push('❌ resultado');
+  if(pr===pg){pts+=R.gv;det.push('✅ gols mandante +4');}else det.push('❌ gols mandante');
+  if(vr===vg){pts+=R.gp;det.push('✅ gols visitante +4');}else det.push('❌ gols visitante');
+  if(Math.abs(pr-vr)===Math.abs(pg-vg)){pts+=R.dif;det.push('✅ diferença +2');}else det.push('❌ diferença');
+  return {pts,det};
+}
+
+function c3(pr,pg,vr,vg){
+  const nr=res(pr,vr),np=res(pg,vg);
+  let pts=0,det=[];
+  if(nr===np){pts+=R.venc;det.push('✅ resultado +10');}else det.push('❌ resultado');
+  if(nr==='E'){
+    if(np==='E'){
+      if(pr===pg&&vr===vg){pts+=R.gv+R.gp+R.dif;det.push('✅ ambos gols +8','✅ diferença +2');}
+      else{pts+=R.dif;det.push('✅ diferença=0 +2');}
+    }else det.push('⛔ empate real → sem parciais');
+    return {pts,det};
+  }
+  const maxR=Math.max(pr,vr),minR=Math.min(pr,vr),maxP=Math.max(pg,vg),minP=Math.min(pg,vg);
+  if(maxR===maxP){pts+=R.gv;det.push('✅ gols vencedor +4');}else det.push('❌ gols vencedor');
+  if(minR===minP){pts+=R.gp;det.push('✅ gols perdedor +4');}else det.push('❌ gols perdedor');
+  if((maxR-minR)===(maxP-minP)){pts+=R.dif;det.push('✅ diferença +2');}else det.push('❌ diferença');
+  return {pts,det};
+}
+
+const jogos=[
+  {label:'🇧🇷 Brasil 2 × 1 Marrocos',desc:'Vitória do mandante',pr:2,vr:1,
+   palpites:[{d:'2 × 1',o:'placar exato'},{d:'1 × 2',o:'invertido — acerta gols'},{d:'3 × 1',o:'acerta gols do perdedor'},{d:'2 × 0',o:'acerta vencedor + diferença'},{d:'1 × 0',o:'acerta só a diferença'},{d:'0 × 1',o:'erra resultado, acerta gols perdedor'},{d:'2 × 2',o:'palpitou empate, acerta gols vencedor'},{d:'1 × 1',o:'palpitou empate, erra tudo'}]},
+  {label:'🇫🇷 França 1 × 1 Espanha',desc:'Empate',pr:1,vr:1,
+   palpites:[{d:'1 × 1',o:'placar exato'},{d:'0 × 0',o:'acerta empate, erra gols'},{d:'2 × 2',o:'acerta empate, erra gols'},{d:'2 × 1',o:'palpitou vitória do mandante'},{d:'1 × 0',o:'palpitou vitória do mandante'},{d:'0 × 1',o:'palpitou vitória do visitante'},{d:'1 × 2',o:'palpitou vitória do visitante'}]},
+  {label:'🇺🇸 EUA 3 × 0 Paraguai',desc:'Goleada do mandante',pr:3,vr:0,
+   palpites:[{d:'3 × 0',o:'placar exato'},{d:'0 × 3',o:'invertido — acerta gols'},{d:'2 × 0',o:'acerta gols do perdedor'},{d:'3 × 1',o:'acerta gols do vencedor'},{d:'4 × 1',o:'acerta diferença de 3'},{d:'1 × 1',o:'palpitou empate'},{d:'1 × 0',o:'erra resultado, acerta gols perdedor'}]},
+];
+
+function parse(d){const m=d.match(/(\d+)\s*×\s*(\d+)/);return m?[+m[1],+m[2]]:[0,0];}
+function ptsColor(p){return p===0?'#333':p>=20?'#00a651':p>=14?'#3498db':'#f39c12';}
+function detHtml(det,cor){return det.map(d=>`<span style="display:block;white-space:nowrap;color:${d.startsWith('✅')?cor:d.startsWith('⛔')?'#e67e22':'#333'};font-size:0.6rem;line-height:1.7;">${d}</span>`).join('');}
+
+const cont=document.getElementById('tabela-comp');
+jogos.forEach(j=>{
+  let html=`<div style="margin-bottom:2rem;">
+  <div style="background:var(--cinza-medio);border-left:4px solid var(--verde);padding:0.6rem 1rem;border-radius:4px;margin-bottom:0.5rem;font-weight:700;font-size:0.93rem;">${j.label}</div>
+  <div style="font-size:0.72rem;color:#555;margin-bottom:0.5rem;">${j.desc} · Mandante ${j.pr} · Visitante ${j.vr}</div>
+  <table style="width:100%;border-collapse:collapse;font-size:0.77rem;">
+    <tr style="background:var(--cinza);border-bottom:2px solid var(--cinza-medio);">
+      <th style="text-align:left;padding:0.5rem 0.4rem;color:#aaa;font-size:0.7rem;width:13%">Palpite</th>
+      <th style="text-align:left;padding:0.5rem 0.4rem;color:#555;font-size:0.68rem;width:22%">Observação</th>
+      <th style="text-align:center;padding:0.5rem 0.3rem;color:#9b59b6;font-size:0.7rem;width:7%">C1</th>
+      <th style="text-align:center;padding:0.5rem 0.3rem;color:#3498db;font-size:0.7rem;width:7%">C2</th>
+      <th style="text-align:center;padding:0.5rem 0.3rem;color:#e74c3c;font-size:0.7rem;width:7%">C3</th>
+      <th style="text-align:left;padding:0.5rem 0.3rem;color:#9b59b655;font-size:0.65rem;width:15%">Det. C1</th>
+      <th style="text-align:left;padding:0.5rem 0.3rem;color:#3498db55;font-size:0.65rem;width:15%">Det. C2</th>
+      <th style="text-align:left;padding:0.5rem 0.3rem;color:#e74c3c55;font-size:0.65rem;width:14%">Det. C3</th>
+    </tr>`;
+  j.palpites.forEach(p=>{
+    const [pg,vg]=parse(p.d);
+    const r1=c1(j.pr,pg,j.vr,vg),r2=c2(j.pr,pg,j.vr,vg),r3=c3(j.pr,pg,j.vr,vg);
+    html+=`<tr style="border-bottom:1px solid var(--cinza-medio);">
+      <td style="padding:0.4rem;font-weight:700;vertical-align:top;">${p.d}</td>
+      <td style="padding:0.4rem;color:#555;font-size:0.7rem;vertical-align:top;">${p.o}</td>
+      <td style="text-align:center;padding:0.4rem;vertical-align:top;"><span style="font-weight:700;color:${ptsColor(r1.pts)};font-size:0.85rem;">${r1.pts}</span></td>
+      <td style="text-align:center;padding:0.4rem;vertical-align:top;"><span style="font-weight:700;color:${ptsColor(r2.pts)};font-size:0.85rem;">${r2.pts}</span></td>
+      <td style="text-align:center;padding:0.4rem;vertical-align:top;"><span style="font-weight:700;color:${ptsColor(r3.pts)};font-size:0.85rem;">${r3.pts}</span></td>
+      <td style="padding:0.4rem;vertical-align:top;">${detHtml(r1.det,'#9b59b6')}</td>
+      <td style="padding:0.4rem;vertical-align:top;">${detHtml(r2.det,'#3498db')}</td>
+      <td style="padding:0.4rem;vertical-align:top;">${detHtml(r3.det,'#e74c3c')}</td>
+    </tr>`;
+  });
+  html+='</table></div>';
+  cont.innerHTML+=html;
+});
+
+cont.innerHTML+=`<div style="background:var(--cinza);border-radius:8px;padding:1rem;font-size:0.73rem;color:#666;line-height:2;margin-top:0.5rem;">
+  <strong style="color:var(--texto);display:block;margin-bottom:0.3rem;">📌 Resumo dos Cenários</strong>
+  <span style="color:#9b59b6">■ C1</span> — Para pontuar parciais, é <strong style="color:var(--texto)">obrigatório acertar o resultado do jogo</strong>. Empate cravado = 20pts. Empate acertado sem cravar = 12pts.<br>
+  <span style="color:#3498db">■ C2</span> — Gols comparados <strong style="color:var(--texto)">pela seleção apostada</strong>: mandante vs mandante, visitante vs visitante. Independe do resultado.<br>
+  <span style="color:#e74c3c">■ C3</span> — Gols comparados pelo <strong style="color:var(--texto)">papel no jogo (vencedor/perdedor)</strong>. Em empate real, sem vencedor = sem parciais de gols.<br><br>
+  <span style="color:#00a651">🟢 20pts</span> placar exato &nbsp;·&nbsp; <span style="color:#3498db">🔵 14+pts</span> ótimo &nbsp;·&nbsp; <span style="color:#f39c12">🟡 2-13pts</span> parcial &nbsp;·&nbsp; <span style="color:#333">⚫ 0pts</span> zero
+</div>`;
+</script>
+{% endblock %}

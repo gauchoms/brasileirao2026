@@ -3536,3 +3536,208 @@ def migrar_reset_senha_render():
         return jsonify({'sucesso': True, 'mensagem': 'Colunas adicionadas!'})
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+    
+
+
+
+@bp.route('/bolao/<int:bolao_id>/lembrete_palpites')
+@login_required
+def lembrete_palpites(bolao_id):
+    from app.models import Bolao, Jogo, Palpite, ParticipanteBolao, Usuario
+    from datetime import datetime, timedelta
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+
+    # Só dono ou admin
+    if bolao.dono_id != current_user.id and not current_user.is_admin:
+        return jsonify({'erro': 'Acesso negado'}), 403
+
+    agora = datetime.utcnow()
+    hoje_inicio = agora.replace(hour=0, minute=0, second=0, microsecond=0)
+    hoje_fim = hoje_inicio + timedelta(days=1)
+
+    # Busca jogos de hoje que ainda não começaram
+    jogos_alvo = Jogo.query.filter(
+        Jogo.data >= hoje_inicio.strftime('%Y-%m-%dT%H:%M:%S'),
+        Jogo.data < hoje_fim.strftime('%Y-%m-%dT%H:%M:%S'),
+        Jogo.data > agora.strftime('%Y-%m-%dT%H:%M:%S'),
+        Jogo.gols_casa == None
+    )
+
+    # Filtra pelos jogos do bolão
+    if bolao.tipo_bolao in ('time_campeonato', 'time_ano_completo') and bolao.time_especifico_id:
+        jogos_alvo = jogos_alvo.filter(
+            (Jogo.time_casa_id == bolao.time_especifico_id) |
+            (Jogo.time_fora_id == bolao.time_especifico_id)
+        )
+    if bolao.competicao_id:
+        jogos_alvo = jogos_alvo.filter(Jogo.competicao_id == bolao.competicao_id)
+
+    jogos_alvo = jogos_alvo.order_by(Jogo.data).all()
+
+    # Se não houver jogos hoje, busca o próximo dia com jogos
+    if not jogos_alvo:
+        proximo_jogo = Jogo.query.filter(
+            Jogo.data > agora.strftime('%Y-%m-%dT%H:%M:%S'),
+            Jogo.gols_casa == None
+        )
+        if bolao.tipo_bolao in ('time_campeonato', 'time_ano_completo') and bolao.time_especifico_id:
+            proximo_jogo = proximo_jogo.filter(
+                (Jogo.time_casa_id == bolao.time_especifico_id) |
+                (Jogo.time_fora_id == bolao.time_especifico_id)
+            )
+        if bolao.competicao_id:
+            proximo_jogo = proximo_jogo.filter(Jogo.competicao_id == bolao.competicao_id)
+
+        proximo_jogo = proximo_jogo.order_by(Jogo.data).first()
+
+        if not proximo_jogo:
+            return jsonify({'jogos': [], 'pendentes': [], 'mensagem': ''})
+
+        # Pega todos os jogos desse mesmo dia
+        data_prox = datetime.strptime(
+            proximo_jogo.data.replace('+00:00', '').replace('Z', ''),
+            '%Y-%m-%dT%H:%M:%S'
+        )
+        dia_inicio = data_prox.replace(hour=0, minute=0, second=0, microsecond=0)
+        dia_fim = dia_inicio + timedelta(days=1)
+
+        jogos_alvo_q = Jogo.query.filter(
+            Jogo.data >= dia_inicio.strftime('%Y-%m-%dT%H:%M:%S'),
+            Jogo.data < dia_fim.strftime('%Y-%m-%dT%H:%M:%S'),
+            Jogo.gols_casa == None
+        )
+        if bolao.tipo_bolao in ('time_campeonato', 'time_ano_completo') and bolao.time_especifico_id:
+            jogos_alvo_q = jogos_alvo_q.filter(
+                (Jogo.time_casa_id == bolao.time_especifico_id) |
+                (Jogo.time_fora_id == bolao.time_especifico_id)
+            )
+        if bolao.competicao_id:
+            jogos_alvo_q = jogos_alvo_q.filter(Jogo.competicao_id == bolao.competicao_id)
+        jogos_alvo = jogos_alvo_q.order_by(Jogo.data).all()
+
+    jogos_ids = [j.id for j in jogos_alvo]
+
+    # Participantes que NÃO palpitaram em pelo menos um desses jogos
+    participantes = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
+    pendentes = []
+    for part in participantes:
+        palpites_ids = {
+            p.jogo_id for p in Palpite.query.filter_by(
+                bolao_id=bolao_id,
+                usuario_id=part.usuario_id
+            ).filter(Palpite.jogo_id.in_(jogos_ids)).all()
+        }
+        faltando = [j for j in jogos_alvo if j.id not in palpites_ids]
+        if faltando:
+            u = Usuario.query.get(part.usuario_id)
+            pendentes.append({
+                'nome_completo': u.nome_completo or u.username,
+                'username': u.username,
+                'email': u.email or '—'
+            })
+
+    # Monta a mensagem
+    from app.utils import converter_utc_brasilia
+    linhas_jogos = []
+    for j in jogos_alvo:
+        data_br = converter_utc_brasilia(
+            datetime.strptime(j.data.replace('+00:00','').replace('Z',''), '%Y-%m-%dT%H:%M:%S')
+        )
+        linhas_jogos.append(
+            f"  ⚽ {j.time_casa.nome} x {j.time_fora.nome} — {data_br.strftime('%d/%m às %H:%M')}"
+        )
+
+    data_ref = converter_utc_brasilia(
+        datetime.strptime(
+            jogos_alvo[0].data.replace('+00:00','').replace('Z',''),
+            '%Y-%m-%dT%H:%M:%S'
+        )
+    ).strftime('%d/%m/%Y')
+
+    mensagem = (
+        f"⏰ *Lembrete de palpites — {bolao.nome}*\n\n"
+        f"Jogos do dia {data_ref}:\n"
+        + "\n".join(linhas_jogos) +
+        f"\n\n👉 Acesse e registre seu palpite antes do apito inicial!\n"
+        f"🔗 https://erreidenovo.com.br/bolao/{bolao_id}"
+    )
+
+    return jsonify({
+        'jogos': [{'casa': j.time_casa.nome, 'fora': j.time_fora.nome} for j in jogos_alvo],
+        'pendentes': pendentes,
+        'mensagem': mensagem
+    })
+# ─────────────────────────────────────────────────────────────
+# VOTAÇÃO DE CENÁRIO — adicionar em app/routes.py
+# ─────────────────────────────────────────────────────────────
+
+@bp.route('/bolao/<int:bolao_id>/votacao', methods=['GET'])
+@login_required
+def votacao_cenario(bolao_id):
+    from app.models import Bolao, ParticipanteBolao, VotoCenario
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+
+    # Só participantes do bolão
+    eh_participante = ParticipanteBolao.query.filter_by(
+        bolao_id=bolao_id, usuario_id=current_user.id
+    ).first()
+    if not eh_participante and not current_user.is_admin:
+        return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
+
+    meu_voto = VotoCenario.query.filter_by(
+        bolao_id=bolao_id, usuario_id=current_user.id
+    ).first()
+
+    lista_votos = VotoCenario.query.filter_by(bolao_id=bolao_id)\
+        .order_by(VotoCenario.data_voto).all()
+
+    votos = {'C1': 0, 'C2': 0, 'C3': 0}
+    for v in lista_votos:
+        if v.cenario in votos:
+            votos[v.cenario] += 1
+
+    return render_template('votacao_cenario.html',
+        bolao=bolao,
+        meu_voto=meu_voto,
+        lista_votos=lista_votos,
+        votos=votos,
+        total_votos=len(lista_votos)
+    )
+
+
+@bp.route('/bolao/<int:bolao_id>/votar_cenario', methods=['POST'])
+@login_required
+def votar_cenario(bolao_id):
+    from app.models import Bolao, ParticipanteBolao, VotoCenario
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+
+    eh_participante = ParticipanteBolao.query.filter_by(
+        bolao_id=bolao_id, usuario_id=current_user.id
+    ).first()
+    if not eh_participante and not current_user.is_admin:
+        return redirect(url_for('main.bolao_detalhes', bolao_id=bolao_id))
+
+    cenario = request.form.get('cenario')
+    if cenario not in ('C1', 'C2', 'C3'):
+        return redirect(url_for('main.votacao_cenario', bolao_id=bolao_id))
+
+    voto = VotoCenario.query.filter_by(
+        bolao_id=bolao_id, usuario_id=current_user.id
+    ).first()
+
+    if voto:
+        voto.cenario = cenario
+        voto.data_voto = datetime.utcnow()
+    else:
+        voto = VotoCenario(
+            bolao_id=bolao_id,
+            usuario_id=current_user.id,
+            cenario=cenario
+        )
+        db.session.add(voto)
+
+    db.session.commit()
+    return redirect(url_for('main.votacao_cenario', bolao_id=bolao_id))
