@@ -1323,7 +1323,7 @@ def bolao_detalhes(bolao_id):
     import json
     ranking = []
     for part in bolao.participantes.all():
-        palpites_part = Palpite.query.filter_by(bolao_id=bolao_id, usuario_id=part.usuario_id).all()
+        palpites_part = Palpite.query.filter_by(bolao_id=bolao_id, usuario_id=part.usuario_id).join(Palpite.jogo).order_by(Jogo.data).all()
 
         placares_exatos = 0
         acertos_resultado = 0
