@@ -2176,6 +2176,100 @@ def chartrace_data(bolao_id):
         "keyframes":     keyframes
     })
 
+
+@bp.route('/chartrace/<int:bolao_id>/csv')
+def chartrace_csv(bolao_id):
+    """
+    Exporta CSV para Flourish Bar Chart Race.
+    Linhas = participantes, colunas = jogos (label completo com data/hora/placar).
+    Ordenado temporalmente. Pontos acumulados.
+    """
+    import csv as csvlib, io
+    from flask import Response
+    from app.models import Bolao, Jogo, Palpite, ParticipanteBolao
+    from app.utils import converter_utc_brasilia
+
+    bolao = Bolao.query.get_or_404(bolao_id)
+    regra = bolao.regra
+
+    if not regra:
+        return Response("Bolão sem regra de pontuação.", mimetype='text/plain'), 400
+
+    # Participantes
+    participantes_db = ParticipanteBolao.query.filter_by(bolao_id=bolao_id).all()
+
+    # Jogos encerrados — mesma lógica da rota /data
+    from app.models import Competicao as CompModel
+    if bolao.tipo_bolao == 'campeonato_completo':
+        jogos = Jogo.query.filter(
+            Jogo.competicao_id == bolao.competicao_id,
+            Jogo.gols_casa != None
+        ).order_by(Jogo.data, Jogo.grupo).all()
+    elif bolao.tipo_bolao == 'time_campeonato':
+        jogos = Jogo.query.filter(
+            (Jogo.time_casa_id == bolao.time_especifico_id) | (Jogo.time_fora_id == bolao.time_especifico_id),
+            Jogo.competicao_id == bolao.competicao_id,
+            Jogo.gols_casa != None
+        ).order_by(Jogo.data).all()
+    elif bolao.tipo_bolao == 'time_ano_completo':
+        jogos = Jogo.query.join(CompModel).filter(
+            (Jogo.time_casa_id == bolao.time_especifico_id) | (Jogo.time_fora_id == bolao.time_especifico_id),
+            CompModel.ano == bolao.ano,
+            Jogo.gols_casa != None
+        ).order_by(Jogo.data).all()
+    else:
+        jogos = []
+
+    if not jogos:
+        return Response("Nenhum jogo encerrado ainda.", mimetype='text/plain'), 404
+
+    # Indexa palpites
+    user_ids = [pb.usuario_id for pb in participantes_db]
+    todos_palpites = Palpite.query.filter(
+        Palpite.bolao_id == bolao_id,
+        Palpite.usuario_id.in_(user_ids)
+    ).all()
+    idx = {(p.usuario_id, p.jogo_id): p for p in todos_palpites}
+
+    # Monta colunas: (label, {usuario_id: pts_acumulados})
+    acumulado = {pb.usuario_id: 0 for pb in participantes_db}
+    cols = []
+
+    for jogo in jogos:
+        data_br = converter_utc_brasilia(jogo.data)
+        data_str = data_br.strftime('%d/%m %H:%M') if data_br else '?'
+        tc = jogo.time_casa.nome if jogo.time_casa else '?'
+        tf = jogo.time_fora.nome if jogo.time_fora else '?'
+        grupo = f' · {jogo.grupo}' if jogo.grupo else ''
+        label = f"{data_str}{grupo} · {tc} {jogo.gols_casa}×{jogo.gols_fora} {tf}"
+
+        pts_col = {}
+        for pb in participantes_db:
+            pal = idx.get((pb.usuario_id, jogo.id))
+            pts = calcular_pontos_palpite(pal, jogo, regra) if pal else 0
+            acumulado[pb.usuario_id] += pts
+            pts_col[pb.usuario_id] = acumulado[pb.usuario_id]
+        cols.append((label, pts_col))
+
+    # Ordena participantes pelo total final (maior primeiro)
+    parts_sorted = sorted(participantes_db, key=lambda pb: -acumulado[pb.usuario_id])
+
+    # Gera CSV
+    output = io.StringIO()
+    writer = csvlib.writer(output)
+    writer.writerow(['Participante'] + [label for label, _ in cols])
+    for pb in parts_sorted:
+        nome = pb.usuario.nome_completo or pb.usuario.username
+        writer.writerow([nome] + [pts_col.get(pb.usuario_id, 0) for _, pts_col in cols])
+
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': f'attachment; filename=chartrace_{bolao_id}.csv'}
+    )
+
+
 @bp.route('/admin/toggle_controla_cotas/<int:bolao_id>', methods=['POST'])
 @admin_required
 def toggle_controla_cotas(bolao_id):
