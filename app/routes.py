@@ -1344,11 +1344,20 @@ def bolao_detalhes(bolao_id):
             eh_acerto_resultado = (res_real == res_palpite)
 
             # Gols vencedor/perdedor
-            if res_real != 'empate':
-                gols_v_real = max(j.gols_casa, j.gols_fora)
-                gols_p_real = min(j.gols_casa, j.gols_fora)
-                gols_v_palp = max(p.gols_casa_palpite, p.gols_fora_palpite)
-                gols_p_palp = min(p.gols_casa_palpite, p.gols_fora_palpite)
+            # No C1 (requer_resultado_correto), só conta se acertou o resultado
+            if res_real != 'empate' and (not regra.requer_resultado_correto or eh_acerto_resultado):
+                if regra.requer_resultado_correto:
+                    # C1: usa max/min (vencedor/perdedor)
+                    gols_v_real = max(j.gols_casa, j.gols_fora)
+                    gols_p_real = min(j.gols_casa, j.gols_fora)
+                    gols_v_palp = max(p.gols_casa_palpite, p.gols_fora_palpite)
+                    gols_p_palp = min(p.gols_casa_palpite, p.gols_fora_palpite)
+                else:
+                    # C2: mandante vs mandante, visitante vs visitante
+                    gols_v_real = j.gols_casa
+                    gols_p_real = j.gols_fora
+                    gols_v_palp = p.gols_casa_palpite
+                    gols_p_palp = p.gols_fora_palpite
                 if gols_v_real == gols_v_palp:
                     gols_vencedor_acertos += 1
                 if gols_p_real == gols_p_palp:
