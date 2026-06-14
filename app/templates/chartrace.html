@@ -4,350 +4,870 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chart Race · {{ bolao.nome }}</title>
-
-<!-- Open Graph para preview no WhatsApp -->
 <meta property="og:title"       content="🏆 {{ bolao.nome }} — Chart Race">
 <meta property="og:description" content="Veja o ranking animado do bolão jogo a jogo!">
 <meta property="og:type"        content="website">
 <meta property="og:url"         content="{{ request.url }}">
 
+<!-- D3 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<!-- gif.js para export GIF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #111; color: #eee; font-family: Arial, sans-serif; overflow-x: hidden; }
-  #root { min-height: 100vh; }
+:root {
+  --bg: #0d0d0f;
+  --card: #161618;
+  --border: #2a2a2e;
+  --green: #00e676;
+  --green-dim: #00e67622;
+  --text: #e8e8ee;
+  --muted: #555560;
+  --gold: #FFD700;
+  --silver: #C0C0C0;
+  --bronze: #CD7F32;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Arial, sans-serif; min-height: 100vh; }
+
+#app { max-width: 860px; margin: 0 auto; padding: 1rem; }
+
+/* Header */
+.header { text-align: center; padding: 1rem 0 0.5rem; }
+.bolao-nome { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+.jogo-label { margin-top: 0.4rem; display: inline-block; font-size: 0.78rem;
+  color: var(--green); background: var(--green-dim); border: 1px solid #00e67633;
+  padding: 0.25rem 0.9rem; border-radius: 20px; }
+.jogo-counter { font-size: 0.65rem; color: var(--muted); margin-top: 0.25rem; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin: 1rem 0 0; }
+.tab { padding: 0.55rem 1.4rem; font-size: 0.82rem; cursor: pointer; border: none;
+  background: none; color: var(--muted); border-bottom: 2px solid transparent;
+  transition: all 0.2s; font-weight: 500; }
+.tab.active { color: var(--green); border-bottom-color: var(--green); }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Controles */
+.controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  justify-content: center; margin: 0.8rem 0; }
+.btn { padding: 0.4rem 0.85rem; background: var(--card); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+  font-size: 0.84rem; transition: all 0.15s; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--green); color: var(--text); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn.primary { background: var(--green); color: #000; border-color: var(--green); font-weight: 700; }
+.btn.danger  { background: #c0392b; color: #fff; border-color: #c0392b; }
+.btn.active-speed { background: var(--green); color: #000; border-color: var(--green); }
+
+/* Progress */
+.progress-wrap { width: 100%; display: flex; align-items: center; gap: 8px; margin: 0.3rem 0; }
+.progress-wrap input[type=range] { flex: 1; accent-color: var(--green); }
+.progress-wrap span { font-size: 0.63rem; color: var(--muted); min-width: 18px; }
+.dots { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; margin: 0.3rem 0 0.8rem; }
+.dot { width: 11px; height: 11px; border-radius: 50%; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+
+/* Chart containers */
+#bar-container { width: 100%; position: relative; overflow: hidden; }
+#line-container { width: 100%; }
+#line-container svg { width: 100%; display: block; }
+
+/* Export */
+.export-row { display: flex; gap: 8px; justify-content: center; margin: 0.5rem 0; flex-wrap: wrap; }
+.export-status { font-size: 0.72rem; color: var(--muted); text-align: center; min-height: 18px; }
+
+/* Loading */
+.loading { display: flex; align-items: center; justify-content: center;
+  height: 60vh; flex-direction: column; gap: 1rem; color: var(--muted); }
+.loading-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+  animation: pulse 1.2s infinite; display: inline-block; margin: 0 3px; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+/* Tooltip linha */
+.tooltip { position: fixed; background: #1e1e22; border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; pointer-events: none;
+  z-index: 100; display: none; max-width: 200px; }
+
+footer { text-align: center; font-size: 0.62rem; color: #2a2a30; margin: 1rem 0 0.5rem; }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="app">
+  <div class="loading" id="loading">
+    <div><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+    <div>Carregando dados...</div>
+  </div>
+  <div id="main" style="display:none">
+    <div class="header">
+      <div class="bolao-nome">🏆 <span id="bolao-nome"></span></div>
+      <div><span class="jogo-label" id="jogo-label"></span></div>
+      <div class="jogo-counter" id="jogo-counter"></div>
+    </div>
 
-<!-- React via CDN -->
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+    <div class="tabs">
+      <button class="tab active" id="tab-bar" onclick="switchTab('bar')">📊 Bar Race</button>
+      <button class="tab" id="tab-line" onclick="switchTab('line')">📈 Line Race</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="btn-prev" onclick="stepFrame(-1)">←</button>
+      <button class="btn primary" id="btn-play" onclick="togglePlay()">▶ Play</button>
+      <button class="btn" id="btn-next" onclick="stepFrame(1)">→</button>
+      <span style="font-size:0.72rem;color:var(--muted)">Vel:</span>
+      <button class="btn" id="sp0" onclick="setSpeed(0)">🐢</button>
+      <button class="btn active-speed" id="sp1" onclick="setSpeed(1)">🚶</button>
+      <button class="btn" id="sp2" onclick="setSpeed(2)">🏃</button>
+      <button class="btn" id="sp3" onclick="setSpeed(3)">⚡</button>
+    </div>
+
+    <div class="progress-wrap">
+      <span>1</span>
+      <input type="range" id="slider" min="0" value="0" oninput="onSlider(this.value)">
+      <span id="slider-max">1</span>
+    </div>
+    <div class="dots" id="dots"></div>
+
+    <!-- BAR RACE -->
+    <div id="bar-view">
+      <div id="bar-container"></div>
+    </div>
+
+    <!-- LINE RACE -->
+    <div id="line-view" style="display:none">
+      <div id="line-container"></div>
+    </div>
+
+    <!-- Export -->
+    <div class="export-row">
+      <button class="btn" onclick="exportGIF()">🎞️ Exportar GIF</button>
+      <button class="btn" onclick="exportWebM()">🎬 Exportar Vídeo (WebM)</button>
+    </div>
+    <div class="export-status" id="export-status"></div>
+
+    <footer>erreidenovo.com.br</footer>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
 
 <script>
-  // Variável renderizada pelo Jinja2 ANTES do bloco raw
-  window.CHARTRACE_BOLAO_ID = {{ bolao.id }};
-  window.CHARTRACE_BOLAO_NOME = "{{ bolao.nome | e }}";
-</script>
-<script type="text/babel">
-{% raw %}
-const { useState, useEffect, useRef, useCallback } = React;
+window.CHARTRACE_BOLAO_ID = {{ bolao.id }};
 
-const DATA_URL = `/chartrace/${window.CHARTRACE_BOLAO_ID}/data`;
-
+// ─── CORES ───────────────────────────────────────────────────────────────────
+const PALETTE = [
+  "#00e676","#2196F3","#FF5722","#FFC107","#9C27B0",
+  "#00BCD4","#FF4081","#8BC34A","#FF9800","#3F51B5",
+  "#E91E63","#009688","#CDDC39","#795548","#607D8B",
+  "#F44336","#673AB7","#03A9F4","#4CAF50","#FF6F00",
+  "#76FF03","#EA80FC","#00E5FF","#FFAB40","#69F0AE",
+  "#40C4FF","#FF6E40","#B2FF59","#FFD740","#E040FB"
+];
 const EMOJIS = ["🏆","⭐","⚽","🔥","💪","⚡","🎯","🌟","👟","🏅",
                  "🥅","💎","🚀","👑","🎪","🦁","🐯","🦊","🐻","🦅",
-                 "🦋","🌈","⛰️","🏄","🎸","🎯","🧨","🎲","🏹","🎳"];
-const CORES = [
-  "#00a651","#3498db","#e74c3c","#f39c12","#9b59b6",
-  "#1abc9c","#e67e22","#2980b9","#c0392b","#27ae60",
-  "#8e44ad","#16a085","#d35400","#2c3e50","#7f8c8d",
-  "#f1c40f","#e91e63","#00bcd4","#8bc34a","#ff5722",
-  "#607d8b","#795548","#9e9e9e","#03a9f4","#4caf50",
-  "#ff9800","#673ab7","#009688","#ffeb3b","#f44336"
-];
+                 "🦋","🌈","🏄","🎸","🧨","🎲","🏹","🎳","🎀","🔮"];
 
-const BAR_H = 50, BAR_GAP = 10, SLOT = BAR_H + BAR_GAP;
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let DATA = null;
+let frame = 0;
+let playing = false;
+let rafId = null;
+let lastTs = null;
+let progress = 0; // 0..1 dentro do keyframe atual
+let speedLevels = [2.5, 1.4, 0.8, 0.35];
+let speedIdx = 1;
+let tab = 'bar';
 
-function App() {
-  const [data, setData]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
-  const [kf, setKf]           = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed]     = useState(1.4);
-  const [display, setDisplay] = useState({});
+// valores interpolados atuais
+let curVals = {};
+let fromVals = {};
+let toVals = {};
 
-  const rafRef      = useRef(null);
-  const playRef     = useRef(null);
-  const kfRef       = useRef(0);
-  const speedRef    = useRef(1.4);
-  const fromRef     = useRef({});
-  const toRef       = useRef({});
-  const tRef        = useRef(0);
-  const lastTsRef   = useRef(null);
-  const playingRef  = useRef(false);
-  const curRef      = useRef({});
+// mapa id → cor / emoji / índice
+let colorMap = {};
+let emojiMap = {};
 
-  // Buscar dados
-  useEffect(() => {
-    fetch(DATA_URL)
-      .then(r => r.json())
-      .then(d => {
-        setData(d);
-        setLoading(false);
-        // Inicializar display com zeros
-        const zeros = {};
-        d.participantes.forEach(p => { zeros[p.id] = 0; });
-        setDisplay(zeros);
-        curRef.current = zeros;
-      })
-      .catch(e => { setError(e.message); setLoading(false); });
-  }, []);
+// ─── LOAD ─────────────────────────────────────────────────────────────────────
+fetch(`/chartrace/${window.CHARTRACE_BOLAO_ID}/data`)
+  .then(r => r.json())
+  .then(d => {
+    DATA = d;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    document.getElementById('bolao-nome').textContent = d.bolao;
+    document.getElementById('slider').max = d.keyframes.length - 1;
+    document.getElementById('slider-max').textContent = d.keyframes.length;
 
-  useEffect(() => { speedRef.current = speed; }, [speed]);
-
-  const animate = useCallback((ts) => {
-    if (!playingRef.current || !data) return;
-    if (!lastTsRef.current) lastTsRef.current = ts;
-    const dt = (ts - lastTsRef.current) / 1000;
-    lastTsRef.current = ts;
-
-    tRef.current = Math.min(tRef.current + dt / speedRef.current, 1);
-    const e = tRef.current * tRef.current * (3 - 2 * tRef.current); // smooth step
-
-    const novo = {};
-    Object.keys(toRef.current).forEach(id => {
-      const from = fromRef.current[id] ?? 0;
-      const to   = toRef.current[id]   ?? 0;
-      novo[id]   = from + (to - from) * e;
+    // atribuir cores e emojis
+    d.participantes.forEach((p, i) => {
+      colorMap[p.id] = PALETTE[i % PALETTE.length];
+      emojiMap[p.id] = EMOJIS[i % EMOJIS.length];
     });
-    curRef.current = novo;
-    setDisplay({...novo});
 
-    if (tRef.current >= 1) {
-      const next = kfRef.current + 1;
-      if (next < data.keyframes.length) {
-        fromRef.current = {...novo};
-        toRef.current   = {...data.keyframes[next].pts};
-        tRef.current    = 0;
-        lastTsRef.current = null;
-        kfRef.current   = next;
-        setKf(next);
+    // zeros iniciais
+    const zeros = {};
+    d.participantes.forEach(p => { zeros[p.id] = 0; });
+    curVals = {...zeros};
+    fromVals = {...zeros};
+    toVals = {...d.keyframes[0].pts};
+
+    buildDots();
+    buildBarChart();
+    buildLineChart();
+    updateHeader();
+    renderBar();
+    renderLine();
+
+    // autoplay
+    setTimeout(() => startPlay(), 600);
+  })
+  .catch(e => {
+    document.getElementById('loading').innerHTML =
+      `<div style="color:#e74c3c">Erro: ${e.message}</div>`;
+  });
+
+// ─── DOTS ────────────────────────────────────────────────────────────────────
+function buildDots() {
+  const wrap = document.getElementById('dots');
+  wrap.innerHTML = '';
+  DATA.keyframes.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.title = DATA.keyframes[i].label;
+    d.style.background = i === 0 ? 'var(--green)' : '#2a2a2e';
+    d.style.border = i === 0 ? '2px solid var(--green)' : '1px solid #333';
+    d.onclick = () => { pause(); jumpTo(i); };
+    wrap.appendChild(d);
+  });
+}
+
+function updateDots() {
+  const dots = document.getElementById('dots').children;
+  for (let i = 0; i < dots.length; i++) {
+    dots[i].style.background = i === frame ? 'var(--green)' : i < frame ? '#00e67644' : '#2a2a2e';
+    dots[i].style.border = i === frame ? '2px solid var(--green)' : '1px solid #333';
+  }
+}
+
+// ─── HEADER ──────────────────────────────────────────────────────────────────
+function updateHeader() {
+  const kf = DATA.keyframes[frame];
+  document.getElementById('jogo-label').textContent = kf ? kf.label : '';
+  document.getElementById('jogo-counter').textContent =
+    `Jogo ${frame + 1} de ${DATA.keyframes.length}`;
+  document.getElementById('slider').value = frame;
+  updateDots();
+}
+
+// ─── INTERPOLAÇÃO ────────────────────────────────────────────────────────────
+function smoothStep(t) { return t * t * (3 - 2 * t); }
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function interpolate(t) {
+  const e = smoothStep(Math.max(0, Math.min(1, t)));
+  const vals = {};
+  DATA.participantes.forEach(p => {
+    vals[p.id] = lerp(fromVals[p.id] ?? 0, toVals[p.id] ?? 0, e);
+  });
+  return vals;
+}
+
+// ─── PLAYBACK ────────────────────────────────────────────────────────────────
+function startPlay() {
+  if (!DATA) return;
+  if (frame >= DATA.keyframes.length - 1 && progress >= 1) {
+    // reinicia
+    frame = 0;
+    progress = 0;
+    const zeros = {};
+    DATA.participantes.forEach(p => { zeros[p.id] = 0; });
+    curVals = {...zeros};
+    fromVals = {...zeros};
+    toVals = {...DATA.keyframes[0].pts};
+  }
+  playing = true;
+  lastTs = null;
+  document.getElementById('btn-play').textContent = '⏸ Pausar';
+  document.getElementById('btn-play').className = 'btn danger';
+  rafId = requestAnimationFrame(animLoop);
+}
+
+function pause() {
+  playing = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  document.getElementById('btn-play').textContent =
+    frame >= DATA.keyframes.length - 1 ? '🔄 Reiniciar' : '▶ Play';
+  document.getElementById('btn-play').className = 'btn primary';
+}
+
+function togglePlay() {
+  if (playing) pause(); else startPlay();
+}
+
+function animLoop(ts) {
+  if (!playing) return;
+  if (!lastTs) lastTs = ts;
+  const dt = (ts - lastTs) / 1000;
+  lastTs = ts;
+
+  progress += dt / speedLevels[speedIdx];
+  if (progress >= 1) {
+    // chegou no fim do keyframe atual
+    curVals = {...toVals};
+    if (frame < DATA.keyframes.length - 1) {
+      frame++;
+      fromVals = {...curVals};
+      toVals = {...DATA.keyframes[frame].pts};
+      progress = 0;
+      updateHeader();
+    } else {
+      // terminou tudo
+      progress = 1;
+      curVals = interpolate(1);
+      render();
+      pause();
+      return;
+    }
+  }
+
+  curVals = interpolate(progress);
+  render();
+  rafId = requestAnimationFrame(animLoop);
+}
+
+function stepFrame(dir) {
+  pause();
+  const next = Math.max(0, Math.min(DATA.keyframes.length - 1, frame + dir));
+  jumpTo(next);
+}
+
+function jumpTo(idx) {
+  frame = idx;
+  progress = 1;
+  fromVals = idx > 0
+    ? {...DATA.keyframes[idx - 1].pts}
+    : Object.fromEntries(DATA.participantes.map(p => [p.id, 0]));
+  toVals = {...DATA.keyframes[idx].pts};
+  curVals = {...toVals};
+  updateHeader();
+  render();
+}
+
+function onSlider(val) {
+  pause();
+  jumpTo(parseInt(val));
+}
+
+function setSpeed(idx) {
+  speedIdx = idx;
+  ['sp0','sp1','sp2','sp3'].forEach((id, i) => {
+    document.getElementById(id).className = 'btn' + (i === idx ? ' active-speed' : '');
+  });
+}
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  tab = t;
+  document.getElementById('bar-view').style.display = t === 'bar' ? '' : 'none';
+  document.getElementById('line-view').style.display = t === 'line' ? '' : 'none';
+  document.getElementById('tab-bar').className = 'tab' + (t === 'bar' ? ' active' : '');
+  document.getElementById('tab-line').className = 'tab' + (t === 'line' ? ' active' : '');
+  render();
+}
+
+// ─── RENDER DISPATCHER ───────────────────────────────────────────────────────
+function render() {
+  if (tab === 'bar') renderBar();
+  else renderLine();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BAR RACE — D3
+// ══════════════════════════════════════════════════════════════════════════════
+const BAR_H = 46;
+const BAR_GAP = 8;
+const SLOT = BAR_H + BAR_GAP;
+const MAX_BARS = 50;
+const LABEL_W = 170;
+const PTS_W = 52;
+const MARGIN = { top: 4, right: PTS_W + 8, bottom: 4, left: LABEL_W + 8 };
+
+let barSvg, barX, barW;
+
+function buildBarChart() {
+  const wrap = document.getElementById('bar-container');
+  wrap.innerHTML = '';
+  const n = Math.min(DATA.participantes.length, MAX_BARS);
+  const H = n * SLOT + MARGIN.top + MARGIN.bottom;
+  barW = wrap.clientWidth || 760;
+  const innerW = barW - MARGIN.left - MARGIN.right;
+
+  barSvg = d3.select('#bar-container').append('svg')
+    .attr('width', barW)
+    .attr('height', H);
+
+  const g = barSvg.append('g')
+    .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+
+  barX = d3.scaleLinear().range([0, innerW]);
+
+  // grupos por participante
+  DATA.participantes.slice(0, MAX_BARS).forEach((p, pi) => {
+    const gr = g.append('g').attr('class', `bar-g bar-g-${p.id}`);
+    const cor = colorMap[p.id];
+
+    // track bg
+    gr.append('rect')
+      .attr('class', 'bar-bg')
+      .attr('x', 0).attr('y', (SLOT - BAR_H) / 2)
+      .attr('height', BAR_H).attr('rx', 5)
+      .attr('fill', '#1a1a1e');
+
+    // fill
+    gr.append('rect')
+      .attr('class', 'bar-fill')
+      .attr('x', 0).attr('y', (SLOT - BAR_H) / 2)
+      .attr('height', BAR_H).attr('rx', 5)
+      .attr('fill', cor).attr('opacity', 0.85);
+
+    // nome (à esquerda)
+    gr.append('text')
+      .attr('class', 'bar-name')
+      .attr('x', -8).attr('y', SLOT / 2 + 1)
+      .attr('text-anchor', 'end')
+      .attr('dominant-baseline', 'middle')
+      .attr('fill', '#aaa')
+      .attr('font-size', '0.7rem')
+      .attr('font-family', 'Segoe UI, Arial, sans-serif')
+      .text(p.nome.length > 18 ? p.nome.slice(0, 17) + '…' : p.nome);
+
+    // emoji + pos
+    gr.append('text')
+      .attr('class', 'bar-emoji')
+      .attr('x', -LABEL_W + 2).attr('y', SLOT / 2)
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', '1.1rem')
+      .text(emojiMap[p.id]);
+
+    gr.append('text')
+      .attr('class', 'bar-pos')
+      .attr('x', -LABEL_W + 28).attr('y', SLOT / 2)
+      .attr('dominant-baseline', 'middle')
+      .attr('fill', '#555')
+      .attr('font-size', '0.65rem')
+      .attr('font-family', 'Segoe UI, Arial, sans-serif');
+
+    // pts (à direita)
+    gr.append('text')
+      .attr('class', 'bar-pts')
+      .attr('x', innerW + 6).attr('y', SLOT / 2)
+      .attr('dominant-baseline', 'middle')
+      .attr('fill', cor)
+      .attr('font-size', '0.82rem')
+      .attr('font-weight', '700')
+      .attr('font-family', 'Segoe UI, Arial, sans-serif');
+  });
+}
+
+function renderBar() {
+  if (!barSvg || !DATA) return;
+  const n = Math.min(DATA.participantes.length, MAX_BARS);
+  const parts = DATA.participantes.slice(0, n);
+
+  // ordenar pelo valor atual
+  const sorted = [...parts]
+    .map(p => ({ ...p, val: curVals[p.id] ?? 0 }))
+    .sort((a, b) => b.val - a.val || a.id - b.id);
+
+  const maxVal = Math.max(...sorted.map(p => p.val), 1);
+  barX.domain([0, maxVal]);
+  const innerW = barW - MARGIN.left - MARGIN.right;
+
+  sorted.forEach((p, rank) => {
+    const targetY = rank * SLOT;
+    const cor = colorMap[p.id];
+    const isPodium = rank < 3;
+    const posColor = rank === 0 ? 'var(--gold)' : rank === 1 ? 'var(--silver)' : rank === 2 ? 'var(--bronze)' : '#444';
+
+    const gr = barSvg.select(`.bar-g-${p.id}`);
+
+    // mover grupo para posição (transição suave)
+    gr.transition().duration(80).ease(d3.easeLinear)
+      .attr('transform', `translate(0,${targetY})`);
+
+    const bw = barX(p.val);
+
+    gr.select('.bar-bg')
+      .attr('width', innerW);
+
+    gr.select('.bar-fill')
+      .transition().duration(80).ease(d3.easeLinear)
+      .attr('width', Math.max(bw, 0))
+      .attr('fill', cor)
+      .attr('opacity', isPodium ? 1 : 0.75);
+
+    gr.select('.bar-pts')
+      .text(Math.round(p.val) + ' pts');
+
+    gr.select('.bar-pos')
+      .attr('fill', posColor)
+      .attr('font-weight', isPodium ? '700' : '400')
+      .text(`${rank + 1}º`);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LINE RACE — D3 (estilo eleição)
+// ══════════════════════════════════════════════════════════════════════════════
+let lineSvg, lineX, lineY, lineG, lineW, lineH;
+const LINE_MARGIN = { top: 20, right: 120, bottom: 40, left: 45 };
+
+function buildLineChart() {
+  const wrap = document.getElementById('line-container');
+  wrap.innerHTML = '';
+  lineW = (wrap.clientWidth || 760);
+  lineH = Math.max(380, Math.min(500, window.innerHeight * 0.55));
+
+  const innerW = lineW - LINE_MARGIN.left - LINE_MARGIN.right;
+  const innerH = lineH - LINE_MARGIN.top - LINE_MARGIN.bottom;
+
+  lineSvg = d3.select('#line-container').append('svg')
+    .attr('width', lineW).attr('height', lineH);
+
+  const defs = lineSvg.append('defs');
+  // clip para não vazar
+  defs.append('clipPath').attr('id', 'line-clip')
+    .append('rect').attr('width', innerW).attr('height', innerH + 10).attr('y', -5);
+
+  lineG = lineSvg.append('g')
+    .attr('transform', `translate(${LINE_MARGIN.left},${LINE_MARGIN.top})`);
+
+  // eixos
+  lineX = d3.scaleLinear().range([0, innerW]);
+  lineY = d3.scaleLinear().range([innerH, 0]);
+
+  lineG.append('g').attr('class', 'axis-x')
+    .attr('transform', `translate(0,${innerH})`);
+  lineG.append('g').attr('class', 'axis-y');
+
+  // grade horizontal
+  lineG.append('g').attr('class', 'grid-y');
+
+  // área de linhas (clipped)
+  lineG.append('g').attr('class', 'lines').attr('clip-path', 'url(#line-clip)');
+
+  // labels flutuantes à direita
+  lineG.append('g').attr('class', 'line-labels');
+
+  // tooltip overlay
+  lineG.append('rect')
+    .attr('width', innerW).attr('height', innerH)
+    .attr('fill', 'transparent')
+    .on('mousemove', onLineMouseMove)
+    .on('mouseleave', () => { document.getElementById('tooltip').style.display = 'none'; });
+}
+
+function renderLine() {
+  if (!lineSvg || !DATA) return;
+  const nKF = DATA.keyframes.length;
+  const parts = DATA.participantes;
+  const innerW = lineW - LINE_MARGIN.left - LINE_MARGIN.right;
+  const innerH = lineH - LINE_MARGIN.top - LINE_MARGIN.bottom;
+
+  // domínio X: 0..nKF-1
+  lineX.domain([0, Math.max(nKF - 1, 1)]);
+
+  // domínio Y: 0..maxPts de todos os keyframes até o frame atual
+  let maxPts = 0;
+  for (let i = 0; i <= frame; i++) {
+    const pts = DATA.keyframes[i].pts;
+    parts.forEach(p => { if ((pts[p.id] ?? 0) > maxPts) maxPts = pts[p.id]; });
+  }
+  // adiciona pts correntes interpolados
+  parts.forEach(p => { if ((curVals[p.id] ?? 0) > maxPts) maxPts = curVals[p.id]; });
+  lineY.domain([0, Math.max(maxPts * 1.08, 10)]);
+
+  // eixo X: labels de jogo
+  const xAxis = d3.axisBottom(lineX)
+    .ticks(Math.min(nKF, 10))
+    .tickFormat(i => {
+      const kf = DATA.keyframes[Math.round(i)];
+      return kf ? `J${Math.round(i) + 1}` : '';
+    });
+  lineG.select('.axis-x')
+    .call(xAxis)
+    .selectAll('text').attr('fill', '#555').attr('font-size', '0.62rem');
+  lineG.select('.axis-x').select('.domain').attr('stroke', '#2a2a2e');
+  lineG.select('.axis-x').selectAll('.tick line').attr('stroke', '#2a2a2e');
+
+  // eixo Y
+  const yAxis = d3.axisLeft(lineY).ticks(6).tickFormat(d => d + ' pts');
+  lineG.select('.axis-y')
+    .call(yAxis)
+    .selectAll('text').attr('fill', '#555').attr('font-size', '0.62rem');
+  lineG.select('.axis-y').select('.domain').attr('stroke', '#2a2a2e');
+  lineG.select('.axis-y').selectAll('.tick line').attr('stroke', '#2a2a2e');
+
+  // grade
+  lineG.select('.grid-y')
+    .call(d3.axisLeft(lineY).ticks(6).tickSize(-innerW).tickFormat(''))
+    .selectAll('line').attr('stroke', '#1e1e22').attr('stroke-dasharray', '3,3');
+  lineG.select('.grid-y').select('.domain').remove();
+
+  // linha builder
+  const lineGen = d3.line()
+    .x((d, i) => lineX(i))
+    .y(d => lineY(d))
+    .curve(d3.curveCatmullRom.alpha(0.5));
+
+  // para cada participante: pontos até frame atual + ponto interpolado atual
+  const linesG = lineG.select('.lines');
+  const labelsG = lineG.select('.line-labels');
+
+  parts.forEach((p, pi) => {
+    const cor = colorMap[p.id];
+    // histórico real até frame-1
+    const hist = [];
+    for (let i = 0; i <= frame; i++) {
+      if (i < frame) {
+        hist.push(DATA.keyframes[i].pts[p.id] ?? 0);
       } else {
-        playingRef.current = false;
-        setPlaying(false);
-        return;
+        // ponto atual interpolado
+        hist.push(curVals[p.id] ?? 0);
       }
     }
-    rafRef.current = requestAnimationFrame(animate);
-  }, [data]);
 
-  const goTo = useCallback((idx, skipAnim = false) => {
-    if (!data) return;
-    const i = Math.max(0, Math.min(data.keyframes.length - 1, idx));
-    const prevPts = i > 0 ? data.keyframes[i-1].pts : Object.fromEntries(data.participantes.map(p=>[p.id,0]));
-    fromRef.current = {...prevPts};
-    toRef.current   = {...data.keyframes[i].pts};
-    tRef.current    = skipAnim ? 1 : 0;
-    lastTsRef.current = null;
-    kfRef.current   = i;
-    setKf(i);
-    if (skipAnim) {
-      curRef.current = {...data.keyframes[i].pts};
-      setDisplay({...data.keyframes[i].pts});
+    // line path
+    let path = linesG.select(`.line-${p.id}`);
+    if (path.empty()) {
+      path = linesG.append('path')
+        .attr('class', `line-${p.id}`)
+        .attr('fill', 'none')
+        .attr('stroke-width', 2.5)
+        .attr('stroke-linecap', 'round')
+        .attr('stroke-linejoin', 'round');
     }
-  }, [data]);
+    path.attr('stroke', cor).attr('d', lineGen(hist));
 
-  const startPlay = useCallback(() => {
-    if (!data) return;
-    if (kfRef.current >= data.keyframes.length - 1) {
-      const zeros = Object.fromEntries(data.participantes.map(p=>[p.id,0]));
-      curRef.current = zeros;
-      fromRef.current = zeros;
-      toRef.current = {...data.keyframes[0].pts};
-      tRef.current = 0;
-      lastTsRef.current = null;
-      kfRef.current = 0;
-      setKf(0);
-      setDisplay(zeros);
+    // dot no ponto atual
+    const cx = lineX(hist.length - 1);
+    const cy = lineY(hist[hist.length - 1]);
+
+    let dot = linesG.select(`.dot-${p.id}`);
+    if (dot.empty()) {
+      dot = linesG.append('circle').attr('class', `dot-${p.id}`).attr('r', 4);
     }
-    playingRef.current = true;
-    setPlaying(true);
-    lastTsRef.current = null;
-    rafRef.current = requestAnimationFrame(animate);
-  }, [data, animate]);
+    dot.attr('cx', cx).attr('cy', cy).attr('fill', cor);
 
-  const pause = useCallback(() => {
-    playingRef.current = false;
-    setPlaying(false);
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-  }, []);
+    // label flutuante
+    const curPts = Math.round(curVals[p.id] ?? 0);
+    let lbl = labelsG.select(`.lbl-${p.id}`);
+    if (lbl.empty()) {
+      lbl = labelsG.append('text')
+        .attr('class', `lbl-${p.id}`)
+        .attr('font-size', '0.62rem')
+        .attr('font-family', 'Segoe UI, Arial, sans-serif')
+        .attr('dominant-baseline', 'middle');
+    }
+    lbl.attr('x', lineX(hist.length - 1) + 7)
+       .attr('y', cy)
+       .attr('fill', cor)
+       .text(`${p.nome.split(' ')[0]} ${curPts}`);
+  });
+}
 
-  useEffect(() => () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    clearInterval(playRef.current);
-  }, []);
+function onLineMouseMove(event) {
+  if (!DATA) return;
+  const [mx] = d3.pointer(event);
+  const innerW = lineW - LINE_MARGIN.left - LINE_MARGIN.right;
+  const fi = Math.round(lineX.invert(mx));
+  const kf = DATA.keyframes[Math.min(fi, DATA.keyframes.length - 1)];
+  if (!kf) return;
 
-  if (loading) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}}>
-      <div style={{fontSize:"2rem"}}>⏳</div>
-      <div style={{color:"#666"}}>Carregando dados do bolão...</div>
-    </div>
-  );
+  // top 5 nesse frame
+  const top = DATA.participantes
+    .map(p => ({ nome: p.nome, pts: kf.pts[p.id] ?? 0 }))
+    .sort((a, b) => b.pts - a.pts)
+    .slice(0, 5);
 
-  if (error || !data) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}}>
-      <div style={{fontSize:"2rem"}}>❌</div>
-      <div style={{color:"#e74c3c"}}>Erro ao carregar: {error}</div>
-    </div>
-  );
+  const tip = document.getElementById('tooltip');
+  tip.innerHTML = `<strong style="color:#eee">${kf.label}</strong><br>` +
+    top.map((p, i) => `<span style="color:${PALETTE[i]}">${i+1}. ${p.nome.split(' ')[0]}: ${p.pts}pts</span>`).join('<br>');
+  tip.style.display = 'block';
+  tip.style.left = (event.clientX + 12) + 'px';
+  tip.style.top  = (event.clientY - 10) + 'px';
+}
 
-  if (!data.keyframes.length) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}}>
-      <div style={{fontSize:"3rem"}}>⏳</div>
-      <div style={{color:"#666",textAlign:"center",padding:"0 2rem"}}>
-        <strong style={{color:"#eee",display:"block",marginBottom:8}}>{data.bolao}</strong>
-        Nenhum jogo encerrado ainda. Volte após o início!
-      </div>
-    </div>
-  );
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+let isExporting = false;
+let mediaRecorder = null;
+let recordedChunks = [];
 
-  const parts      = data.participantes;
-  const SHOW       = Math.min(parts.length, 10);
-  const containerH = SHOW * SLOT;
-  const curKF      = data.keyframes[kf] || {};
+function setExportStatus(msg) {
+  document.getElementById('export-status').textContent = msg;
+}
 
-  // Ranking pelos pontos interpolados
-  const sorted = [...parts]
-    .map(p => ({ ...p, val: display[p.id] ?? 0 }))
-    .sort((a,b) => b.val - a.val || a.id - b.id);
+async function runExportAnimation(onFrame, onDone) {
+  if (isExporting) return;
+  isExporting = true;
+  pause();
 
-  const rankMap = {};
-  sorted.forEach((p,i) => { rankMap[p.id] = i; });
+  // voltar ao início
+  frame = 0;
+  progress = 0;
+  const zeros = {};
+  DATA.participantes.forEach(p => { zeros[p.id] = 0; });
+  curVals = { ...zeros };
+  fromVals = { ...zeros };
+  toVals = { ...DATA.keyframes[0].pts };
+  updateHeader();
+  render();
 
-  const maxVal = Math.max(...sorted.slice(0,SHOW).map(p=>p.val), 1);
+  const FPS = 30;
+  const DURATION_PER_FRAME_S = 1.2; // segundos por jogo
+  const totalFrames = DATA.keyframes.length * (DURATION_PER_FRAME_S * FPS);
+  let f = 0;
 
-  return (
-    <div style={{background:"#111",minHeight:"100vh",padding:"1rem",display:"flex",flexDirection:"column",alignItems:"center"}}>
+  function step() {
+    if (f >= totalFrames) {
+      isExporting = false;
+      onDone();
+      return;
+    }
+    const t = f / (DURATION_PER_FRAME_S * FPS);
+    const kfIdx = Math.min(Math.floor(t), DATA.keyframes.length - 1);
+    const kfProg = t - Math.floor(t);
 
-      {/* Header */}
-      <div style={{textAlign:"center",marginBottom:"0.8rem",width:"100%",maxWidth:700}}>
-        <div style={{fontSize:"1.3rem",fontWeight:700,marginBottom:"0.5rem"}}>
-          🏆 {data.bolao}
-        </div>
-        <div style={{fontSize:"0.78rem",color:"#00a651",background:"#00a65115",
-          padding:"0.3rem 0.8rem",borderRadius:20,display:"inline-block",
-          border:"1px solid #00a65130",maxWidth:"95%",textAlign:"center",lineHeight:1.4}}>
-          {curKF.label || ""}
-        </div>
-        <div style={{fontSize:"0.68rem",color:"#444",marginTop:"0.3rem"}}>
-          Jogo {kf+1} de {data.keyframes.length}
-        </div>
-      </div>
+    frame = kfIdx;
+    const prev = kfIdx > 0 ? DATA.keyframes[kfIdx - 1].pts
+      : Object.fromEntries(DATA.participantes.map(p => [p.id, 0]));
+    fromVals = { ...prev };
+    toVals = { ...DATA.keyframes[kfIdx].pts };
+    curVals = interpolate(kfProg);
+    updateHeader();
+    render();
 
-      {/* Chart */}
-      <div style={{width:"100%",maxWidth:700,position:"relative",height:containerH,overflow:"hidden",marginBottom:"1.2rem"}}>
-        {parts.map((p, pi) => {
-          const rank    = rankMap[p.id] ?? parts.length-1;
-          const topPx   = rank * SLOT;
-          const val     = display[p.id] ?? 0;
-          const pct     = maxVal > 0 ? Math.max((val/maxVal)*100, 0) : 0;
-          const cor     = CORES[pi % CORES.length];
-          const emoji   = EMOJIS[pi % EMOJIS.length];
-          const vis     = rank < SHOW;
+    onFrame(f);
+    f++;
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
-          return (
-            <div key={p.id} style={{
-              position:"absolute", left:0, right:0,
-              top: topPx, height: BAR_H,
-              opacity: vis ? 1 : 0,
-              display:"flex", alignItems:"center", gap:6,
-            }}>
-              {/* Avatar */}
-              <div style={{
-                width:38,height:38,borderRadius:"50%",
-                background:`${cor}22`,border:`2px solid ${cor}`,
-                display:"flex",alignItems:"center",justifyContent:"center",
-                fontSize:"1.1rem",flexShrink:0,
-                boxShadow: rank===0 ? `0 0 10px ${cor}` : "none"
-              }}>{emoji}</div>
+function exportWebM() {
+  if (isExporting) return;
+  setExportStatus('⏳ Preparando gravação...');
 
-              {/* Barra + nome */}
-              <div style={{flex:1}}>
-                <div style={{fontSize:"0.7rem",color:"#888",marginBottom:2,lineHeight:1,
-                  whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:180}}>
-                  {p.nome}
-                </div>
-                <div style={{height:26,borderRadius:4,background:"#1a1a1a",overflow:"hidden",position:"relative"}}>
-                  <div style={{
-                    position:"absolute",top:0,left:0,bottom:0,
-                    width:`${pct}%`,
-                    background:`linear-gradient(90deg,${cor}77,${cor})`,
-                    borderRadius:4,
-                    display:"flex",alignItems:"center",justifyContent:"flex-end",
-                    paddingRight: pct>8?8:0,
-                    minWidth: val>0.5 ? 48 : 0
-                  }}>
-                    {val>0.5 && <span style={{fontSize:"0.8rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap"}}>{Math.round(val)}</span>}
-                  </div>
-                  {val<=0.5 && <span style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)",fontSize:"0.7rem",color:"#333"}}>0</span>}
-                </div>
-              </div>
+  // Precisamos gravar o elemento visível como canvas
+  // Usamos canvas-based approach: clona SVG → canvas → MediaRecorder
+  const svg = tab === 'bar'
+    ? document.querySelector('#bar-container svg')
+    : document.querySelector('#line-container svg');
 
-              {/* Posição */}
-              <div style={{width:22,textAlign:"center",fontSize:"0.7rem",flexShrink:0,
-                color: rank===0?"#FFD700":rank===1?"#C0C0C0":rank===2?"#CD7F32":"#555",
-                fontWeight: rank<3?700:400}}>
-                {rank+1}º
-              </div>
-            </div>
-          );
-        })}
-      </div>
+  if (!svg) { setExportStatus('❌ Renderize o chart primeiro'); return; }
 
-      {/* Controles */}
-      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",justifyContent:"center",marginBottom:"0.8rem"}}>
-        <button onClick={()=>{pause();goTo(Math.max(0,kfRef.current-1),true);}}
-          disabled={kf===0}
-          style={{...btn, opacity:kf===0?0.4:1}}>←</button>
+  const canvas = document.createElement('canvas');
+  const bbox = svg.getBoundingClientRect();
+  canvas.width = bbox.width;
+  canvas.height = bbox.height + 60; // +header
 
-        <button onClick={()=>playing?pause():startPlay()}
-          style={{...btn,background:playing?"#e74c3c":"#00a651",color:playing?"#fff":"#000",minWidth:90,fontWeight:700}}>
-          {playing?"⏸ Pausar":kf>=data.keyframes.length-1?"🔄 Reiniciar":"▶ Play"}
-        </button>
+  const stream = canvas.captureStream(30);
+  recordedChunks = [];
+  mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `chartrace-${window.CHARTRACE_BOLAO_ID}.webm`;
+    a.click();
+    setExportStatus('✅ WebM exportado!');
+  };
+  mediaRecorder.start();
 
-        <button onClick={()=>{pause();goTo(Math.min(data.keyframes.length-1,kfRef.current+1),true);}}
-          disabled={kf>=data.keyframes.length-1}
-          style={{...btn,opacity:kf>=data.keyframes.length-1?0.4:1}}>→</button>
+  const ctx = canvas.getContext('2d');
 
-        <div style={{display:"flex",gap:4}}>
-          {[[2.5,"🐢"],[1.4,"🚶"],[0.8,"🏃"],[0.35,"⚡"]].map(([s,ic])=>(
-            <button key={s} onClick={()=>setSpeed(s)}
-              style={{...btn,background:Math.abs(speed-s)<0.05?"#00a651":"#1e1e1e",
-                color:Math.abs(speed-s)<0.05?"#000":"#aaa",padding:"0.3rem 0.5rem",fontSize:"0.82rem"}}>
-              {ic}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Slider */}
-      <div style={{width:"100%",maxWidth:700,display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        <span style={{fontSize:"0.65rem",color:"#333"}}>1</span>
-        <input type="range" min={0} max={data.keyframes.length-1} value={kf}
-          onChange={e=>{pause();goTo(Number(e.target.value),true);}}
-          style={{flex:1,accentColor:"#00a651"}}/>
-        <span style={{fontSize:"0.65rem",color:"#333"}}>{data.keyframes.length}</span>
-      </div>
-
-      {/* Bolinhas de jogos */}
-      <div style={{width:"100%",maxWidth:700,display:"flex",gap:3,flexWrap:"wrap",justifyContent:"center"}}>
-        {data.keyframes.map((_,i)=>(
-          <div key={i} onClick={()=>{pause();goTo(i,true);}}
-            title={data.keyframes[i].label}
-            style={{width:12,height:12,borderRadius:"50%",cursor:"pointer",flexShrink:0,
-              background:i===kf?"#00a651":i<kf?"#00a65155":"#222",
-              border:i===kf?"2px solid #00a651":"1px solid #333"}}/>
-        ))}
-      </div>
-
-      <div style={{marginTop:12,fontSize:"0.65rem",color:"#222",textAlign:"center"}}>
-        erreidenovo.com.br
-      </div>
-    </div>
+  runExportAnimation(
+    () => {
+      // desenha SVG no canvas
+      const xml = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+      img.onload = () => { ctx.fillStyle = '#0d0d0f'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img, 0, 60); };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+      setExportStatus(`⏺ Gravando... ${Math.round((frame/DATA.keyframes.length)*100)}%`);
+    },
+    () => {
+      setTimeout(() => { mediaRecorder.stop(); }, 500);
+    }
   );
 }
 
-const btn = {
-  padding:"0.45rem 0.9rem",background:"#1e1e1e",
-  color:"#aaa",border:"1px solid #333",borderRadius:6,
-  cursor:"pointer",fontSize:"0.88rem"
-};
+function exportGIF() {
+  if (isExporting) return;
+  setExportStatus('⏳ Iniciando exportação GIF (pode demorar ~30s)...');
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-{% endraw %}
+  const svg = tab === 'bar'
+    ? document.querySelector('#bar-container svg')
+    : document.querySelector('#line-container svg');
+  if (!svg) { setExportStatus('❌ Renderize o chart primeiro'); return; }
+
+  const bbox = svg.getBoundingClientRect();
+  const W = Math.round(bbox.width);
+  const H = Math.round(bbox.height);
+
+  // Verifica se gif.js carregou
+  if (typeof GIF === 'undefined') {
+    setExportStatus('❌ gif.js não carregou. Use o export WebM.');
+    return;
+  }
+
+  const gif = new GIF({
+    workers: 2, quality: 8, width: W, height: H,
+    workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  gif.on('finished', blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `chartrace-${window.CHARTRACE_BOLAO_ID}.gif`;
+    a.click();
+    setExportStatus('✅ GIF exportado! Cole no WhatsApp como arquivo.');
+  });
+
+  let fCount = 0;
+  runExportAnimation(
+    (f) => {
+      if (f % 3 !== 0) return; // captura 1 em cada 3 frames → 10fps no GIF
+      const xml = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+      ctx.fillStyle = '#0d0d0f';
+      ctx.fillRect(0, 0, W, H);
+      try { ctx.drawImage(img, 0, 0); } catch(e) {}
+      gif.addFrame(ctx, { copy: true, delay: 100 });
+      fCount++;
+      setExportStatus(`⏺ Capturando frames... ${Math.round((frame/DATA.keyframes.length)*100)}%`);
+    },
+    () => {
+      setExportStatus('⚙️ Renderizando GIF...');
+      gif.render();
+    }
+  );
+}
+
+// ─── RESIZE ──────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  if (!DATA) return;
+  buildBarChart();
+  buildLineChart();
+  renderBar();
+  renderLine();
+});
 </script>
 </body>
 </html>
