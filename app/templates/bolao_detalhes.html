@@ -989,48 +989,88 @@
             </div>
             {% endif %}
             
-            <h3 style="color: var(--amarelo); margin-top: 2rem; margin-bottom: 1rem;" data-i18n="bd_exemplos">💡 Exemplos (jogo termina 3x1):</h3>
-            
-            {% set pts_max = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_vencedor + bolao.regra.pontos_gols_perdedor + bolao.regra.pontos_diferenca_gols %}
-            
-            <div style="font-family: monospace; font-size: 0.95rem; background: var(--cinza-medio); padding: 1.5rem; border-radius: 6px;">
-                <div style="margin-bottom: 0.8rem;">
-                    Seu palpite <strong>3x1</strong> → 
-                    <span style="color: var(--verde); font-weight: 600;">{{ pts_max }} pontos</span> ✨
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_placar_exato">(placar exato - todos os acertos)</span>
-                </div>
-                
-                {% set pts_2x1 = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_perdedor %}
-                <div style="margin-bottom: 0.8rem;">
-                    Seu palpite <strong>2x1</strong> → 
-                    <span style="color: var(--amarelo); font-weight: 600;">{{ pts_2x1 }} pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_resultado_perd">(resultado + gols do perdedor)</span>
-                </div>
-                
-                {% set pts_3x0 = bolao.regra.pontos_resultado + bolao.regra.pontos_gols_vencedor %}
-                <div style="margin-bottom: 0.8rem;">
-                    Seu palpite <strong>3x0</strong> → 
-                    <span style="color: var(--amarelo); font-weight: 600;">{{ pts_3x0 }} pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_resultado_venc">(resultado + gols do vencedor)</span>
-                </div>
-                
-                {% set pts_2x0 = bolao.regra.pontos_resultado + bolao.regra.pontos_diferenca_gols %}
-                <div style="margin-bottom: 0.8rem;">
-                    Seu palpite <strong>2x0</strong> → 
-                    <span style="color: var(--amarelo); font-weight: 600;">{{ pts_2x0 }} pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(resultado + diferença de gols)</span>
+            <h3 style="color: var(--amarelo); margin-top: 2rem; margin-bottom: 1rem;">💡 Exemplos — Jogo termina 3×1</h3>
+
+            {% set R = bolao.regra.pontos_resultado %}
+            {% set GV = bolao.regra.pontos_gols_vencedor %}
+            {% set GP = bolao.regra.pontos_gols_perdedor %}
+            {% set D = bolao.regra.pontos_diferenca_gols %}
+            {% set usa_c1 = bolao.regra.requer_resultado_correto %}
+
+            <div style="font-family: monospace; font-size: 0.9rem; background: var(--cinza-medio); padding: 1.5rem; border-radius: 6px; line-height: 2;">
+
+                {# 3x1 — placar exato #}
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>3×1</strong> →
+                    <span style="color: var(--verde); font-weight: 700;">{{ R + GV + GP + D }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(placar exato ✨)</span>
                 </div>
 
-                <div style="margin-bottom: 0.8rem;">
-                    Seu palpite <strong>1x0</strong> → 
-                    <span style="color: var(--amarelo); font-weight: 600;">{{ bolao.regra.pontos_resultado }} pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;">(apenas resultado)</span>
+                {# 2x1 — acerta resultado + gols do perdedor #}
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>2×1</strong> →
+                    <span style="color: var(--amarelo); font-weight: 700;">{{ R + GP }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(resultado + gols do perdedor)</span>
                 </div>
-                
-                <div>
-                    Seu palpite <strong>1x3</strong> → 
-                    <span style="color: #e74c3c; font-weight: 600;" data-i18n="bd_zero_pts">0 pontos</span>
-                    <span style="color: var(--texto-fraco); font-size: 0.85rem;" data-i18n="bd_errou">(errou o resultado)</span>
+
+                {# 3x0 — acerta resultado + gols do vencedor #}
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>3×0</strong> →
+                    <span style="color: var(--amarelo); font-weight: 700;">{{ R + GV }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(resultado + gols do vencedor)</span>
+                </div>
+
+                {# 2x0 — acerta resultado + diferença #}
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>2×0</strong> →
+                    <span style="color: var(--amarelo); font-weight: 700;">{{ R + D }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(resultado + diferença de gols)</span>
+                </div>
+
+                {# 1x0 — só resultado #}
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>1×0</strong> →
+                    <span style="color: var(--amarelo); font-weight: 700;">{{ R }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(apenas resultado)</span>
+                </div>
+
+                {# 1x3 — errou resultado #}
+                {% if usa_c1 %}
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>1×3</strong> →
+                    <span style="color: #e74c3c; font-weight: 700;">0 pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(errou o resultado → zera tudo)</span>
+                </div>
+                {% else %}
+                {# C2: errou resultado mas pode pontuar parciais por mandante/visitante #}
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>1×3</strong> →
+                    <span style="color: var(--amarelo); font-weight: 700;">{{ GP }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(errou resultado, mas acertou gols do visitante=1 → gols perdedor)</span>
+                </div>
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>0×1</strong> →
+                    <span style="color: var(--amarelo); font-weight: 700;">{{ GP + D }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(errou resultado, acertou visitante=1 e diferença=2... não, dif=1 vs 2 → só gols perd)</span>
+                </div>
+                {% endif %}
+
+                {# Empate — 1x1 real, palpite 1x1 #}
+                <div style="border-top: 1px solid var(--cinza); margin-top: 0.8rem; padding-top: 0.8rem; color: var(--texto-fraco); font-size: 0.78rem;">Jogo termina 1×1:</div>
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>1×1</strong> →
+                    <span style="color: var(--verde); font-weight: 700;">{{ R + GV + GP + D }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(empate cravado ✨)</span>
+                </div>
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>0×0</strong> →
+                    <span style="color: var(--amarelo); font-weight: 700;">{{ R + D }} pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(acertou empate + diferença=0)</span>
+                </div>
+                <div style="margin-bottom: 0.4rem;">
+                    Palpite <strong>2×1</strong> →
+                    <span style="color: #e74c3c; font-weight: 700;">0 pts</span>
+                    <span style="color: var(--texto-fraco); font-size: 0.8rem;">(errou resultado — em empate real não há vencedor/perdedor)</span>
                 </div>
             </div>
             
