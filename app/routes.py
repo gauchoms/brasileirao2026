@@ -31,98 +31,82 @@ METAS = {
 
 def calcular_pontos_palpite(palpite, jogo, regra):
     """
-    Calcula os pontos obtidos em um palpite baseado na regra de pontuação.
-    Sistema acumulativo: soma todos os acertos.
+    Calcula os pontos obtidos em um palpite.
+
+    requer_resultado_correto = True  → Cenário 1
+        Para pontuar parciais é obrigatório acertar o resultado (vitória/empate).
+        Em empate: cravou = 20pts, acertou sem cravar = 12pts.
+
+    requer_resultado_correto = False → Cenário 2
+        Gols comparados por seleção: mandante vs mandante, visitante vs visitante.
+        Pontua parciais independente de acertar o resultado.
     """
     pontos = 0
-    
-    # Determina resultado real
-    if jogo.gols_casa > jogo.gols_fora:
+
+    pr = jogo.gols_casa
+    vr = jogo.gols_fora
+    pg = palpite.gols_casa_palpite
+    vg = palpite.gols_fora_palpite
+
+    # Resultado real e palpitado
+    if pr > vr:
         resultado_real = 'casa'
-        gols_vencedor_real = jogo.gols_casa
-        gols_perdedor_real = jogo.gols_fora
-    elif jogo.gols_fora > jogo.gols_casa:
+    elif vr > pr:
         resultado_real = 'fora'
-        gols_vencedor_real = jogo.gols_fora
-        gols_perdedor_real = jogo.gols_casa
     else:
         resultado_real = 'empate'
-        gols_vencedor_real = None
-        gols_perdedor_real = None
-    
-    # Determina resultado do palpite
-    if palpite.gols_casa_palpite > palpite.gols_fora_palpite:
-        resultado_palpite = 'casa'
-        gols_vencedor_palpite = palpite.gols_casa_palpite
-        gols_perdedor_palpite = palpite.gols_fora_palpite
-    elif palpite.gols_fora_palpite > palpite.gols_casa_palpite:
-        resultado_palpite = 'fora'
-        gols_vencedor_palpite = palpite.gols_fora_palpite
-        gols_perdedor_palpite = palpite.gols_casa_palpite
-    else:
-        resultado_palpite = 'empate'
-        gols_vencedor_palpite = None
-        gols_perdedor_palpite = None
-    
-    # Acertou o resultado?
-    acertou_resultado = (resultado_real == resultado_palpite)
-    
-    if acertou_resultado:
-        # Ganha pontos por acertar o resultado
-        pontos += regra.pontos_resultado
-        
-        # Acertos adicionais
-        if resultado_real != 'empate':
-            # VITÓRIAS: pontua vencedor e perdedor separadamente
-            if gols_vencedor_real == gols_vencedor_palpite:
-                pontos += regra.pontos_gols_vencedor
-            
-            if gols_perdedor_real == gols_perdedor_palpite:
-                pontos += regra.pontos_gols_perdedor
-        else:
-            # EMPATES: pontua se acertou os gols de ambos os times
-            if palpite.gols_casa_palpite == jogo.gols_casa:
-                pontos += regra.pontos_gols_vencedor
-            
-            if palpite.gols_fora_palpite == jogo.gols_fora:
-                pontos += regra.pontos_gols_perdedor
-        
-        # Acertou diferença de gols?
-        diferenca_real = abs(jogo.gols_casa - jogo.gols_fora)
-        diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
-        if diferenca_real == diferenca_palpite:
-            pontos += regra.pontos_diferenca_gols
-            # Bônus por jogos elásticos
-        if regra.ativar_bonus_gols:
-            total_gols = jogo.gols_casa + jogo.gols_fora
-            if total_gols > regra.limite_gols_bonus:
-                gols_extras = total_gols - regra.limite_gols_bonus
-                pontos += gols_extras * regra.pontos_por_gol_extra
 
-    
+    if pg > vg:
+        resultado_palp = 'casa'
+    elif vg > pg:
+        resultado_palp = 'fora'
     else:
-        # Errou o resultado
-        if not regra.requer_resultado_correto:
-            # Checkbox desmarcado: pontua mesmo errando resultado
-            if resultado_real != 'empate' and resultado_palpite != 'empate':
-                # Ambos preveram vitória (mas de times diferentes)
-                # Verifica se acertou os números mesmo invertidos
-                if gols_vencedor_real == gols_vencedor_palpite:
-                    pontos += regra.pontos_gols_vencedor
-                
-                if gols_perdedor_real == gols_perdedor_palpite:
-                    pontos += regra.pontos_gols_perdedor
-            
-            # Diferença de gols
-            diferenca_real = abs(jogo.gols_casa - jogo.gols_fora)
-            diferenca_palpite = abs(palpite.gols_casa_palpite - palpite.gols_fora_palpite)
-            if diferenca_real == diferenca_palpite:
+        resultado_palp = 'empate'
+
+    acertou_resultado = (resultado_real == resultado_palp)
+
+    # Pontos por resultado
+    if acertou_resultado:
+        pontos += regra.pontos_resultado
+    elif regra.requer_resultado_correto:
+        # Cenário 1: errou resultado = zera tudo
+        return 0
+
+    if regra.requer_resultado_correto:
+        # Cenário 1: parciais só se acertou resultado (já garantido acima)
+        if resultado_real == 'empate':
+            # Empate: pontua gols se acertou ambos (placar exato)
+            if pr == pg:
+                pontos += regra.pontos_gols_vencedor
+            if vr == vg:
+                pontos += regra.pontos_gols_perdedor
+            # Diferença sempre 0 em empate
+            pontos += regra.pontos_diferenca_gols
+        else:
+            # Vitória: usa max/min (vencedor/perdedor)
+            max_r = max(pr, vr); min_r = min(pr, vr)
+            max_p = max(pg, vg); min_p = min(pg, vg)
+            if max_r == max_p:
+                pontos += regra.pontos_gols_vencedor
+            if min_r == min_p:
+                pontos += regra.pontos_gols_perdedor
+            if (max_r - min_r) == (max_p - min_p):
                 pontos += regra.pontos_diferenca_gols
-            
-        
-        # Se checkbox marcado: pontos = 0 (já está zerado)
-    
-    
+    else:
+        # Cenário 2: mandante vs mandante, visitante vs visitante
+        if pr == pg:
+            pontos += regra.pontos_gols_vencedor
+        if vr == vg:
+            pontos += regra.pontos_gols_perdedor
+        if abs(pr - vr) == abs(pg - vg):
+            pontos += regra.pontos_diferenca_gols
+
+    # Bônus elástico — só se acertou resultado
+    if regra.ativar_bonus_gols and acertou_resultado:
+        total_gols = pr + vr
+        if total_gols > regra.limite_gols_bonus:
+            pontos += (total_gols - regra.limite_gols_bonus) * regra.pontos_por_gol_extra
+
     return pontos
 
 
