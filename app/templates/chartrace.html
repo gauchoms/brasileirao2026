@@ -9,94 +9,71 @@
 <meta property="og:type"        content="website">
 <meta property="og:url"         content="{{ request.url }}">
 
-<!-- D3 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<!-- gif.js para export GIF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
 
 <style>
 :root {
-  --bg: #0d0d0f;
-  --card: #161618;
-  --border: #2a2a2e;
-  --green: #00e676;
-  --green-dim: #00e67622;
-  --text: #e8e8ee;
-  --muted: #555560;
-  --gold: #FFD700;
-  --silver: #C0C0C0;
-  --bronze: #CD7F32;
+  --bg:#0d0d0f; --card:#161618; --border:#252528;
+  --green:#00e676; --green-dim:#00e67618;
+  --text:#e0e0e8; --muted:#505060;
+  --gold:#FFD700; --silver:#C0C0C0; --bronze:#CD7F32;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Arial, sans-serif; min-height: 100vh; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;min-height:100vh}
+#app{max-width:880px;margin:0 auto;padding:1rem 1rem 2rem}
 
-#app { max-width: 860px; margin: 0 auto; padding: 1rem; }
+.header{text-align:center;padding:.8rem 0 .2rem}
+.bolao-nome{font-size:1.35rem;font-weight:700}
+.jogo-label{margin-top:.35rem;display:inline-block;font-size:.75rem;
+  color:var(--green);background:var(--green-dim);border:1px solid #00e67628;
+  padding:.22rem .85rem;border-radius:20px}
+.jogo-counter{font-size:.62rem;color:var(--muted);margin-top:.2rem}
 
-/* Header */
-.header { text-align: center; padding: 1rem 0 0.5rem; }
-.bolao-nome { font-size: 1.4rem; font-weight: 700; color: var(--text); }
-.jogo-label { margin-top: 0.4rem; display: inline-block; font-size: 0.78rem;
-  color: var(--green); background: var(--green-dim); border: 1px solid #00e67633;
-  padding: 0.25rem 0.9rem; border-radius: 20px; }
-.jogo-counter { font-size: 0.65rem; color: var(--muted); margin-top: 0.25rem; }
+.tabs{display:flex;border-bottom:1px solid var(--border);margin:.9rem 0 0}
+.tab{padding:.5rem 1.3rem;font-size:.8rem;cursor:pointer;border:none;
+  background:none;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s;font-weight:500}
+.tab.active{color:var(--green);border-bottom-color:var(--green)}
+.tab:hover:not(.active){color:var(--text)}
 
-/* Tabs */
-.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin: 1rem 0 0; }
-.tab { padding: 0.55rem 1.4rem; font-size: 0.82rem; cursor: pointer; border: none;
-  background: none; color: var(--muted); border-bottom: 2px solid transparent;
-  transition: all 0.2s; font-weight: 500; }
-.tab.active { color: var(--green); border-bottom-color: var(--green); }
-.tab:hover:not(.active) { color: var(--text); }
+.controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:center;margin:.7rem 0}
+.btn{padding:.38rem .8rem;background:var(--card);color:var(--muted);
+  border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.82rem;transition:all .15s}
+.btn:hover:not(:disabled){border-color:var(--green);color:var(--text)}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn.primary{background:var(--green);color:#000;border-color:var(--green);font-weight:700}
+.btn.stop{background:#c0392b;color:#fff;border-color:#c0392b;font-weight:700}
 
-/* Controles */
-.controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  justify-content: center; margin: 0.8rem 0; }
-.btn { padding: 0.4rem 0.85rem; background: var(--card); color: var(--muted);
-  border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
-  font-size: 0.84rem; transition: all 0.15s; white-space: nowrap; }
-.btn:hover:not(:disabled) { border-color: var(--green); color: var(--text); }
-.btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.btn.primary { background: var(--green); color: #000; border-color: var(--green); font-weight: 700; }
-.btn.danger  { background: #c0392b; color: #fff; border-color: #c0392b; }
-.btn.active-speed { background: var(--green); color: #000; border-color: var(--green); }
+.progress-wrap{width:100%;display:flex;align-items:center;gap:8px;margin:.25rem 0}
+.progress-wrap input[type=range]{flex:1;accent-color:var(--green)}
+.progress-wrap span{font-size:.62rem;color:var(--muted);min-width:16px}
 
-/* Progress */
-.progress-wrap { width: 100%; display: flex; align-items: center; gap: 8px; margin: 0.3rem 0; }
-.progress-wrap input[type=range] { flex: 1; accent-color: var(--green); }
-.progress-wrap span { font-size: 0.63rem; color: var(--muted); min-width: 18px; }
-.dots { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; margin: 0.3rem 0 0.8rem; }
-.dot { width: 11px; height: 11px; border-radius: 50%; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+.dots{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin:.25rem 0 .7rem}
+.dot{width:10px;height:10px;border-radius:50%;cursor:pointer;flex-shrink:0;transition:background .2s}
 
-/* Chart containers */
-#bar-container { width: 100%; position: relative; overflow: hidden; }
-#line-container { width: 100%; }
-#line-container svg { width: 100%; display: block; }
+#bar-container svg{display:block}
+#line-container svg{width:100%;display:block}
 
-/* Export */
-.export-row { display: flex; gap: 8px; justify-content: center; margin: 0.5rem 0; flex-wrap: wrap; }
-.export-status { font-size: 0.72rem; color: var(--muted); text-align: center; min-height: 18px; }
+.export-row{display:flex;gap:8px;justify-content:center;margin:.6rem 0;flex-wrap:wrap}
+.export-status{font-size:.7rem;color:var(--muted);text-align:center;min-height:16px;margin:.2rem 0}
 
-/* Loading */
-.loading { display: flex; align-items: center; justify-content: center;
-  height: 60vh; flex-direction: column; gap: 1rem; color: var(--muted); }
-.loading-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green);
-  animation: pulse 1.2s infinite; display: inline-block; margin: 0 3px; }
-.loading-dot:nth-child(2) { animation-delay: 0.2s; }
-.loading-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes pulse { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+.loading{display:flex;align-items:center;justify-content:center;
+  height:60vh;flex-direction:column;gap:1rem;color:var(--muted)}
+.ld{width:9px;height:9px;border-radius:50%;background:var(--green);
+  animation:pu 1.2s infinite;display:inline-block;margin:0 3px}
+.ld:nth-child(2){animation-delay:.2s}.ld:nth-child(3){animation-delay:.4s}
+@keyframes pu{0%,80%,100%{opacity:.15}40%{opacity:1}}
 
-/* Tooltip linha */
-.tooltip { position: fixed; background: #1e1e22; border: 1px solid var(--border);
-  border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; pointer-events: none;
-  z-index: 100; display: none; max-width: 200px; }
+.tooltip{position:fixed;background:#1a1a1e;border:1px solid var(--border);
+  border-radius:6px;padding:6px 10px;font-size:.7rem;pointer-events:none;
+  z-index:100;display:none;line-height:1.6}
 
-footer { text-align: center; font-size: 0.62rem; color: #2a2a30; margin: 1rem 0 0.5rem; }
+footer{text-align:center;font-size:.6rem;color:#222;margin:.8rem 0 0}
 </style>
 </head>
 <body>
 <div id="app">
   <div class="loading" id="loading">
-    <div><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+    <div><span class="ld"></span><span class="ld"></span><span class="ld"></span></div>
     <div>Carregando dados...</div>
   </div>
   <div id="main" style="display:none">
@@ -108,18 +85,13 @@ footer { text-align: center; font-size: 0.62rem; color: #2a2a30; margin: 1rem 0 
 
     <div class="tabs">
       <button class="tab active" id="tab-bar" onclick="switchTab('bar')">📊 Bar Race</button>
-      <button class="tab" id="tab-line" onclick="switchTab('line')">📈 Line Race</button>
+      <button class="tab"        id="tab-line" onclick="switchTab('line')">📈 Line Race</button>
     </div>
 
     <div class="controls">
       <button class="btn" id="btn-prev" onclick="stepFrame(-1)">←</button>
       <button class="btn primary" id="btn-play" onclick="togglePlay()">▶ Play</button>
       <button class="btn" id="btn-next" onclick="stepFrame(1)">→</button>
-      <span style="font-size:0.72rem;color:var(--muted)">Vel:</span>
-      <button class="btn" id="sp0" onclick="setSpeed(0)">🐢</button>
-      <button class="btn active-speed" id="sp1" onclick="setSpeed(1)">🚶</button>
-      <button class="btn" id="sp2" onclick="setSpeed(2)">🏃</button>
-      <button class="btn" id="sp3" onclick="setSpeed(3)">⚡</button>
     </div>
 
     <div class="progress-wrap">
@@ -129,20 +101,12 @@ footer { text-align: center; font-size: 0.62rem; color: #2a2a30; margin: 1rem 0 
     </div>
     <div class="dots" id="dots"></div>
 
-    <!-- BAR RACE -->
-    <div id="bar-view">
-      <div id="bar-container"></div>
-    </div>
+    <div id="bar-view"><div id="bar-container"></div></div>
+    <div id="line-view" style="display:none"><div id="line-container"></div></div>
 
-    <!-- LINE RACE -->
-    <div id="line-view" style="display:none">
-      <div id="line-container"></div>
-    </div>
-
-    <!-- Export -->
     <div class="export-row">
-      <button class="btn" onclick="exportGIF()">🎞️ Exportar GIF</button>
       <button class="btn" onclick="exportWebM()">🎬 Exportar Vídeo (WebM)</button>
+      <button class="btn" onclick="exportFrames()">🖼️ Exportar PNG atual</button>
     </div>
     <div class="export-status" id="export-status"></div>
 
@@ -153,41 +117,67 @@ footer { text-align: center; font-size: 0.62rem; color: #2a2a30; margin: 1rem 0 
 
 <script>
 window.CHARTRACE_BOLAO_ID = {{ bolao.id }};
+window.CHARTRACE_BOLAO_NOME = "{{ bolao.nome | e }}";
 
-// ─── CORES ───────────────────────────────────────────────────────────────────
+// ── PALETA ──────────────────────────────────────────────────────────────────
 const PALETTE = [
   "#00e676","#2196F3","#FF5722","#FFC107","#9C27B0",
   "#00BCD4","#FF4081","#8BC34A","#FF9800","#3F51B5",
-  "#E91E63","#009688","#CDDC39","#795548","#607D8B",
-  "#F44336","#673AB7","#03A9F4","#4CAF50","#FF6F00",
-  "#76FF03","#EA80FC","#00E5FF","#FFAB40","#69F0AE",
-  "#40C4FF","#FF6E40","#B2FF59","#FFD740","#E040FB"
+  "#E91E63","#009688","#CDDC39","#F44336","#607D8B",
+  "#03A9F4","#4CAF50","#FF6F00","#76FF03","#EA80FC",
+  "#00E5FF","#FFAB40","#69F0AE","#40C4FF","#FF6E40",
+  "#B2FF59","#FFD740","#E040FB","#795548","#607D8B"
 ];
 const EMOJIS = ["🏆","⭐","⚽","🔥","💪","⚡","🎯","🌟","👟","🏅",
                  "🥅","💎","🚀","👑","🎪","🦁","🐯","🦊","🐻","🦅",
                  "🦋","🌈","🏄","🎸","🧨","🎲","🏹","🎳","🎀","🔮"];
 
-// ─── STATE ───────────────────────────────────────────────────────────────────
+// ── ESTADO ──────────────────────────────────────────────────────────────────
 let DATA = null;
-let frame = 0;
+let colorMap = {}, emojiMap = {};
+
+// Tempo global contínuo: de 0 até DATA.keyframes.length
+// Cada inteiro = início de um keyframe
+// 0.5 = meio do keyframe 0→1, etc.
+let T = 0;                  // tempo global atual
+const T_PER_KF = 14;       // segundos por keyframe (lento o suficiente)
 let playing = false;
 let rafId = null;
 let lastTs = null;
-let progress = 0; // 0..1 dentro do keyframe atual
-let speedLevels = [2.5, 1.4, 0.8, 0.35];
-let speedIdx = 1;
 let tab = 'bar';
+let isExporting = false;
 
-// valores interpolados atuais
+// valores interpolados
 let curVals = {};
-let fromVals = {};
-let toVals = {};
 
-// mapa id → cor / emoji / índice
-let colorMap = {};
-let emojiMap = {};
+function smoothStep(t){ return t*t*(3-2*t); }
 
-// ─── LOAD ─────────────────────────────────────────────────────────────────────
+function getValsAt(T_global) {
+  const nKF = DATA.keyframes.length;
+  const kfIdx = Math.min(Math.floor(T_global), nKF - 1);
+  const prog   = T_global - Math.floor(T_global);
+
+  const prev = kfIdx > 0
+    ? DATA.keyframes[kfIdx - 1].pts
+    : Object.fromEntries(DATA.participantes.map(p => [p.id, 0]));
+  const curr = DATA.keyframes[kfIdx].pts;
+
+  const e = smoothStep(Math.min(prog, 1));
+  const vals = {};
+  DATA.participantes.forEach(p => {
+    const a = prev[p.id] ?? 0;
+    const b = curr[p.id] ?? 0;
+    vals[p.id] = a + (b - a) * e;
+  });
+  return vals;
+}
+
+function getKFIndex() {
+  if (!DATA) return 0;
+  return Math.min(Math.floor(T), DATA.keyframes.length - 1);
+}
+
+// ── LOAD ────────────────────────────────────────────────────────────────────
 fetch(`/chartrace/${window.CHARTRACE_BOLAO_ID}/data`)
   .then(r => r.json())
   .then(d => {
@@ -198,35 +188,28 @@ fetch(`/chartrace/${window.CHARTRACE_BOLAO_ID}/data`)
     document.getElementById('slider').max = d.keyframes.length - 1;
     document.getElementById('slider-max').textContent = d.keyframes.length;
 
-    // atribuir cores e emojis
     d.participantes.forEach((p, i) => {
       colorMap[p.id] = PALETTE[i % PALETTE.length];
       emojiMap[p.id] = EMOJIS[i % EMOJIS.length];
     });
 
-    // zeros iniciais
-    const zeros = {};
-    d.participantes.forEach(p => { zeros[p.id] = 0; });
-    curVals = {...zeros};
-    fromVals = {...zeros};
-    toVals = {...d.keyframes[0].pts};
+    curVals = Object.fromEntries(d.participantes.map(p => [p.id, 0]));
 
     buildDots();
     buildBarChart();
     buildLineChart();
     updateHeader();
-    renderBar();
-    renderLine();
+    renderBar(curVals);
+    renderLine(0);
 
-    // autoplay
-    setTimeout(() => startPlay(), 600);
+    setTimeout(() => startPlay(), 500);
   })
   .catch(e => {
     document.getElementById('loading').innerHTML =
       `<div style="color:#e74c3c">Erro: ${e.message}</div>`;
   });
 
-// ─── DOTS ────────────────────────────────────────────────────────────────────
+// ── DOTS ────────────────────────────────────────────────────────────────────
 function buildDots() {
   const wrap = document.getElementById('dots');
   wrap.innerHTML = '';
@@ -234,76 +217,54 @@ function buildDots() {
     const d = document.createElement('div');
     d.className = 'dot';
     d.title = DATA.keyframes[i].label;
-    d.style.background = i === 0 ? 'var(--green)' : '#2a2a2e';
-    d.style.border = i === 0 ? '2px solid var(--green)' : '1px solid #333';
-    d.onclick = () => { pause(); jumpTo(i); };
+    d.onclick = () => { pause(); jumpToKF(i); };
     wrap.appendChild(d);
   });
-}
-
-function updateDots() {
-  const dots = document.getElementById('dots').children;
-  for (let i = 0; i < dots.length; i++) {
-    dots[i].style.background = i === frame ? 'var(--green)' : i < frame ? '#00e67644' : '#2a2a2e';
-    dots[i].style.border = i === frame ? '2px solid var(--green)' : '1px solid #333';
-  }
-}
-
-// ─── HEADER ──────────────────────────────────────────────────────────────────
-function updateHeader() {
-  const kf = DATA.keyframes[frame];
-  document.getElementById('jogo-label').textContent = kf ? kf.label : '';
-  document.getElementById('jogo-counter').textContent =
-    `Jogo ${frame + 1} de ${DATA.keyframes.length}`;
-  document.getElementById('slider').value = frame;
   updateDots();
 }
 
-// ─── INTERPOLAÇÃO ────────────────────────────────────────────────────────────
-function smoothStep(t) { return t * t * (3 - 2 * t); }
-
-function lerp(a, b, t) { return a + (b - a) * t; }
-
-function interpolate(t) {
-  const e = smoothStep(Math.max(0, Math.min(1, t)));
-  const vals = {};
-  DATA.participantes.forEach(p => {
-    vals[p.id] = lerp(fromVals[p.id] ?? 0, toVals[p.id] ?? 0, e);
-  });
-  return vals;
+function updateDots() {
+  const kfi = getKFIndex();
+  const dots = document.getElementById('dots').children;
+  for (let i = 0; i < dots.length; i++) {
+    dots[i].style.background = i === kfi ? 'var(--green)'
+      : i < kfi ? '#00e67640' : '#2a2a2e';
+    dots[i].style.border = i === kfi ? '2px solid var(--green)' : '1px solid #333';
+  }
 }
 
-// ─── PLAYBACK ────────────────────────────────────────────────────────────────
+// ── HEADER ──────────────────────────────────────────────────────────────────
+function updateHeader() {
+  const kfi = getKFIndex();
+  const kf = DATA.keyframes[kfi];
+  document.getElementById('jogo-label').textContent = kf ? kf.label : '';
+  document.getElementById('jogo-counter').textContent =
+    `Jogo ${kfi + 1} de ${DATA.keyframes.length}`;
+  document.getElementById('slider').value = kfi;
+  updateDots();
+}
+
+// ── PLAYBACK ────────────────────────────────────────────────────────────────
 function startPlay() {
   if (!DATA) return;
-  if (frame >= DATA.keyframes.length - 1 && progress >= 1) {
-    // reinicia
-    frame = 0;
-    progress = 0;
-    const zeros = {};
-    DATA.participantes.forEach(p => { zeros[p.id] = 0; });
-    curVals = {...zeros};
-    fromVals = {...zeros};
-    toVals = {...DATA.keyframes[0].pts};
-  }
+  const maxT = DATA.keyframes.length - 0.001;
+  if (T >= maxT) { T = 0; }
   playing = true;
   lastTs = null;
   document.getElementById('btn-play').textContent = '⏸ Pausar';
-  document.getElementById('btn-play').className = 'btn danger';
+  document.getElementById('btn-play').className = 'btn stop';
   rafId = requestAnimationFrame(animLoop);
 }
 
 function pause() {
   playing = false;
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-  document.getElementById('btn-play').textContent =
-    frame >= DATA.keyframes.length - 1 ? '🔄 Reiniciar' : '▶ Play';
+  const atEnd = DATA && T >= DATA.keyframes.length - 0.01;
+  document.getElementById('btn-play').textContent = atEnd ? '🔄 Reiniciar' : '▶ Play';
   document.getElementById('btn-play').className = 'btn primary';
 }
 
-function togglePlay() {
-  if (playing) pause(); else startPlay();
-}
+function togglePlay() { if (playing) pause(); else startPlay(); }
 
 function animLoop(ts) {
   if (!playing) return;
@@ -311,562 +272,423 @@ function animLoop(ts) {
   const dt = (ts - lastTs) / 1000;
   lastTs = ts;
 
-  progress += dt / speedLevels[speedIdx];
-  if (progress >= 1) {
-    // chegou no fim do keyframe atual
-    curVals = {...toVals};
-    if (frame < DATA.keyframes.length - 1) {
-      frame++;
-      fromVals = {...curVals};
-      toVals = {...DATA.keyframes[frame].pts};
-      progress = 0;
-      updateHeader();
-    } else {
-      // terminou tudo
-      progress = 1;
-      curVals = interpolate(1);
-      render();
-      pause();
-      return;
-    }
-  }
+  const maxT = DATA.keyframes.length - 0.001;
+  T = Math.min(T + dt / T_PER_KF, maxT);
 
-  curVals = interpolate(progress);
-  render();
+  curVals = getValsAt(T);
+  updateHeader();
+  renderBar(curVals);
+  renderLine(T);
+
+  if (T >= maxT) { pause(); return; }
   rafId = requestAnimationFrame(animLoop);
 }
 
 function stepFrame(dir) {
   pause();
-  const next = Math.max(0, Math.min(DATA.keyframes.length - 1, frame + dir));
-  jumpTo(next);
+  const kfi = Math.max(0, Math.min(DATA.keyframes.length - 1, getKFIndex() + dir));
+  jumpToKF(kfi);
 }
 
-function jumpTo(idx) {
-  frame = idx;
-  progress = 1;
-  fromVals = idx > 0
-    ? {...DATA.keyframes[idx - 1].pts}
-    : Object.fromEntries(DATA.participantes.map(p => [p.id, 0]));
-  toVals = {...DATA.keyframes[idx].pts};
-  curVals = {...toVals};
+function jumpToKF(kfi) {
+  T = kfi;
+  curVals = getValsAt(T);
   updateHeader();
-  render();
+  renderBar(curVals);
+  renderLine(T);
 }
 
 function onSlider(val) {
   pause();
-  jumpTo(parseInt(val));
+  jumpToKF(parseInt(val));
 }
 
-function setSpeed(idx) {
-  speedIdx = idx;
-  ['sp0','sp1','sp2','sp3'].forEach((id, i) => {
-    document.getElementById(id).className = 'btn' + (i === idx ? ' active-speed' : '');
-  });
-}
-
-// ─── TABS ────────────────────────────────────────────────────────────────────
+// ── TABS ────────────────────────────────────────────────────────────────────
 function switchTab(t) {
   tab = t;
-  document.getElementById('bar-view').style.display = t === 'bar' ? '' : 'none';
+  document.getElementById('bar-view').style.display  = t === 'bar'  ? '' : 'none';
   document.getElementById('line-view').style.display = t === 'line' ? '' : 'none';
-  document.getElementById('tab-bar').className = 'tab' + (t === 'bar' ? ' active' : '');
+  document.getElementById('tab-bar').className  = 'tab' + (t === 'bar'  ? ' active' : '');
   document.getElementById('tab-line').className = 'tab' + (t === 'line' ? ' active' : '');
-  render();
+  if (t === 'bar')  renderBar(curVals);
+  if (t === 'line') renderLine(T);
 }
 
-// ─── RENDER DISPATCHER ───────────────────────────────────────────────────────
-function render() {
-  if (tab === 'bar') renderBar();
-  else renderLine();
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// BAR RACE — D3
-// ══════════════════════════════════════════════════════════════════════════════
-const BAR_H = 46;
-const BAR_GAP = 8;
-const SLOT = BAR_H + BAR_GAP;
+// ══════════════════════════════════════════════════════════════════════════
+// BAR RACE
+// ══════════════════════════════════════════════════════════════════════════
+const BAR_H = 44, BAR_GAP = 8, SLOT = BAR_H + BAR_GAP;
 const MAX_BARS = 50;
-const LABEL_W = 170;
-const PTS_W = 52;
-const MARGIN = { top: 4, right: PTS_W + 8, bottom: 4, left: LABEL_W + 8 };
+const LW = 165, PW = 56;
+const BM = { top:4, right:PW+10, bottom:4, left:LW+10 };
 
-let barSvg, barX, barW;
+let bSvg, bInnerW, bH;
 
 function buildBarChart() {
   const wrap = document.getElementById('bar-container');
   wrap.innerHTML = '';
   const n = Math.min(DATA.participantes.length, MAX_BARS);
-  const H = n * SLOT + MARGIN.top + MARGIN.bottom;
-  barW = wrap.clientWidth || 760;
-  const innerW = barW - MARGIN.left - MARGIN.right;
+  const W = wrap.clientWidth || 820;
+  bInnerW = W - BM.left - BM.right;
+  bH = n * SLOT + BM.top + BM.bottom;
 
-  barSvg = d3.select('#bar-container').append('svg')
-    .attr('width', barW)
-    .attr('height', H);
+  bSvg = d3.select('#bar-container').append('svg')
+    .attr('width', W).attr('height', bH);
 
-  const g = barSvg.append('g')
-    .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+  const g = bSvg.append('g').attr('transform', `translate(${BM.left},${BM.top})`);
 
-  barX = d3.scaleLinear().range([0, innerW]);
-
-  // grupos por participante
   DATA.participantes.slice(0, MAX_BARS).forEach((p, pi) => {
-    const gr = g.append('g').attr('class', `bar-g bar-g-${p.id}`);
     const cor = colorMap[p.id];
+    const gr  = g.append('g').attr('class', `bg${p.id}`);
 
-    // track bg
-    gr.append('rect')
-      .attr('class', 'bar-bg')
-      .attr('x', 0).attr('y', (SLOT - BAR_H) / 2)
-      .attr('height', BAR_H).attr('rx', 5)
-      .attr('fill', '#1a1a1e');
+    // bg track
+    gr.append('rect').attr('class','tbg')
+      .attr('y',(SLOT-BAR_H)/2).attr('height',BAR_H).attr('rx',5)
+      .attr('fill','#1a1a1e').attr('width', bInnerW);
 
     // fill
-    gr.append('rect')
-      .attr('class', 'bar-fill')
-      .attr('x', 0).attr('y', (SLOT - BAR_H) / 2)
-      .attr('height', BAR_H).attr('rx', 5)
-      .attr('fill', cor).attr('opacity', 0.85);
+    gr.append('rect').attr('class','tf')
+      .attr('y',(SLOT-BAR_H)/2).attr('height',BAR_H).attr('rx',5)
+      .attr('fill',cor).attr('width',0);
 
-    // nome (à esquerda)
-    gr.append('text')
-      .attr('class', 'bar-name')
-      .attr('x', -8).attr('y', SLOT / 2 + 1)
-      .attr('text-anchor', 'end')
-      .attr('dominant-baseline', 'middle')
-      .attr('fill', '#aaa')
-      .attr('font-size', '0.7rem')
-      .attr('font-family', 'Segoe UI, Arial, sans-serif')
-      .text(p.nome.length > 18 ? p.nome.slice(0, 17) + '…' : p.nome);
-
-    // emoji + pos
-    gr.append('text')
-      .attr('class', 'bar-emoji')
-      .attr('x', -LABEL_W + 2).attr('y', SLOT / 2)
-      .attr('dominant-baseline', 'middle')
-      .attr('font-size', '1.1rem')
+    // emoji
+    gr.append('text').attr('class','te')
+      .attr('x',-LW+2).attr('y',SLOT/2)
+      .attr('dominant-baseline','middle').attr('font-size','1.05rem')
       .text(emojiMap[p.id]);
 
-    gr.append('text')
-      .attr('class', 'bar-pos')
-      .attr('x', -LABEL_W + 28).attr('y', SLOT / 2)
-      .attr('dominant-baseline', 'middle')
-      .attr('fill', '#555')
-      .attr('font-size', '0.65rem')
-      .attr('font-family', 'Segoe UI, Arial, sans-serif');
+    // pos
+    gr.append('text').attr('class','tp')
+      .attr('x',-LW+28).attr('y',SLOT/2)
+      .attr('dominant-baseline','middle')
+      .attr('font-size','.63rem').attr('font-family','Segoe UI,Arial,sans-serif');
 
-    // pts (à direita)
-    gr.append('text')
-      .attr('class', 'bar-pts')
-      .attr('x', innerW + 6).attr('y', SLOT / 2)
-      .attr('dominant-baseline', 'middle')
-      .attr('fill', cor)
-      .attr('font-size', '0.82rem')
-      .attr('font-weight', '700')
-      .attr('font-family', 'Segoe UI, Arial, sans-serif');
+    // nome
+    gr.append('text').attr('class','tn')
+      .attr('x',-8).attr('y',SLOT/2)
+      .attr('text-anchor','end').attr('dominant-baseline','middle')
+      .attr('fill','#999').attr('font-size','.68rem')
+      .attr('font-family','Segoe UI,Arial,sans-serif')
+      .text(p.nome.length > 18 ? p.nome.slice(0,17)+'…' : p.nome);
+
+    // pts
+    gr.append('text').attr('class','tpt')
+      .attr('x', bInnerW+7).attr('y',SLOT/2)
+      .attr('dominant-baseline','middle').attr('font-weight','700')
+      .attr('font-size','.8rem').attr('font-family','Segoe UI,Arial,sans-serif')
+      .attr('fill',cor);
   });
 }
 
-function renderBar() {
-  if (!barSvg || !DATA) return;
+function renderBar(vals) {
+  if (!bSvg || !DATA) return;
   const n = Math.min(DATA.participantes.length, MAX_BARS);
   const parts = DATA.participantes.slice(0, n);
-
-  // ordenar pelo valor atual
   const sorted = [...parts]
-    .map(p => ({ ...p, val: curVals[p.id] ?? 0 }))
-    .sort((a, b) => b.val - a.val || a.id - b.id);
-
+    .map(p => ({...p, val: vals[p.id] ?? 0}))
+    .sort((a,b) => b.val - a.val || a.id - b.id);
   const maxVal = Math.max(...sorted.map(p => p.val), 1);
-  barX.domain([0, maxVal]);
-  const innerW = barW - MARGIN.left - MARGIN.right;
+  const xScale = d3.scaleLinear().domain([0,maxVal]).range([0,bInnerW]);
 
   sorted.forEach((p, rank) => {
-    const targetY = rank * SLOT;
     const cor = colorMap[p.id];
-    const isPodium = rank < 3;
-    const posColor = rank === 0 ? 'var(--gold)' : rank === 1 ? 'var(--silver)' : rank === 2 ? 'var(--bronze)' : '#444';
+    const gr  = bSvg.select(`.bg${p.id}`);
+    const posC = rank===0?'var(--gold)':rank===1?'var(--silver)':rank===2?'var(--bronze)':'#3a3a44';
 
-    const gr = barSvg.select(`.bar-g-${p.id}`);
+    // posição vertical — transição suave
+    gr.transition().duration(120).ease(d3.easeLinear)
+      .attr('transform', `translate(0,${rank * SLOT})`);
 
-    // mover grupo para posição (transição suave)
-    gr.transition().duration(80).ease(d3.easeLinear)
-      .attr('transform', `translate(0,${targetY})`);
+    // largura da barra — transição suave
+    gr.select('.tf').transition().duration(100).ease(d3.easeLinear)
+      .attr('width', Math.max(xScale(p.val), 0));
 
-    const bw = barX(p.val);
+    gr.select('.tp').attr('fill', posC).attr('font-weight', rank<3?'700':'400')
+      .text(`${rank+1}º`);
 
-    gr.select('.bar-bg')
-      .attr('width', innerW);
-
-    gr.select('.bar-fill')
-      .transition().duration(80).ease(d3.easeLinear)
-      .attr('width', Math.max(bw, 0))
-      .attr('fill', cor)
-      .attr('opacity', isPodium ? 1 : 0.75);
-
-    gr.select('.bar-pts')
-      .text(Math.round(p.val) + ' pts');
-
-    gr.select('.bar-pos')
-      .attr('fill', posColor)
-      .attr('font-weight', isPodium ? '700' : '400')
-      .text(`${rank + 1}º`);
+    gr.select('.tpt').text(Math.round(p.val)+' pts');
   });
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// LINE RACE — D3 (estilo eleição)
-// ══════════════════════════════════════════════════════════════════════════════
-let lineSvg, lineX, lineY, lineG, lineW, lineH;
-const LINE_MARGIN = { top: 20, right: 120, bottom: 40, left: 45 };
+// ══════════════════════════════════════════════════════════════════════════
+// LINE RACE — crescimento contínuo
+// ══════════════════════════════════════════════════════════════════════════
+const LM = { top:20, right:130, bottom:38, left:50 };
+let lSvg, lX, lY, lG, lInnerW, lInnerH, lW, lH;
 
 function buildLineChart() {
   const wrap = document.getElementById('line-container');
   wrap.innerHTML = '';
-  lineW = (wrap.clientWidth || 760);
-  lineH = Math.max(380, Math.min(500, window.innerHeight * 0.55));
+  lW = wrap.clientWidth || 820;
+  lH = Math.max(360, Math.min(480, window.innerHeight * 0.52));
+  lInnerW = lW - LM.left - LM.right;
+  lInnerH = lH - LM.top  - LM.bottom;
 
-  const innerW = lineW - LINE_MARGIN.left - LINE_MARGIN.right;
-  const innerH = lineH - LINE_MARGIN.top - LINE_MARGIN.bottom;
+  lSvg = d3.select('#line-container').append('svg')
+    .attr('width', lW).attr('height', lH);
 
-  lineSvg = d3.select('#line-container').append('svg')
-    .attr('width', lineW).attr('height', lineH);
+  const defs = lSvg.append('defs');
+  defs.append('clipPath').attr('id','lclip')
+    .append('rect').attr('width', lInnerW+2).attr('height', lInnerH+10).attr('y',-5);
 
-  const defs = lineSvg.append('defs');
-  // clip para não vazar
-  defs.append('clipPath').attr('id', 'line-clip')
-    .append('rect').attr('width', innerW).attr('height', innerH + 10).attr('y', -5);
+  lG = lSvg.append('g').attr('transform', `translate(${LM.left},${LM.top})`);
 
-  lineG = lineSvg.append('g')
-    .attr('transform', `translate(${LINE_MARGIN.left},${LINE_MARGIN.top})`);
-
-  // eixos
-  lineX = d3.scaleLinear().range([0, innerW]);
-  lineY = d3.scaleLinear().range([innerH, 0]);
-
-  lineG.append('g').attr('class', 'axis-x')
-    .attr('transform', `translate(0,${innerH})`);
-  lineG.append('g').attr('class', 'axis-y');
-
-  // grade horizontal
-  lineG.append('g').attr('class', 'grid-y');
-
-  // área de linhas (clipped)
-  lineG.append('g').attr('class', 'lines').attr('clip-path', 'url(#line-clip)');
-
-  // labels flutuantes à direita
-  lineG.append('g').attr('class', 'line-labels');
-
-  // tooltip overlay
-  lineG.append('rect')
-    .attr('width', innerW).attr('height', innerH)
-    .attr('fill', 'transparent')
-    .on('mousemove', onLineMouseMove)
-    .on('mouseleave', () => { document.getElementById('tooltip').style.display = 'none'; });
-}
-
-function renderLine() {
-  if (!lineSvg || !DATA) return;
+  // X: de 0 até número total de jogos - 1 (fixo desde o início)
   const nKF = DATA.keyframes.length;
-  const parts = DATA.participantes;
-  const innerW = lineW - LINE_MARGIN.left - LINE_MARGIN.right;
-  const innerH = lineH - LINE_MARGIN.top - LINE_MARGIN.bottom;
+  lX = d3.scaleLinear().domain([0, nKF - 1]).range([0, lInnerW]);
 
-  // domínio X: 0..nKF-1
-  lineX.domain([0, Math.max(nKF - 1, 1)]);
-
-  // domínio Y: 0..maxPts de todos os keyframes até o frame atual
-  let maxPts = 0;
-  for (let i = 0; i <= frame; i++) {
-    const pts = DATA.keyframes[i].pts;
-    parts.forEach(p => { if ((pts[p.id] ?? 0) > maxPts) maxPts = pts[p.id]; });
-  }
-  // adiciona pts correntes interpolados
-  parts.forEach(p => { if ((curVals[p.id] ?? 0) > maxPts) maxPts = curVals[p.id]; });
-  lineY.domain([0, Math.max(maxPts * 1.08, 10)]);
-
-  // eixo X: labels de jogo
-  const xAxis = d3.axisBottom(lineX)
-    .ticks(Math.min(nKF, 10))
-    .tickFormat(i => {
-      const kf = DATA.keyframes[Math.round(i)];
-      return kf ? `J${Math.round(i) + 1}` : '';
-    });
-  lineG.select('.axis-x')
-    .call(xAxis)
-    .selectAll('text').attr('fill', '#555').attr('font-size', '0.62rem');
-  lineG.select('.axis-x').select('.domain').attr('stroke', '#2a2a2e');
-  lineG.select('.axis-x').selectAll('.tick line').attr('stroke', '#2a2a2e');
-
-  // eixo Y
-  const yAxis = d3.axisLeft(lineY).ticks(6).tickFormat(d => d + ' pts');
-  lineG.select('.axis-y')
-    .call(yAxis)
-    .selectAll('text').attr('fill', '#555').attr('font-size', '0.62rem');
-  lineG.select('.axis-y').select('.domain').attr('stroke', '#2a2a2e');
-  lineG.select('.axis-y').selectAll('.tick line').attr('stroke', '#2a2a2e');
+  // Y: placeholder - atualizado no render
+  lY = d3.scaleLinear().domain([0, 100]).range([lInnerH, 0]);
 
   // grade
-  lineG.select('.grid-y')
-    .call(d3.axisLeft(lineY).ticks(6).tickSize(-innerW).tickFormat(''))
-    .selectAll('line').attr('stroke', '#1e1e22').attr('stroke-dasharray', '3,3');
-  lineG.select('.grid-y').select('.domain').remove();
+  lG.append('g').attr('class','gy');
 
-  // linha builder
-  const lineGen = d3.line()
-    .x((d, i) => lineX(i))
-    .y(d => lineY(d))
-    .curve(d3.curveCatmullRom.alpha(0.5));
+  // eixo X — labels de jogo, fixos
+  const xAxis = d3.axisBottom(lX)
+    .ticks(Math.min(nKF, 12))
+    .tickFormat(i => `J${Math.round(i)+1}`);
+  lG.append('g').attr('class','ax')
+    .attr('transform', `translate(0,${lInnerH})`)
+    .call(xAxis)
+    .selectAll('text').attr('fill','#444').attr('font-size','.6rem');
+  lG.select('.ax').select('.domain').attr('stroke','#252528');
+  lG.select('.ax').selectAll('.tick line').attr('stroke','#252528');
 
-  // para cada participante: pontos até frame atual + ponto interpolado atual
-  const linesG = lineG.select('.lines');
-  const labelsG = lineG.select('.line-labels');
+  // eixo Y
+  lG.append('g').attr('class','ay');
 
-  parts.forEach((p, pi) => {
+  // área de linhas (clipped)
+  lG.append('g').attr('class','lines').attr('clip-path','url(#lclip)');
+
+  // labels à direita
+  lG.append('g').attr('class','lbls');
+
+  // tooltip overlay
+  lG.append('rect')
+    .attr('width', lInnerW).attr('height', lInnerH)
+    .attr('fill','transparent')
+    .on('mousemove', onLineHover)
+    .on('mouseleave', () => { document.getElementById('tooltip').style.display='none'; });
+}
+
+function renderLine(T_global) {
+  if (!lSvg || !DATA) return;
+  const nKF  = DATA.participantes.length > 0 ? DATA.keyframes.length : 1;
+  const parts = DATA.participantes;
+
+  // máximo Y de todos os keyframes
+  let maxPts = 10;
+  DATA.keyframes.forEach(kf => {
+    parts.forEach(p => { if ((kf.pts[p.id]??0) > maxPts) maxPts = kf.pts[p.id]; });
+  });
+  lY.domain([0, maxPts * 1.08]);
+
+  // atualiza eixo Y
+  const yAxis = d3.axisLeft(lY).ticks(6).tickFormat(d => d+'pts');
+  lG.select('.ay').call(yAxis)
+    .selectAll('text').attr('fill','#444').attr('font-size','.6rem');
+  lG.select('.ay').select('.domain').attr('stroke','#252528');
+  lG.select('.ay').selectAll('.tick line').attr('stroke','#252528');
+
+  // grade Y
+  lG.select('.gy').call(
+    d3.axisLeft(lY).ticks(6).tickSize(-lInnerW).tickFormat('')
+  ).selectAll('line').attr('stroke','#1a1a1e').attr('stroke-dasharray','3,3');
+  lG.select('.gy').select('.domain').remove();
+
+  const linesG = lG.select('.lines');
+  const lblsG  = lG.select('.lbls');
+
+  parts.forEach((p) => {
     const cor = colorMap[p.id];
-    // histórico real até frame-1
-    const hist = [];
-    for (let i = 0; i <= frame; i++) {
-      if (i < frame) {
-        hist.push(DATA.keyframes[i].pts[p.id] ?? 0);
+
+    // Construir array de pontos do eixo X = 0 até T_global
+    // X é contínuo: a cada unidade = 1 jogo
+    // Para T_global = 2.5: temos ponto em 0, 1, 2 (do histórico) e 2.5 (interpolado)
+    const kfiCur = Math.min(Math.floor(T_global), DATA.keyframes.length - 1);
+    const prog   = T_global - Math.floor(T_global);
+
+    // pontos históricos: x=0..kfiCur-1 com valores reais
+    const points = [];
+    // ponto de origem
+    points.push([0, 0]);
+    for (let i = 0; i <= kfiCur; i++) {
+      const xPos = i; // x contínuo = índice do jogo
+      let yVal;
+      if (i < kfiCur) {
+        yVal = DATA.keyframes[i].pts[p.id] ?? 0;
       } else {
         // ponto atual interpolado
-        hist.push(curVals[p.id] ?? 0);
+        yVal = curVals[p.id] ?? 0;
       }
+      // evitar duplicar ponto 0
+      if (i === 0) points[0] = [0, yVal === 0 && T_global < 0.01 ? 0 : yVal];
+      else points.push([xPos, yVal]);
     }
 
-    // line path
-    let path = linesG.select(`.line-${p.id}`);
+    // linha
+    const lineGen = d3.line()
+      .x(d => lX(d[0]))
+      .y(d => lY(d[1]))
+      .curve(d3.curveCatmullRom.alpha(0.5));
+
+    let path = linesG.select(`.lp${p.id}`);
     if (path.empty()) {
-      path = linesG.append('path')
-        .attr('class', `line-${p.id}`)
-        .attr('fill', 'none')
-        .attr('stroke-width', 2.5)
-        .attr('stroke-linecap', 'round')
-        .attr('stroke-linejoin', 'round');
+      path = linesG.append('path').attr('class',`lp${p.id}`)
+        .attr('fill','none').attr('stroke-width',2.2)
+        .attr('stroke-linecap','round').attr('stroke-linejoin','round');
     }
-    path.attr('stroke', cor).attr('d', lineGen(hist));
+    path.attr('stroke', cor).attr('d', lineGen(points));
 
-    // dot no ponto atual
-    const cx = lineX(hist.length - 1);
-    const cy = lineY(hist[hist.length - 1]);
-
-    let dot = linesG.select(`.dot-${p.id}`);
+    // dot no fim da linha
+    const lastPt = points[points.length - 1];
+    let dot = linesG.select(`.ld${p.id}`);
     if (dot.empty()) {
-      dot = linesG.append('circle').attr('class', `dot-${p.id}`).attr('r', 4);
+      dot = linesG.append('circle').attr('class',`ld${p.id}`).attr('r',3.5);
     }
-    dot.attr('cx', cx).attr('cy', cy).attr('fill', cor);
+    dot.attr('cx', lX(lastPt[0])).attr('cy', lY(lastPt[1])).attr('fill', cor);
 
-    // label flutuante
+    // label à direita
     const curPts = Math.round(curVals[p.id] ?? 0);
-    let lbl = labelsG.select(`.lbl-${p.id}`);
+    let lbl = lblsG.select(`.ll${p.id}`);
     if (lbl.empty()) {
-      lbl = labelsG.append('text')
-        .attr('class', `lbl-${p.id}`)
-        .attr('font-size', '0.62rem')
-        .attr('font-family', 'Segoe UI, Arial, sans-serif')
-        .attr('dominant-baseline', 'middle');
+      lbl = lblsG.append('text').attr('class',`ll${p.id}`)
+        .attr('font-size','.6rem').attr('font-family','Segoe UI,Arial,sans-serif')
+        .attr('dominant-baseline','middle');
     }
-    lbl.attr('x', lineX(hist.length - 1) + 7)
-       .attr('y', cy)
+    lbl.attr('x', lX(lastPt[0]) + 6)
+       .attr('y', lY(lastPt[1]))
        .attr('fill', cor)
        .text(`${p.nome.split(' ')[0]} ${curPts}`);
   });
+
+  // Anti-colisão básica dos labels (ordena por Y e empurra)
+  const lblNodes = [];
+  lblsG.selectAll('text').each(function() { lblNodes.push(this); });
+  const MIN_GAP = 11;
+  // ordena por y atual
+  lblNodes.sort((a,b) => +d3.select(a).attr('y') - +d3.select(b).attr('y'));
+  for (let i = 1; i < lblNodes.length; i++) {
+    const prev = +d3.select(lblNodes[i-1]).attr('y');
+    const cur  = +d3.select(lblNodes[i]).attr('y');
+    if (cur - prev < MIN_GAP) {
+      d3.select(lblNodes[i]).attr('y', prev + MIN_GAP);
+    }
+  }
 }
 
-function onLineMouseMove(event) {
+function onLineHover(event) {
   if (!DATA) return;
   const [mx] = d3.pointer(event);
-  const innerW = lineW - LINE_MARGIN.left - LINE_MARGIN.right;
-  const fi = Math.round(lineX.invert(mx));
-  const kf = DATA.keyframes[Math.min(fi, DATA.keyframes.length - 1)];
+  const fi = Math.round(lX.invert(mx));
+  const kf = DATA.keyframes[Math.min(fi, DATA.keyframes.length-1)];
   if (!kf) return;
-
-  // top 5 nesse frame
   const top = DATA.participantes
-    .map(p => ({ nome: p.nome, pts: kf.pts[p.id] ?? 0 }))
-    .sort((a, b) => b.pts - a.pts)
-    .slice(0, 5);
-
+    .map(p => ({nome:p.nome, pts:kf.pts[p.id]??0}))
+    .sort((a,b)=>b.pts-a.pts).slice(0,5);
   const tip = document.getElementById('tooltip');
   tip.innerHTML = `<strong style="color:#eee">${kf.label}</strong><br>` +
-    top.map((p, i) => `<span style="color:${PALETTE[i]}">${i+1}. ${p.nome.split(' ')[0]}: ${p.pts}pts</span>`).join('<br>');
+    top.map((p,i)=>`<span style="color:${PALETTE[i]}">${i+1}. ${p.nome.split(' ')[0]}: ${p.pts}pts</span>`).join('<br>');
   tip.style.display = 'block';
-  tip.style.left = (event.clientX + 12) + 'px';
-  tip.style.top  = (event.clientY - 10) + 'px';
+  tip.style.left = (event.clientX+12)+'px';
+  tip.style.top  = (event.clientY-10)+'px';
 }
 
-// ─── EXPORT ──────────────────────────────────────────────────────────────────
-let isExporting = false;
-let mediaRecorder = null;
-let recordedChunks = [];
+// ── EXPORT ──────────────────────────────────────────────────────────────────
+function setStatus(msg) { document.getElementById('export-status').textContent = msg; }
 
-function setExportStatus(msg) {
-  document.getElementById('export-status').textContent = msg;
-}
-
-async function runExportAnimation(onFrame, onDone) {
-  if (isExporting) return;
-  isExporting = true;
-  pause();
-
-  // voltar ao início
-  frame = 0;
-  progress = 0;
-  const zeros = {};
-  DATA.participantes.forEach(p => { zeros[p.id] = 0; });
-  curVals = { ...zeros };
-  fromVals = { ...zeros };
-  toVals = { ...DATA.keyframes[0].pts };
-  updateHeader();
-  render();
-
-  const FPS = 30;
-  const DURATION_PER_FRAME_S = 1.2; // segundos por jogo
-  const totalFrames = DATA.keyframes.length * (DURATION_PER_FRAME_S * FPS);
-  let f = 0;
-
-  function step() {
-    if (f >= totalFrames) {
-      isExporting = false;
-      onDone();
-      return;
-    }
-    const t = f / (DURATION_PER_FRAME_S * FPS);
-    const kfIdx = Math.min(Math.floor(t), DATA.keyframes.length - 1);
-    const kfProg = t - Math.floor(t);
-
-    frame = kfIdx;
-    const prev = kfIdx > 0 ? DATA.keyframes[kfIdx - 1].pts
-      : Object.fromEntries(DATA.participantes.map(p => [p.id, 0]));
-    fromVals = { ...prev };
-    toVals = { ...DATA.keyframes[kfIdx].pts };
-    curVals = interpolate(kfProg);
-    updateHeader();
-    render();
-
-    onFrame(f);
-    f++;
-    requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
+function exportFrames() {
+  // Exporta o SVG atual como PNG
+  const svg = tab === 'bar'
+    ? document.querySelector('#bar-container svg')
+    : document.querySelector('#line-container svg');
+  if (!svg) { setStatus('❌ Nenhum chart visível'); return; }
+  const xml = new XMLSerializer().serializeToString(svg);
+  const blob = new Blob([xml], {type:'image/svg+xml'});
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `chartrace-jogo${getKFIndex()+1}.svg`;
+  a.click();
+  setStatus('✅ SVG baixado! Abra no browser e salve como PNG.');
 }
 
 function exportWebM() {
   if (isExporting) return;
-  setExportStatus('⏳ Preparando gravação...');
-
-  // Precisamos gravar o elemento visível como canvas
-  // Usamos canvas-based approach: clona SVG → canvas → MediaRecorder
   const svg = tab === 'bar'
     ? document.querySelector('#bar-container svg')
     : document.querySelector('#line-container svg');
+  if (!svg) { setStatus('❌ Nenhum chart visível'); return; }
 
-  if (!svg) { setExportStatus('❌ Renderize o chart primeiro'); return; }
-
-  const canvas = document.createElement('canvas');
-  const bbox = svg.getBoundingClientRect();
-  canvas.width = bbox.width;
-  canvas.height = bbox.height + 60; // +header
-
-  const stream = canvas.captureStream(30);
-  recordedChunks = [];
-  mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
-  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-  mediaRecorder.onstop = () => {
-    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `chartrace-${window.CHARTRACE_BOLAO_ID}.webm`;
-    a.click();
-    setExportStatus('✅ WebM exportado!');
-  };
-  mediaRecorder.start();
-
-  const ctx = canvas.getContext('2d');
-
-  runExportAnimation(
-    () => {
-      // desenha SVG no canvas
-      const xml = new XMLSerializer().serializeToString(svg);
-      const img = new Image();
-      img.onload = () => { ctx.fillStyle = '#0d0d0f'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img, 0, 60); };
-      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
-      setExportStatus(`⏺ Gravando... ${Math.round((frame/DATA.keyframes.length)*100)}%`);
-    },
-    () => {
-      setTimeout(() => { mediaRecorder.stop(); }, 500);
-    }
-  );
-}
-
-function exportGIF() {
-  if (isExporting) return;
-  setExportStatus('⏳ Iniciando exportação GIF (pode demorar ~30s)...');
-
-  const svg = tab === 'bar'
-    ? document.querySelector('#bar-container svg')
-    : document.querySelector('#line-container svg');
-  if (!svg) { setExportStatus('❌ Renderize o chart primeiro'); return; }
-
-  const bbox = svg.getBoundingClientRect();
-  const W = Math.round(bbox.width);
-  const H = Math.round(bbox.height);
-
-  // Verifica se gif.js carregou
-  if (typeof GIF === 'undefined') {
-    setExportStatus('❌ gif.js não carregou. Use o export WebM.');
-    return;
-  }
-
-  const gif = new GIF({
-    workers: 2, quality: 8, width: W, height: H,
-    workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
-  });
-
+  // canvas do tamanho do SVG
+  const W = svg.clientWidth || 820;
+  const H = svg.clientHeight || 500;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  gif.on('finished', blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `chartrace-${window.CHARTRACE_BOLAO_ID}.gif`;
-    a.click();
-    setExportStatus('✅ GIF exportado! Cole no WhatsApp como arquivo.');
-  });
+  // tenta MediaRecorder
+  let stream, recorder, chunks = [];
+  try {
+    stream = canvas.captureStream(30);
+    recorder = new MediaRecorder(stream, {mimeType:'video/webm;codecs=vp8',videoBitsPerSecond:2500000});
+  } catch(e) { setStatus('❌ Seu browser não suporta gravação. Use Chrome.'); return; }
 
-  let fCount = 0;
-  runExportAnimation(
-    (f) => {
-      if (f % 3 !== 0) return; // captura 1 em cada 3 frames → 10fps no GIF
-      const xml = new XMLSerializer().serializeToString(svg);
-      const img = new Image();
-      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+  recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks,{type:'video/webm'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `chartrace-${window.CHARTRACE_BOLAO_ID}.webm`;
+    a.click();
+    setStatus('✅ WebM exportado! Envie como arquivo no WhatsApp.');
+    isExporting = false;
+  };
+
+  isExporting = true;
+  pause();
+  const savedT = T;
+  T = 0;
+  recorder.start();
+  setStatus('⏺ Gravando...');
+
+  const FPS = 30;
+  const DT = 1 / (T_PER_KF * FPS); // incremento de T por frame
+  const maxT = DATA.keyframes.length - 0.001;
+
+  function captureFrame() {
+    if (!isExporting) return;
+    T = Math.min(T + DT, maxT);
+    curVals = getValsAt(T);
+    updateHeader();
+    if (tab === 'bar') renderBar(curVals); else renderLine(T);
+
+    // desenha SVG no canvas
+    const xml = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = () => {
       ctx.fillStyle = '#0d0d0f';
-      ctx.fillRect(0, 0, W, H);
-      try { ctx.drawImage(img, 0, 0); } catch(e) {}
-      gif.addFrame(ctx, { copy: true, delay: 100 });
-      fCount++;
-      setExportStatus(`⏺ Capturando frames... ${Math.round((frame/DATA.keyframes.length)*100)}%`);
-    },
-    () => {
-      setExportStatus('⚙️ Renderizando GIF...');
-      gif.render();
+      ctx.fillRect(0,0,W,H);
+      ctx.drawImage(img,0,0,W,H);
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+
+    const pct = Math.round((T / maxT) * 100);
+    setStatus(`⏺ Gravando... ${pct}%`);
+
+    if (T >= maxT) {
+      setTimeout(() => { recorder.stop(); T = savedT; }, 800);
+    } else {
+      requestAnimationFrame(captureFrame);
     }
-  );
+  }
+  requestAnimationFrame(captureFrame);
 }
 
-// ─── RESIZE ──────────────────────────────────────────────────────────────────
+// ── RESIZE ──────────────────────────────────────────────────────────────────
 window.addEventListener('resize', () => {
   if (!DATA) return;
-  buildBarChart();
-  buildLineChart();
-  renderBar();
-  renderLine();
+  buildBarChart(); buildLineChart();
+  renderBar(curVals); renderLine(T);
 });
 </script>
 </body>
