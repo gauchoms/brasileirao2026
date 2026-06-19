@@ -4,6 +4,7 @@
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime, timedelta
 import pytz
 import logging
@@ -314,23 +315,23 @@ def iniciar_scheduler(app):
         replace_existing=True
     )
 
-    # Job C: de hora em hora, independente dos jogos
+    # Job C: todo hora no minuto :30 (Cron do Render roda no :00)
     _scheduler.add_job(
         func=atualizar_resultados_job,
-        trigger=IntervalTrigger(hours=1),
+        trigger=CronTrigger(minute=30, timezone=BRASILIA),
         args=[app],
         id='atualizar_hora',
-        name='Atualização horária',
+        name='Atualização horária (minuto :30)',
         replace_existing=True
     )
 
-    # Job D: de hora em hora, importa jogos novos para todos os bolões ativos
+    # Job D: todo hora no minuto :32 (logo após atualizar)
     _scheduler.add_job(
         func=sincronizar_jogos_job,
-        trigger=IntervalTrigger(hours=1),
+        trigger=CronTrigger(minute=32, timezone=BRASILIA),
         args=[app],
         id='sincronizar_jogos',
-        name='Sincronizar jogos novos',
+        name='Sincronizar jogos novos (minuto :32)',
         replace_existing=True
     )
 
@@ -345,6 +346,9 @@ def iniciar_scheduler(app):
     )
 
     _scheduler.start()
-    print("[SCHEDULER] Iniciado com 7 jobs ativos ✅")
-    print("[SCHEDULER] Iniciado com 3 jobs ativos ✅")
+    print("[SCHEDULER] Iniciado com 4 jobs ativos ✅")
+    print("[SCHEDULER]   • verificar_jogos: a cada 5min")
+    print("[SCHEDULER]   • atualizar_hora:  todo :30")
+    print("[SCHEDULER]   • sincronizar_jogos: todo :32")
+    print("[SCHEDULER]   • alertas_palpites: a cada 30min")
     return _scheduler

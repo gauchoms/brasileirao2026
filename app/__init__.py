@@ -201,6 +201,17 @@ def create_app():
     app.jinja_env.globals['traduzir_pais'] = traduzir_pais
     app.jinja_env.globals['flag_emoji'] = flag_emoji
 
+    # ── APScheduler (backup do Cron Job do Render) ──────────
+    # Cron Job roda no :00 de cada hora; scheduler interno roda no :30
+    # para não concorrerem. Só inicia fora de modo teste/migrate.
+    import os as _os
+    if not app.config.get('TESTING') and _os.environ.get('FLASK_ENV') != 'testing':
+        try:
+            from app.scheduler import iniciar_scheduler
+            iniciar_scheduler(app)
+        except Exception as e:
+            print(f"[SCHEDULER] Aviso: não foi possível iniciar: {e}")
+
     return app
 
 
