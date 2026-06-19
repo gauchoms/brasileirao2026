@@ -484,18 +484,30 @@
     <div id="content-todos-palpites" style="display: none;">
         <h2 style="margin-bottom: 1.5rem;" data-i18n="bd_todos_h2">📋 Todos os Palpites</h2>
         
-        <p style="color: var(--texto-fraco); margin-bottom: 2rem;">
-            Clique em um jogo para ver os palpites de todos os participantes
-        </p>
-        
+        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+            <p style="color: var(--texto-fraco); margin:0;">
+                Clique em um jogo para ver os palpites de todos os participantes
+            </p>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:0.5rem;">
+                <span style="font-size:0.85rem; color:var(--texto-fraco);">Ordenar:</span>
+                <select id="ordem-todos-palpites" onchange="ordenarJogosTodosPalpites()"
+                    style="padding:0.4rem 0.8rem; background:var(--cinza-medio); border:1px solid var(--cinza-medio);
+                           border-radius:6px; color:var(--texto); font-size:0.85rem; cursor:pointer;">
+                    <option value="desc">Mais recente primeiro</option>
+                    <option value="asc">Mais antigo primeiro</option>
+                </select>
+            </div>
+        </div>
+
         <!-- Lista de Jogos -->
-        <div style="display: grid; gap: 1rem;">
+        <div id="lista-todos-palpites" style="display: grid; gap: 1rem;">
             {% for jogo in jogos %}
             {% set jogo_encerrado = jogo.gols_casa is not none %}
             {% set jogo_iniciado = jogo.data and jogo.data < agora %}
             
             {% if jogo_iniciado or jogo_encerrado %}
             <div style="background: var(--cinza); padding: 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                 data-data="{{ jogo.data or '' }}"
                  onclick="toggleDetalhesJogo({{ jogo.id }})"
                  onmouseover="this.style.background='var(--cinza-medio)'"
                  onmouseout="this.style.background='var(--cinza)'">
@@ -1826,6 +1838,32 @@ function enviarLembreteOwner(userId, jogoId, bolaoId, btn) {
         setTimeout(() => { btn.disabled = false; btn.textContent = '📧'; }, 3000);
     });
 }
+
+function ordenarJogosTodosPalpites() {
+    const ordem = document.getElementById('ordem-todos-palpites').value;
+    const lista = document.getElementById('lista-todos-palpites');
+    if (!lista) return;
+    const cards = Array.from(lista.children);
+    cards.sort((a, b) => {
+        const da = a.dataset.data || '';
+        const db_ = b.dataset.data || '';
+        if (!da && !db_) return 0;
+        if (!da) return 1;
+        if (!db_) return -1;
+        return ordem === 'asc' ? da.localeCompare(db_) : db_.localeCompare(da);
+    });
+    cards.forEach(c => lista.appendChild(c));
+}
+
+// Ordena ao clicar na aba
+const _tabTodosBtn = document.getElementById('tab-todos-palpites');
+if (_tabTodosBtn) {
+    _tabTodosBtn.addEventListener('click', () => {
+        setTimeout(ordenarJogosTodosPalpites, 50);
+    });
+}
+// Ordena na carga (default: desc = mais recente primeiro)
+document.addEventListener('DOMContentLoaded', () => ordenarJogosTodosPalpites());
 </script>
 <style>
 @media (max-width: 768px) {
