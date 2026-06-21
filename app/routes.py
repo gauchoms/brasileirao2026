@@ -920,6 +920,22 @@ def admin_importar_competicao(league_id, ano):
 def registro():
     if request.method == 'POST':
         from app.models import Usuario
+
+        # reCAPTCHA v3 — bloqueia bots, nunca bloqueia por falha de rede
+        token = request.form.get('g-recaptcha-response', '')
+        if token:
+            try:
+                import requests as _req
+                resp = _req.post(
+                    'https://www.google.com/recaptcha/api/siteverify',
+                    data={'secret': '6Lfw4SktAAAAAIiTB2mic-jzOsd9wLPNChaGhf1K', 'response': token},
+                    timeout=3
+                ).json()
+                if resp.get('success') and resp.get('score', 1) < 0.4:
+                    next_url = request.args.get('next', '')
+                    return render_template('registro.html', erro='Verificação de segurança falhou. Tente novamente.', next_url=next_url)
+            except Exception:
+                pass  # Se API do Google falhar, permite o cadastro normalmente
         
         nome_completo = request.form.get('nome_completo')
         username = request.form.get('username')

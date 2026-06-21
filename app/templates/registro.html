@@ -1,3 +1,4 @@
+{# VERSÃO: 2026-06-21 v2 — reCAPTCHA v3 adicionado #}
 {% extends "base.html" %}
 
 {% block title %}Criar Conta{% endblock %}
@@ -79,7 +80,8 @@
             </label>
         </div>
 
-        <button type="submit" 
+        <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+        <button type="submit" id="btn-registro"
                 style="width: 100%; padding: 1rem; background: var(--verde); color: #000; border: none; 
                        border-radius: 6px; font-size: 1.1rem; font-weight: 600; cursor: pointer;" data-i18n="reg_btn">✅ Criar Conta</button>
 
@@ -111,4 +113,20 @@ input[type="checkbox"]:checked {
 }
 </style>
 
+{% endblock %}
+
+{% block scripts %}
+<script src="https://www.google.com/recaptcha/api.js?render=6Lfw4SktAAAAANIS1HjRpF0L_W2UwI8LqWuRR9Wa"></script>
+<script>
+document.getElementById('btn-registro').addEventListener('click', function(e) {
+    e.preventDefault();
+    var form = this.closest('form');
+    grecaptcha.ready(function() {
+        grecaptcha.execute('6Lfw4SktAAAAANIS1HjRpF0L_W2UwI8LqWuRR9Wa', {action: 'registro'}).then(function(token) {
+            document.getElementById('g-recaptcha-response').value = token;
+            form.submit();
+        });
+    });
+});
+</script>
 {% endblock %}
