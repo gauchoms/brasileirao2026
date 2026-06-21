@@ -490,7 +490,7 @@
         
         <!-- Lista de Jogos -->
         <div style="display: grid; gap: 1rem;">
-            {% for jogo in jogos %}
+            {% for jogo in jogos|reverse %}
             {% set jogo_encerrado = jogo.gols_casa is not none %}
             {% set jogo_iniciado = jogo.data and jogo.data < agora %}
             
@@ -505,13 +505,13 @@
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
                             <span style="font-weight: 600; font-size: 1.1rem;">
-                                {{ jogo.time_casa.nome }} 
+                                {{ traduzir_pais(jogo.time_casa.nome) if eh_selecao(jogo.time_casa.nome) else jogo.time_casa.nome }}
                                 {% if jogo_encerrado %}
                                     <span style="color: var(--verde);">{{ jogo.gols_casa }} x {{ jogo.gols_fora }}</span>
                                 {% else %}
                                     <span style="color: var(--amarelo);">vs</span>
                                 {% endif %}
-                                {{ jogo.time_fora.nome }}
+                                {{ traduzir_pais(jogo.time_fora.nome) if eh_selecao(jogo.time_fora.nome) else jogo.time_fora.nome }}
                             </span>
                         </div>
                         <div style="font-size: 0.85rem; color: var(--texto-fraco);">
