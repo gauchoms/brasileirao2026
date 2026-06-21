@@ -3612,3 +3612,7 @@ def votar_cenario(bolao_id):
 
     db.session.commit()
     return redirect(url_for('main.votacao_cenario', bolao_id=bolao_id))
+
+@bp.route('/ads.txt')
+def ads_txt():
+    return "google.com, pub-8239762738099420, DIRECT, f08c47fec0942fa0\n", 200, {'Content-Type': 'text/plain'}
