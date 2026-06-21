@@ -42,7 +42,7 @@ SELECOES = {
     "Venezuela","Vietnam","Wales","Yemen","Zambia","Zimbabwe",
     # Nomes alternativos comuns na API
     "Korea Republic","Korea DPR","USA","IR Iran","Côte d'Ivoire",
-    "Cape Verde","Trinidad & Tobago","Congo DR","Bosnia",
+    "Cape Verde","Trinidad & Tobago","Congo DR","Bosnia","Türkiye","Cape Verde Islands",
 }
 
 TRADUCOES = {
@@ -87,7 +87,7 @@ TRADUCOES = {
     "Syria": "Síria", "Thailand": "Tailândia", "Togo": "Togo",
     "Trinidad and Tobago": "Trinidad e Tobago",
     "Trinidad & Tobago": "Trinidad e Tobago",
-    "Tunisia": "Tunísia", "Turkey": "Turquia","Türkiye":"Turquia", "Uganda": "Uganda",
+    "Tunisia": "Tunísia", "Turkey": "Turquia", "Türkiye": "Turquia", "Uganda": "Uganda",
     "Ukraine": "Ucrânia", "United Arab Emirates": "Emirados Árabes",
     "United States": "Estados Unidos", "USA": "Estados Unidos",
     "Uruguay": "Uruguai", "Uzbekistan":"Usbequistão","Venezuela": "Venezuela", "Vietnam": "Vietnã",
@@ -114,7 +114,7 @@ FLAG_EMOJIS = {
     "Honduras":"🇭🇳","Greece":"🇬🇷","Austria":"🇦🇹","Romania":"🇷🇴",
     "Hungary":"🇭🇺","Slovakia":"🇸🇰","Slovenia":"🇸🇮","Israel":"🇮🇱",
     "Ivory Coast":"🇨🇮","Mali":"🇲🇱","Togo":"🇹🇬","Rwanda":"🇷🇼",
-    "Kenya":"🇰🇪","Angola":"🇦🇴","Cape Verde":"🇨🇻","Cabo Verde":"🇨🇻",
+    "Kenya":"🇰🇪","Angola":"🇦🇴","Cape Verde":"🇨🇻","Cabo Verde":"🇨🇻","Cape Verde Islands":"🇨🇻","Türkiye":"🇹🇷",
     "New Zealand":"🇳🇿","Bosnia and Herzegovina":"🇧🇦","Bosnia":"🇧🇦",
     "North Macedonia":"🇲🇰","Albania":"🇦🇱","Kosovo":"🇽🇰",
     "Montenegro":"🇲🇪","Uzbekistan":"🇺🇿","Jordan":"🇯🇴",
