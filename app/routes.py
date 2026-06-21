@@ -1,4 +1,5 @@
 
+# VERSÃO: 2026-06-21 v5 — calcular_pontos_palpite C1/C2, criterios desempate, traduzir_pais no modal, ordem data decrescente
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from app import db
 from datetime import datetime

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{# VERSÃO: 2026-06-21 v5 — filtro padrão abertos, traducao todos palpites, ordenação reversa, filtrarJogos no onload #}
 
 {% block title %}{{ bolao.nome }}{% endblock %}
 
@@ -1393,6 +1394,9 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Aplica filtro padrão "abertos" ao carregar a página
+    filtrarJogos();
 });
 
 function filtrarJogos() {
