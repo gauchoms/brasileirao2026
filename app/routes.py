@@ -8,6 +8,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from functools import wraps
 from app.utils import converter_utc_brasilia
+from app import traduzir_pais
 
 
 def admin_required(f):
@@ -1363,9 +1364,10 @@ def bolao_detalhes(bolao_id):
                 timestamp_min = p.timestamp_preciso
 
             detalhes.append({
-                'time_casa': j.time_casa.nome,
-                'time_fora': j.time_fora.nome,
+                'time_casa': traduzir_pais(j.time_casa.nome),
+                'time_fora': traduzir_pais(j.time_fora.nome),
                 'data': converter_utc_brasilia(j.data).strftime('%d/%m/%Y às %H:%M') if j.data else '',
+                'data_iso': j.data if j.data else '',
                 'gols_casa_real': j.gols_casa,
                 'gols_fora_real': j.gols_fora,
                 'gols_casa_palpite': p.gols_casa_palpite,
@@ -1376,6 +1378,9 @@ def bolao_detalhes(bolao_id):
                 'gols_vencedor_acerto': res_real != 'empate' and (not regra.requer_resultado_correto or eh_acerto_resultado) and (max(j.gols_casa, j.gols_fora) == max(p.gols_casa_palpite, p.gols_fora_palpite) if regra.requer_resultado_correto else j.gols_casa == p.gols_casa_palpite),
                 'gols_perdedor_acerto': res_real != 'empate' and (not regra.requer_resultado_correto or eh_acerto_resultado) and (min(j.gols_casa, j.gols_fora) == min(p.gols_casa_palpite, p.gols_fora_palpite) if regra.requer_resultado_correto else j.gols_fora == p.gols_fora_palpite),
             })
+
+        # Ordena detalhes por data decrescente (jogos mais recentes primeiro)
+        detalhes.sort(key=lambda x: x.get('data_iso', ''), reverse=True)
 
         ranking.append({
             'participante': part,

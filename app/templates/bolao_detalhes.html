@@ -235,7 +235,7 @@
                     style="padding: 0.6rem 1rem; background: var(--cinza-medio); border: 1px solid var(--cinza-medio);
                            border-radius: 6px; color: var(--texto); font-size: 0.9rem;">
                     <option value="todos">Todos os jogos</option>
-                    <option value="abertos">Pode palpitar</option>
+                    <option value="abertos" selected>Pode palpitar</option>
                     <option value="encerrados">Já encerrados</option>
                 </select>
 
@@ -547,11 +547,11 @@
                     {% endfor %}
                     
                     {% if palpites_jogo|length > 0 %}
-                        <!-- Ordena por pontos (se jogo encerrado) -->
+                        <!-- Ordena por pontos (se jogo encerrado), senão alfabético -->
                         {% if jogo_encerrado %}
                             {% set palpites_ordenados = palpites_jogo|sort(attribute='pontos_obtidos', reverse=True) %}
                         {% else %}
-                            {% set palpites_ordenados = palpites_jogo %}
+                            {% set palpites_ordenados = palpites_jogo|sort(attribute='usuario.nome_completo') %}
                         {% endif %}
                         
                         <div style="display: grid; gap: 0.5rem;">
