@@ -90,7 +90,7 @@ TRADUCOES = {
     "Tunisia": "Tunísia", "Turkey": "Turquia", "Türkiye": "Turquia", "Uganda": "Uganda",
     "Ukraine": "Ucrânia", "United Arab Emirates": "Emirados Árabes",
     "United States": "Estados Unidos", "USA": "Estados Unidos",
-    "Uruguay": "Uruguai", "Uzbekistan":"Usbequistão","Venezuela": "Venezuela", "Vietnam": "Vietnã",
+    "Uruguay": "Uruguai", "Uzbekistan":"Uzbequistão","Venezuela": "Venezuela", "Vietnam": "Vietnã",
     "Wales": "País de Gales", "Yemen": "Iêmen", "Zambia": "Zâmbia",
     "Zimbabwe": "Zimbábue",
 }
