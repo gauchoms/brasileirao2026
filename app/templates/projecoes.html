@@ -81,6 +81,19 @@
     {% endif %}
 </form>
 
+<!-- AdSense: banner entre filtros e lista de jogos -->
+{% if time_selecionado %}
+<div style="text-align:center; margin-bottom: 1.5rem;">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-8239762738099420"
+         data-ad-slot="SLOT_PROJECOES_MEIO"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endif %}
+
 <!-- Lista de jogos -->
 {% if time_selecionado and projecao_selecionada %}
 <h2>{{ time_selecionado.nome }} — {{ projecao_selecionada|capitalize }}</h2>

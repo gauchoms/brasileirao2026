@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="google-adsense-account" content="ca-pub-8239762738099420">
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8239762738099420"
+         crossorigin="anonymous"></script>
     <!-- Google Analytics GA4 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-0WXF8BPQDJ"></script>
     <script>
@@ -391,12 +394,41 @@
         </div>
     </nav>
 
+    <!-- AdSense: banner topo -->
+    <div style="text-align:center; background: var(--fundo-alt); border-bottom: 1px solid var(--cinza-medio); padding: 4px 0;">
+        {% if current_user.is_authenticated %}
+        <ins class="adsbygoogle"
+             style="display:inline-block; width:728px; height:90px; max-width:100%;"
+             data-ad-client="ca-pub-8239762738099420"
+             data-ad-slot="SLOT_BANNER_TOPO_LOGADO"></ins>
+        {% else %}
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-8239762738099420"
+             data-ad-slot="SLOT_BANNER_TOPO_PUBLICO"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        {% endif %}
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
     <!-- CONTEÚDO -->
     <div style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
         {% block content %}{% endblock %}
     </div>
 
     <!-- FOOTER -->
+    <!-- AdSense: banner rodapé -->
+    <div style="text-align:center; background: var(--fundo-alt); border-top: 1px solid var(--cinza-medio); padding: 8px 0;">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-8239762738099420"
+             data-ad-slot="SLOT_BANNER_RODAPE"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
     <footer>
         <p style="color: var(--texto-fraco); margin-bottom: 0.5rem;" data-i18n="footer_copy">© 2026 Brasileirão - Sistema de Bolões e Projeções</p>
         <div style="display: flex; gap: 1.5rem; justify-content: center; margin-top: 1rem;">
