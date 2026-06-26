@@ -4,7 +4,6 @@
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime, timedelta
 import pytz
 import logging
@@ -42,8 +41,10 @@ def atualizar_resultados_job(app):
 
                     for fixture in jogos:
                         api_id = fixture['fixture']['id']
-                        gols_casa = fixture['goals']['home']
-                        gols_fora = fixture['goals']['away']
+                        # Usa placar do tempo normal (90min) — decisão do bolão
+                        _sc = fixture.get('score', {}).get('fulltime', {})
+                        gols_casa = _sc.get('home') if _sc.get('home') is not None else fixture['goals']['home']
+                        gols_fora = _sc.get('away') if _sc.get('away') is not None else fixture['goals']['away']
 
                         jogo = Jogo.query.filter_by(api_id=api_id).first()
 
@@ -315,23 +316,23 @@ def iniciar_scheduler(app):
         replace_existing=True
     )
 
-    # Job C: todo hora no minuto :30 (Cron do Render roda no :00)
+    # Job C: de hora em hora, independente dos jogos
     _scheduler.add_job(
         func=atualizar_resultados_job,
-        trigger=CronTrigger(minute=30, timezone=BRASILIA),
+        trigger=IntervalTrigger(hours=1),
         args=[app],
         id='atualizar_hora',
-        name='Atualização horária (minuto :30)',
+        name='Atualização horária',
         replace_existing=True
     )
 
-    # Job D: todo hora no minuto :32 (logo após atualizar)
+    # Job D: de hora em hora, importa jogos novos para todos os bolões ativos
     _scheduler.add_job(
         func=sincronizar_jogos_job,
-        trigger=CronTrigger(minute=32, timezone=BRASILIA),
+        trigger=IntervalTrigger(hours=1),
         args=[app],
         id='sincronizar_jogos',
-        name='Sincronizar jogos novos (minuto :32)',
+        name='Sincronizar jogos novos',
         replace_existing=True
     )
 
@@ -346,9 +347,6 @@ def iniciar_scheduler(app):
     )
 
     _scheduler.start()
-    print("[SCHEDULER] Iniciado com 4 jobs ativos ✅")
-    print("[SCHEDULER]   • verificar_jogos: a cada 5min")
-    print("[SCHEDULER]   • atualizar_hora:  todo :30")
-    print("[SCHEDULER]   • sincronizar_jogos: todo :32")
-    print("[SCHEDULER]   • alertas_palpites: a cada 30min")
+    print("[SCHEDULER] Iniciado com 7 jobs ativos ✅")
+    print("[SCHEDULER] Iniciado com 3 jobs ativos ✅")
     return _scheduler

@@ -57,22 +57,38 @@ def get_jogos_brasileirao():
     return response.json()
 
 def processar_jogos(data):
-    """Processa fixtures da API Football, incluindo logos e grupo."""
+    """Processa fixtures da API Football, incluindo logos e grupo.
+    
+    IMPORTANTE: usa score.fulltime para gols — ignora prorrogação e pênaltis.
+    Decisão do bolão: pontua apenas o resultado dos 90 minutos.
+    Para jogos sem prorrogação (fase de grupos), fulltime == goals.
+    """
     jogos = []
     for fixture in data.get('response', []):
+        # Usa placar do tempo normal (90min), não o placar final com prorrogação
+        score = fixture.get('score', {})
+        fulltime = score.get('fulltime', {})
+        gols_casa = fulltime.get('home')
+        gols_fora = fulltime.get('away')
+        # Fallback para goals se fulltime não disponível (jogos em andamento, etc.)
+        if gols_casa is None:
+            gols_casa = fixture['goals']['home']
+        if gols_fora is None:
+            gols_fora = fixture['goals']['away']
+
         jogo = {
             'api_id':       fixture['fixture']['id'],
             'rodada':       fixture['league']['round'],
-            'grupo':        fixture['league'].get('group') or '',   # ← NOVO: "Group A", "Group B", etc.
+            'grupo':        fixture['league'].get('group') or '',
             'time_casa':    fixture['teams']['home']['name'],
             'time_fora':    fixture['teams']['away']['name'],
             'time_casa_id': fixture['teams']['home']['id'],
             'time_fora_id': fixture['teams']['away']['id'],
-            'logo_casa':    fixture['teams']['home'].get('logo') or '',  # ← NOVO
-            'logo_fora':    fixture['teams']['away'].get('logo') or '',  # ← NOVO
+            'logo_casa':    fixture['teams']['home'].get('logo') or '',
+            'logo_fora':    fixture['teams']['away'].get('logo') or '',
             'data':         fixture['fixture']['date'],
-            'gols_casa':    fixture['goals']['home'],
-            'gols_fora':    fixture['goals']['away'],
+            'gols_casa':    gols_casa,
+            'gols_fora':    gols_fora,
         }
         jogos.append(jogo)
     return jogos

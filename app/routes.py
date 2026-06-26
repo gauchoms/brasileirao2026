@@ -345,8 +345,10 @@ def atualizar_resultados():
             
             for fixture in jogos:
                 api_id = fixture['fixture']['id']
-                gols_casa = fixture['goals']['home']
-                gols_fora = fixture['goals']['away']
+                # Usa placar do tempo normal (90min) — decisão do bolão
+                _score = fixture.get('score', {}).get('fulltime', {})
+                gols_casa = _score.get('home') if _score.get('home') is not None else fixture['goals']['home']
+                gols_fora = _score.get('away') if _score.get('away') is not None else fixture['goals']['away']
 
                 jogo = Jogo.query.filter_by(api_id=api_id).first()
                 
