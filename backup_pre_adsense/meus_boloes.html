@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Meus Bolões{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 2rem auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 data-i18n="boloes_titulo">Meus Bolões</h1>
+        <div style="display: flex; gap: 1rem;">
+            <a href="/entrar_bolao" style="background: var(--cinza-medio); color: var(--texto); padding: 0.8rem 1.5rem;
+                border-radius: 6px; text-decoration: none; font-weight: 600;" data-i18n="boloes_entrar_codigo">🔑 Entrar com Código</a>
+            <a href="/criar_bolao" style="background: var(--verde); color: #000; padding: 0.8rem 1.5rem;
+                border-radius: 6px; text-decoration: none; font-weight: 600;" data-i18n="boloes_criar">➕ Criar Novo Bolão</a>
+        </div>
+    </div>
+    
+
+   <div style="display: grid; gap: 1.5rem;">
+        {% if boloes_dono|length > 0 %}
+        <div>
+            <h2 style="color: var(--amarelo); margin-bottom: 1rem;" data-i18n="boloes_criados">📋 Bolões que você criou</h2>
+            {% for bolao in boloes_dono %}
+            <div class="bolao-card" style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 3px solid var(--amarelo);">
+                <div class="bolao-info" style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin-bottom: 0.5rem;">{{ bolao.nome }}</h3>
+                        <div class="bolao-stats" style="color: var(--texto-fraco); font-size: 0.9rem; display: flex; gap: 1rem;">
+                            <div>{{ bolao.competicao.nome if bolao.competicao else 'Múltiplas competições' }}</div>
+                            <div>{{ bolao.participantes.count() }} participantes</div>
+                        </div>
+                    </div>
+                    <a href="/bolao/{{ bolao.id }}" class="btn-criar" style="background: var(--verde); color: #000; padding: 0.5rem 1rem;
+                        border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; white-space: nowrap;" data-i18n="boloes_gerenciar">Gerenciar</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- AdSense: banner entre seções de bolões -->
+        <div style="text-align:center; margin: 1rem 0;">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-8239762738099420"
+                 data-ad-slot="SLOT_MEUS_BOLOES_MEIO"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+
+        {% if boloes_participante|length > 0 %}
+        <div>
+            <h2 style="color: var(--verde); margin-bottom: 1rem;" data-i18n="boloes_participa">🎯 Bolões que você participa</h2>
+            {% for participacao in boloes_participante %}
+            <div class="bolao-card" style="background: var(--cinza); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 3px solid var(--verde);">
+                <div class="bolao-info" style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin-bottom: 0.5rem;">{{ participacao.bolao.nome }}</h3>
+                        <div class="bolao-stats" style="color: var(--texto-fraco); font-size: 0.9rem; display: flex; gap: 1rem;">
+                            <div>{{ participacao.bolao.competicao.nome if participacao.bolao.competicao else 'Múltiplas competições' }}</div>
+                            <div>Criado por {{ participacao.bolao.dono.username }}</div>
+                        </div>
+                    </div>
+                    <a href="/bolao/{{ participacao.bolao.id }}" class="btn-criar" style="background: var(--verde); color: #000; padding: 0.5rem 1rem;
+                        border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; white-space: nowrap;" data-i18n="boloes_ver_ranking">Ver Ranking</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if boloes_dono|length == 0 and boloes_participante|length == 0 %}
+        <div style="text-align: center; padding: 4rem; color: var(--texto-fraco);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚽</div>
+            <p data-i18n="boloes_vazio">Você ainda não participa de nenhum bolão.</p>
+            <p style="margin-top: 0.5rem;" data-i18n="boloes_vazio2">Crie um novo ou peça o código de convite para entrar!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Ajusta cards de bolão */
+    .bolao-card {
+        padding: 1rem !important;
+    }
+    
+    .bolao-card h3 {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Empilha informações em mobile */
+    .bolao-info {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+    
+    .bolao-stats {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+    
+    .bolao-stats > div {
+        min-width: calc(50% - 0.25rem) !important;
+    }
+    
+    /* Botão de criar bolão */
+    .btn-criar {
+        padding: 0.8rem 1rem !important;
+        font-size: 0.9rem !important;
+    }
+}
+</style>
+
+{% endblock %}

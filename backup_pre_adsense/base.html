@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="google-adsense-account" content="ca-pub-8239762738099420">
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8239762738099420"
+         crossorigin="anonymous"></script>
+    <!-- Google Analytics GA4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0WXF8BPQDJ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-0WXF8BPQDJ');
+    </script>
+    <title>{% block title %}Bolões e Projeções {% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ========================================
+           TEMA CLARO - Fundo Branco
+        ======================================== */
+        :root {
+            /* Cores de destaque (mantidas) */
+            --verde: #00a651;
+            --amarelo: #ffc107;
+            --azul: #003087;
+            --vermelho: #dc3545;
+            
+            /* TEMA CLARO ✅ */
+            --fundo: #ffffff;           /* Branco */
+            --fundo-alt: #f8f9fa;       /* Cinza claríssimo */
+            --cinza: #e9ecef;           /* Cinza claro para cards */
+            --cinza-medio: #dee2e6;     /* Bordas */
+            --cinza-escuro: #495057;    /* Texto secundário */
+            
+            --texto: #212529;           /* Texto principal ESCURO */
+            --texto-fraco: #6c757d;     /* Texto secundário */
+            --texto-link: #0056b3;      /* Links azuis */
+            
+            /* Sombras */
+            --sombra: rgba(0, 0, 0, 0.1);
+            --sombra-hover: rgba(0, 0, 0, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--fundo);
+            color: var(--texto);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ========================================
+           NAVEGAÇÃO
+        ======================================== */
+        nav {
+            background: var(--fundo);
+            border-bottom: 3px solid var(--verde);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            height: 60px;
+            box-shadow: 0 2px 4px var(--sombra);
+        }
+
+        nav .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--verde) 0%, var(--azul) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        nav a {
+            color: var(--texto-fraco);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            color: var(--verde);
+            background: var(--cinza);
+        }
+
+        nav a.active {
+            color: var(--verde);
+            font-weight: 600;
+            background: var(--cinza);
+        }
+
+        /* ========================================
+           BOTÕES
+        ======================================== */
+        .btn-primary {
+            background: var(--verde);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px var(--sombra);
+        }
+
+        .btn-primary:hover {
+            background: #008f47;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--sombra-hover);
+        }
+
+        .btn-secondary {
+            background: var(--cinza);
+            color: var(--texto);
+            border: 2px solid var(--cinza-medio);
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--cinza-medio);
+            border-color: var(--cinza-escuro);
+        }
+
+        .btn-danger {
+            background: var(--vermelho);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        /* ========================================
+           CARDS
+        ======================================== */
+        .card {
+            background: var(--fundo);
+            border: 1px solid var(--cinza-medio);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px var(--sombra);
+            transition: all 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px var(--sombra-hover);
+        }
+
+        /* ========================================
+           INPUTS E FORMULÁRIOS
+        ======================================== */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"],
+        input[type="date"],
+        input[type="time"],
+        select,
+        textarea {
+            background: var(--fundo);
+            border: 2px solid var(--cinza-medio);
+            color: var(--texto);
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--verde);
+            box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.1);
+        }
+
+        input::placeholder {
+            color: var(--texto-fraco);
+        }
+
+        label {
+            color: var(--texto-fraco);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ========================================
+           TABELAS
+        ======================================== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--fundo);
+        }
+
+        th {
+            background: var(--cinza);
+            color: var(--texto-fraco);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 2px solid var(--verde);
+        }
+
+        td {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--cinza-medio);
+            color: var(--texto);
+        }
+
+        tr:hover {
+            background: var(--fundo-alt);
+        }
+
+        /* ========================================
+           BADGES E TAGS
+        ======================================== */
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        /* ========================================
+           MENU MOBILE
+        ======================================== */
+        .menu-toggle {
+            display: none;
+            background: var(--verde);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle { display: block; }
+            
+            nav {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 1rem;
+            }
+
+            nav a {
+                width: 100%;
+                text-align: center;
+            }
+
+            .nav-links {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+        }
+
+        /* ========================================
+           FOOTER
+        ======================================== */
+        footer {
+            background: var(--cinza);
+            padding: 2rem;
+            margin-top: 4rem;
+            text-align: center;
+            border-top: 3px solid var(--verde);
+        }
+
+        footer a {
+            color: var(--texto-link);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ========================================
+           UTILITÁRIOS
+        ======================================== */
+        .text-center { text-align: center; }
+        .text-muted { color: var(--texto-fraco); }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        
+        .fw-bold { font-weight: 600; }
+        .fw-normal { font-weight: 400; }
+        
+        .d-flex { display: flex; }
+        .gap-1 { gap: 0.5rem; }
+        .gap-2 { gap: 1rem; }
+        .gap-3 { gap: 1.5rem; }
+    </style>
+</head>
+<body>
+    <!-- NAVEGAÇÃO -->
+    <nav>
+        <a href="/" class="logo">Bolões e Projeções</a>
+        
+        <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+        
+        <div class="nav-links" id="navLinks">
+            {% if current_user.is_authenticated %}
+                <a href="/" data-i18n="nav_inicio">Início</a>
+                <a href="/meus_boloes" data-i18n="nav_meus_boloes">Meus Bolões</a>
+                <a href="/criar_bolao" data-i18n="nav_criar_bolao">Criar Bolão</a>
+                <a href="/entrar_bolao" data-i18n="nav_entrar_bolao">Entrar em Bolão</a>
+                <a href="/projecoes" data-i18n="nav_projecoes">Projeções</a>
+                <a href="/dashboard" data-i18n="nav_dashboard">Dashboard</a>
+                
+                {% if current_user.is_admin %}
+                    <a href="/admin/competicoes" data-i18n="nav_competicoes">Competições</a>
+                    <a href="/admin/gerenciar" style="color: var(--vermelho);" data-i18n="nav_admin">Admin</a>
+                {% endif %}
+                
+                <a href="/perfil" style="margin-left: auto;">
+                    👤 {{ current_user.username }}
+                </a>
+            {% else %}
+                <a href="/login" style="margin-left: auto;" data-i18n="nav_entrar">Entrar</a>
+                <a href="/registro" class="btn-primary" style="color: white;" data-i18n="nav_criar_conta">Criar Conta</a>
+            {% endif %}
+
+            <!-- SELETOR DE IDIOMA -->
+            <div style="display:flex; align-items:center; gap:0.3rem; margin-left:0.5rem;">
+                <button onclick="setLang('pt')" id="lang-pt" title="Português"
+                    style="background:none; border:none; cursor:pointer; font-size:1.2rem; opacity:0.5; padding:0.2rem;">🇧🇷</button>
+                <button onclick="setLang('en')" id="lang-en" title="English"
+                    style="background:none; border:none; cursor:pointer; font-size:1.2rem; opacity:0.5; padding:0.2rem;">🇺🇸</button>
+                <button onclick="setLang('hr')" id="lang-hr" title="Hrvatski"
+                    style="background:none; border:none; cursor:pointer; font-size:1.2rem; opacity:0.5; padding:0.2rem;">🇭🇷</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- AdSense: banner topo -->
+    <div style="text-align:center; background: var(--fundo-alt); border-bottom: 1px solid var(--cinza-medio); padding: 4px 0;">
+        {% if current_user.is_authenticated %}
+        <ins class="adsbygoogle"
+             style="display:inline-block; width:728px; height:90px; max-width:100%;"
+             data-ad-client="ca-pub-8239762738099420"
+             data-ad-slot="SLOT_BANNER_TOPO_LOGADO"></ins>
+        {% else %}
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-8239762738099420"
+             data-ad-slot="SLOT_BANNER_TOPO_PUBLICO"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        {% endif %}
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <!-- CONTEÚDO -->
+    <div style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- FOOTER -->
+    <!-- AdSense: banner rodapé -->
+    <div style="text-align:center; background: var(--fundo-alt); border-top: 1px solid var(--cinza-medio); padding: 8px 0;">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-8239762738099420"
+             data-ad-slot="SLOT_BANNER_RODAPE"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <footer>
+        <p style="color: var(--texto-fraco); margin-bottom: 0.5rem;" data-i18n="footer_copy">© 2026 Brasileirão - Sistema de Bolões e Projeções</p>
+        <div style="display: flex; gap: 1.5rem; justify-content: center; margin-top: 1rem;">
+            <a href="/termos" data-i18n="footer_termos">Termos de Uso</a>
+            <a href="/privacidade" data-i18n="footer_privacidade">Política de Privacidade</a>
+            <a href="/contato" data-i18n="footer_contato">Contato</a>
+        </div>
+    </footer>
+
+    <script>
+        // ========================================
+        // SISTEMA DE TRADUÇÃO (i18n)
+        // ========================================
+        const TRANSLATIONS = {
+            pt: {
+                // NAV
+                nav_inicio: "Início", nav_meus_boloes: "Meus Bolões", nav_criar_bolao: "Criar Bolão",
+                nav_entrar_bolao: "Entrar em Bolão", nav_projecoes: "Projeções", nav_dashboard: "Dashboard",
+                nav_competicoes: "Competições", nav_admin: "Admin", nav_entrar: "Entrar", nav_criar_conta: "Criar Conta",
+
+                // INDEX CARDS
+                index_h1: "⚽ Bolões e Projeções",
+                index_sub: "Crie bolões, desafie seus amigos e mostre quem entende mais de futebol!",
+                index_card_boloes: "Meus Bolões", index_card_boloes_sub: "Gerencie seus bolões, faça palpites e veja o ranking",
+                index_card_entrar: "Entrar com Código", index_card_entrar_sub: "Tem um código? Entre em um bolão existente",
+                index_card_proj: "Projeções", index_card_proj_sub: "Projete cenários para seu time favorito",
+                index_card_admin: "Administração", index_card_admin_sub: "Gerenciar usuários, bolões e competições",
+                index_p1_sub: "Escolha a competição e convide seus amigos",
+                index_p2_sub: "Preveja os placares antes dos jogos acontecerem",
+                index_p3_sub: "Veja quem está ganhando em tempo real",
+                // EXTRAS
+                reg_termos: "Termos de Uso", reg_privacidade: "Política de Privacidade",
+                perfil_label_nome: "NOME COMPLETO", perfil_label_email: "E-MAIL", perfil_label_buscar: "BUSCAR TIME",
+                boloes_vazio2: "Crie um novo ou peça o código de convite para entrar!",
+                bd_ranking_h2: "🏆 Ranking", bd_participante: "PARTICIPANTE", bd_pontos: "PONTOS",
+                bd_nenhum_part: "Nenhum participante ainda.", bd_meus_palpites_h2: "Meus Palpites",
+                bd_todos_h2: "📋 Todos os Palpites", bd_encerrado: "Encerrado", bd_andamento: "Em andamento",
+                bd_regras_h2: "📋 Regras de Pontuação", bd_compartilhar: "📹 Compartilhar nas Redes",
+                bd_sistema_pts: "Sistema de Pontos:", bd_exemplos: "💡 Exemplos (jogo termina 3x1):",
+                bd_placar_exato: "(placar exato - todos os acertos)", bd_resultado_perd: "(resultado + gols do perdedor)",
+                bd_resultado_venc: "(resultado + gols do vencedor)", bd_apenas_resultado: "(apenas resultado)",
+                bd_errou: "(errou o resultado)", bd_zero_pts: "0 pontos",
+                footer_copy: "© 2026 Brasileirão - Sistema de Bolões e Projeções", footer_termos: "Termos de Uso", footer_privacidade: "Política de Privacidade", footer_contato: "Contato", termos_h1: "Termos de Uso", priv_h1: "Política de Privacidade (LGPD)", ultima_atualizacao: "Última atualização:",
+                
+                // CRIAR BOLÃO
+                cb_titulo: "Criar Novo Bolão", cb_nome: "NOME DO BOLÃO", cb_tipo: "TIPO DE BOLÃO",
+                cb_camp_completo: "Campeonato Completo", cb_time_camp: "Time em um Campeonato",
+                cb_time_ano: "Time em Todas as Competições do Ano",
+                cb_competicao: "COMPETIÇÃO", cb_sel_comp: "Selecione uma competição",
+                cb_time: "TIME", cb_sel_time: "Selecione um time",
+                cb_comp_primeiro: "Escolha a competição primeiro",
+                cb_modo_pts: "Modo de Pontuação:", cb_pts_exato: "Pontos por acerto exato:",
+                cb_acertar_res: "✅ Acertar Resultado:", cb_gols_venc: "🎯 Acertar Gols Vencedor:",
+                cb_gols_perd: "❌ Acertar Gols Perdedor:", cb_diferenca: "➕➖ Acertar Diferença:",
+                cb_bonus: "🔥 Bônus Elástico (Jogos com Muitos Gols)",
+                cb_limite_gols: "Limite de gols totais:", cb_pts_gol: "Pontos por gol adicional:",
+                cb_acesso: "TIPO DE ACESSO",
+                cb_publico: "Público (qualquer um pode entrar)",
+                cb_publico2: "Público (qualquer um pode entrar com o código)",
+                cb_privado: "Privado (apenas com código)",
+                cb_privado2: "Privado (você precisa aprovar cada participante)",
+                cb_erro_times: "Erro ao carregar times",
+                cb_criar_btn: "✅ Criar Bolão", bd_participantes_h2: "Participantes",
+                proj_label_comp: "COMPETIÇÃO", dash_label_comp: "COMPETIÇÃO",
+                dash_time: "TIME", dash_voltar: "← Voltar", dash_real: "Real:", dash_proj: "Proj:", dash_evolucao: "Evolução",
+                ver_invalido_p: "Este hash não corresponde a nenhum palpite registrado.",                // LOGIN
+                login_titulo: "Login", login_usuario: "USUÁRIO", login_senha: "SENHA", login_btn: "Entrar",
+                login_sem_conta: "Não tem conta?", login_criar: "Criar conta", login_esqueci: "Esqueci minha senha",
+                // REGISTRO
+                reg_titulo: "Criar Conta", reg_nome: "NOME COMPLETO", reg_usuario: "USUÁRIO",
+                reg_email: "E-MAIL", reg_senha: "SENHA", reg_btn: "✅ Criar Conta",
+                reg_ja_tem: "Já tem uma conta?", reg_fazer_login: "Fazer Login",
+                // PERFIL
+                perfil_titulo: "Meu Perfil", perfil_info: "Informações Básicas", perfil_nome: "NOME COMPLETO",
+                perfil_email: "E-MAIL", perfil_avatar: "Avatar", perfil_avatar_sugerido: "Escolher avatar sugerido",
+                perfil_avatar_upload: "Enviar minha foto", perfil_time: "Time do Coração",
+                perfil_buscar_time: "BUSCAR TIME", perfil_salvar: "Salvar Perfil", perfil_sair: "🚪 Sair",
+                perfil_nenhum_time: "Nenhum time selecionado",
+                // BOLÕES
+                boloes_titulo: "Meus Bolões", boloes_entrar_codigo: "🔑 Entrar com Código",
+                boloes_criar: "➕ Criar Novo Bolão", boloes_criados: "📋 Bolões que você criou",
+                boloes_participa: "🎯 Bolões que você participa", boloes_gerenciar: "Gerenciar",
+                boloes_ver_ranking: "Ver Ranking", boloes_vazio: "Você ainda não participa de nenhum bolão.",
+                // ENTRAR BOLÃO
+                entrar_titulo: "Entrar em Bolão", entrar_codigo: "CÓDIGO DO BOLÃO", entrar_btn: "Entrar no Bolão",
+                entrar_voltar: "← Voltar para Meus Bolões",
+                // INDEX
+                index_titulo: "⚽ Bolões e Projeções", index_subtitulo: "Crie bolões, desafie seus amigos e mostre quem entende mais de futebol!",
+                index_como: "Como Funciona", index_p1: "Crie seu Bolão", index_p2: "Faça seus Palpites", index_p3: "Acompanhe o Ranking",
+                // PROJEÇÕES
+                proj_titulo: "Projeções", proj_competicao: "COMPETIÇÃO", proj_time: "TIME", proj_projecao: "PROJEÇÃO",
+                proj_vence: "Vence", proj_empata: "Empata", proj_perde: "Perde",
+                proj_meta: "Meta atingida", proj_faltam: "Faltam",
+                // DASHBOARD
+                dash_titulo: "Dashboard", dash_competicao: "COMPETIÇÃO",
+                // VERIFICAR
+                ver_titulo: "Verificar Comprovante", ver_valido: "Comprovante Autêntico!", ver_invalido: "Comprovante Inválido",
+                ver_participante: "Participante:", ver_jogo: "Jogo:", ver_palpite: "Palpite:", ver_data: "Data/Hora:",
+                // BOLÃO DETALHES
+                bd_ranking: "🏆 Ranking", bd_meus_palpites: "🎯 Meus Palpites", bd_todos_palpites: "📋 Todos os Palpites",
+                bd_regras: "📋 Regras", bd_participantes: "👥 Participantes", bd_salvar_palpite: "💾 Salvar Palpite",
+                bd_comprovante: "📄 Ver Comprovante", bd_atualizar: "🔄 Atualizar Jogos",
+                bd_copiar_link: "🔗 Copiar Link",
+            },
+            en: {
+                // NAV
+                nav_inicio: "Home", nav_meus_boloes: "My Pools", nav_criar_bolao: "Create Pool",
+                nav_entrar_bolao: "Join Pool", nav_projecoes: "Projections", nav_dashboard: "Dashboard",
+                nav_competicoes: "Competitions", nav_admin: "Admin", nav_entrar: "Login", nav_criar_conta: "Sign Up",
+
+                // INDEX CARDS
+                index_h1: "⚽ Pools & Projections",
+                index_sub: "Create pools, challenge your friends and show who knows football best!",
+                index_card_boloes: "My Pools", index_card_boloes_sub: "Manage your pools, make predictions and see the ranking",
+                index_card_entrar: "Enter with Code", index_card_entrar_sub: "Have a code? Join an existing pool",
+                index_card_proj: "Projections", index_card_proj_sub: "Project scenarios for your favorite team",
+                index_card_admin: "Administration", index_card_admin_sub: "Manage users, pools and competitions",
+                index_p1_sub: "Choose the competition and invite your friends",
+                index_p2_sub: "Predict the scores before matches happen",
+                index_p3_sub: "See who is winning in real time",
+                // EXTRAS
+                reg_termos: "Terms of Use", reg_privacidade: "Privacy Policy",
+                perfil_label_nome: "FULL NAME", perfil_label_email: "E-MAIL", perfil_label_buscar: "SEARCH TEAM",
+                boloes_vazio2: "Create a new one or ask for an invite code!",
+                bd_ranking_h2: "🏆 Ranking", bd_participante: "PARTICIPANT", bd_pontos: "POINTS",
+                bd_nenhum_part: "No participants yet.", bd_meus_palpites_h2: "My Predictions",
+                bd_todos_h2: "📋 All Predictions", bd_encerrado: "Finished", bd_andamento: "In progress",
+                bd_regras_h2: "📋 Scoring Rules", bd_compartilhar: "📹 Share on Social",
+                bd_sistema_pts: "Points System:", bd_exemplos: "💡 Examples (match ends 3x1):",
+                bd_placar_exato: "(exact score - all correct)", bd_resultado_perd: "(result + loser goals)",
+                bd_resultado_venc: "(result + winner goals)", bd_apenas_resultado: "(result only)",
+                bd_errou: "(wrong result)", bd_zero_pts: "0 points",
+                footer_copy: "© 2026 Brasileirão - Pools & Projections System", footer_termos: "Terms of Use", footer_privacidade: "Privacy Policy", footer_contato: "Contact", termos_h1: "Terms of Use", priv_h1: "Privacy Policy (LGPD)", ultima_atualizacao: "Last updated:",
+                
+                // CRIAR BOLÃO
+                cb_titulo: "Create New Pool", cb_nome: "POOL NAME", cb_tipo: "POOL TYPE",
+                cb_camp_completo: "Full Championship", cb_time_camp: "Team in a Championship",
+                cb_time_ano: "Team in All Competitions of the Year",
+                cb_competicao: "COMPETITION", cb_sel_comp: "Select a competition",
+                cb_time: "TEAM", cb_sel_time: "Select a team",
+                cb_comp_primeiro: "Choose the competition first",
+                cb_modo_pts: "Scoring Mode:", cb_pts_exato: "Points per exact score:",
+                cb_acertar_res: "✅ Correct Result:", cb_gols_venc: "🎯 Winner Goals:",
+                cb_gols_perd: "❌ Loser Goals:", cb_diferenca: "➕➖ Goal Difference:",
+                cb_bonus: "🔥 Elastic Bonus (High-scoring matches)",
+                cb_limite_gols: "Total goals limit:", cb_pts_gol: "Points per extra goal:",
+                cb_acesso: "ACCESS TYPE",
+                cb_publico: "Public (anyone can join)",
+                cb_publico2: "Public (anyone can join with the code)",
+                cb_privado: "Private (code only)",
+                cb_privado2: "Private (you must approve each participant)",
+                cb_erro_times: "Error loading teams",
+                cb_criar_btn: "✅ Create Pool", bd_participantes_h2: "Participants",
+                proj_label_comp: "COMPETITION", dash_label_comp: "COMPETITION",
+                dash_time: "TEAM", dash_voltar: "← Back", dash_real: "Actual:", dash_proj: "Proj:", dash_evolucao: "Evolution",
+                ver_invalido_p: "This hash does not match any registered prediction.",                // LOGIN
+                login_titulo: "Login", login_usuario: "USERNAME", login_senha: "PASSWORD", login_btn: "Sign In",
+                login_sem_conta: "Don't have an account?", login_criar: "Create account", login_esqueci: "Forgot my password",
+                // REGISTRO
+                reg_titulo: "Create Account", reg_nome: "FULL NAME", reg_usuario: "USERNAME",
+                reg_email: "E-MAIL", reg_senha: "PASSWORD", reg_btn: "✅ Create Account",
+                reg_ja_tem: "Already have an account?", reg_fazer_login: "Sign In",
+                // PERFIL
+                perfil_titulo: "My Profile", perfil_info: "Basic Information", perfil_nome: "FULL NAME",
+                perfil_email: "E-MAIL", perfil_avatar: "Avatar", perfil_avatar_sugerido: "Choose suggested avatar",
+                perfil_avatar_upload: "Upload my photo", perfil_time: "Favorite Team",
+                perfil_buscar_time: "SEARCH TEAM", perfil_salvar: "Save Profile", perfil_sair: "🚪 Sign Out",
+                perfil_nenhum_time: "No team selected",
+                // BOLÕES
+                boloes_titulo: "My Pools", boloes_entrar_codigo: "🔑 Enter with Code",
+                boloes_criar: "➕ Create New Pool", boloes_criados: "📋 Pools you created",
+                boloes_participa: "🎯 Pools you joined", boloes_gerenciar: "Manage",
+                boloes_ver_ranking: "View Ranking", boloes_vazio: "You don't participate in any pool yet.",
+                // ENTRAR BOLÃO
+                entrar_titulo: "Join a Pool", entrar_codigo: "POOL CODE", entrar_btn: "Join Pool",
+                entrar_voltar: "← Back to My Pools",
+                // INDEX
+                index_titulo: "⚽ Pools & Projections", index_subtitulo: "Create pools, challenge your friends and show who knows football best!",
+                index_como: "How It Works", index_p1: "Create your Pool", index_p2: "Make your Predictions", index_p3: "Follow the Ranking",
+                // PROJEÇÕES
+                proj_titulo: "Projections", proj_competicao: "COMPETITION", proj_time: "TEAM", proj_projecao: "PROJECTION",
+                proj_vence: "Wins", proj_empata: "Draw", proj_perde: "Loses",
+                proj_meta: "Goal reached", proj_faltam: "Missing",
+                // DASHBOARD
+                dash_titulo: "Dashboard", dash_competicao: "COMPETITION",
+                // VERIFICAR
+                ver_titulo: "Verify Voucher", ver_valido: "Authentic Voucher!", ver_invalido: "Invalid Voucher",
+                ver_participante: "Participant:", ver_jogo: "Match:", ver_palpite: "Prediction:", ver_data: "Date/Time:",
+                // BOLÃO DETALHES
+                bd_ranking: "🏆 Ranking", bd_meus_palpites: "🎯 My Predictions", bd_todos_palpites: "📋 All Predictions",
+                bd_regras: "📋 Rules", bd_participantes: "👥 Participants", bd_salvar_palpite: "💾 Save Prediction",
+                bd_comprovante: "📄 View Voucher", bd_atualizar: "🔄 Update Matches",
+                bd_copiar_link: "🔗 Copy Link",
+            },
+            hr: {
+                // NAV
+                nav_inicio: "Početna", nav_meus_boloes: "Moje kladionice", nav_criar_bolao: "Stvori kladionicu",
+                nav_entrar_bolao: "Pridruži se", nav_projecoes: "Projekcije", nav_dashboard: "Nadzorna ploča",
+                nav_competicoes: "Natjecanja", nav_admin: "Admin", nav_entrar: "Prijava", nav_criar_conta: "Registracija",
+
+                // INDEX CARDS
+                index_h1: "⚽ Kladionice i projekcije",
+                index_sub: "Stvorite kladionice, izazovite prijatelje i pokažite tko zna više o nogometu!",
+                index_card_boloes: "Moje kladionice", index_card_boloes_sub: "Upravljajte kladionicama, postavljajte prognoze i pratite rang listu",
+                index_card_entrar: "Unesi kod", index_card_entrar_sub: "Imate kod? Pridružite se postojećoj kladionici",
+                index_card_proj: "Projekcije", index_card_proj_sub: "Projektirajte scenarije za vaš omiljeni klub",
+                index_card_admin: "Administracija", index_card_admin_sub: "Upravljanje korisnicima, kladionicama i natjecanjima",
+                index_p1_sub: "Odaberite natjecanje i pozovite prijatelje",
+                index_p2_sub: "Predvidite rezultate prije nego što se odigraju",
+                index_p3_sub: "Pratite tko vodi u stvarnom vremenu",
+                // EXTRAS
+                reg_termos: "Uvjeti korištenja", reg_privacidade: "Politika privatnosti",
+                perfil_label_nome: "PUNO IME", perfil_label_email: "E-MAIL", perfil_label_buscar: "TRAŽI KLUB",
+                boloes_vazio2: "Stvorite novu ili zatražite pozivni kod!",
+                bd_ranking_h2: "🏆 Rang lista", bd_participante: "SUDIONIK", bd_pontos: "BODOVI",
+                bd_nenhum_part: "Još nema sudionika.", bd_meus_palpites_h2: "Moje prognoze",
+                bd_todos_h2: "📋 Sve prognoze", bd_encerrado: "Završeno", bd_andamento: "U tijeku",
+                bd_regras_h2: "📋 Pravila bodovanja", bd_compartilhar: "📹 Podijeli na društvenim mrežama",
+                bd_sistema_pts: "Sustav bodova:", bd_exemplos: "💡 Primjeri (utakmica završava 3x1):",
+                bd_placar_exato: "(točan rezultat - sve točno)", bd_resultado_perd: "(ishod + golovi gubitnika)",
+                bd_resultado_venc: "(ishod + golovi pobjednika)", bd_apenas_resultado: "(samo ishod)",
+                bd_errou: "(pogrešan ishod)", bd_zero_pts: "0 bodova",
+                footer_copy: "© 2026 Brasileirão - Sustav kladionica i projekcija", footer_termos: "Uvjeti korištenja", footer_privacidade: "Politika privatnosti", footer_contato: "Kontakt", termos_h1: "Uvjeti korištenja", priv_h1: "Politika privatnosti (LGPD)", ultima_atualizacao: "Zadnje ažuriranje:",
+                
+                // CRIAR BOLÃO
+                cb_titulo: "Stvori novu kladionicu", cb_nome: "NAZIV KLADIONICE", cb_tipo: "VRSTA KLADIONICE",
+                cb_camp_completo: "Cijelo natjecanje", cb_time_camp: "Klub u natjecanju",
+                cb_time_ano: "Klub u svim natjecanjima godine",
+                cb_competicao: "NATJECANJE", cb_sel_comp: "Odaberi natjecanje",
+                cb_time: "KLUB", cb_sel_time: "Odaberi klub",
+                cb_comp_primeiro: "Prvo odaberi natjecanje",
+                cb_modo_pts: "Način bodovanja:", cb_pts_exato: "Bodovi za točan rezultat:",
+                cb_acertar_res: "✅ Točan ishod:", cb_gols_venc: "🎯 Golovi pobjednika:",
+                cb_gols_perd: "❌ Golovi gubitnika:", cb_diferenca: "➕➖ Razlika golova:",
+                cb_bonus: "🔥 Elastični bonus (utakmice s puno golova)",
+                cb_limite_gols: "Ukupni limit golova:", cb_pts_gol: "Bodovi po dodatnom golu:",
+                cb_acesso: "VRSTA PRISTUPA",
+                cb_publico: "Javno (svi mogu ući)",
+                cb_publico2: "Javno (svi mogu ući s kodom)",
+                cb_privado: "Privatno (samo s kodom)",
+                cb_privado2: "Privatno (morate odobriti svakog sudionika)",
+                cb_erro_times: "Greška pri učitavanju klubova",
+                cb_criar_btn: "✅ Stvori kladionicu", bd_participantes_h2: "Sudionici",
+                proj_label_comp: "NATJECANJE", dash_label_comp: "NATJECANJE",
+                dash_time: "KLUB", dash_voltar: "← Natrag", dash_real: "Stvarno:", dash_proj: "Proj:", dash_evolucao: "Razvoj",
+                ver_invalido_p: "Ovaj hash ne odgovara nijednoj registriranoj prognozi.",                // LOGIN
+                login_titulo: "Prijava", login_usuario: "KORISNIČKO IME", login_senha: "LOZINKA", login_btn: "Prijavi se",
+                login_sem_conta: "Nemate račun?", login_criar: "Stvori račun", login_esqueci: "Zaboravio sam lozinku",
+                // REGISTRO
+                reg_titulo: "Stvori račun", reg_nome: "PUNO IME", reg_usuario: "KORISNIČKO IME",
+                reg_email: "E-MAIL", reg_senha: "LOZINKA", reg_btn: "✅ Stvori račun",
+                reg_ja_tem: "Već imate račun?", reg_fazer_login: "Prijavi se",
+                // PERFIL
+                perfil_titulo: "Moj profil", perfil_info: "Osnovne informacije", perfil_nome: "PUNO IME",
+                perfil_email: "E-MAIL", perfil_avatar: "Avatar", perfil_avatar_sugerido: "Odaberi predloženi avatar",
+                perfil_avatar_upload: "Učitaj svoju fotografiju", perfil_time: "Omiljeni klub",
+                perfil_buscar_time: "TRAŽI KLUB", perfil_salvar: "Spremi profil", perfil_sair: "🚪 Odjava",
+                perfil_nenhum_time: "Nije odabran klub",
+                // BOLÕES
+                boloes_titulo: "Moje kladionice", boloes_entrar_codigo: "🔑 Unesi kod",
+                boloes_criar: "➕ Stvori novu kladionicu", boloes_criados: "📋 Kladionice koje ste stvorili",
+                boloes_participa: "🎯 Kladionice u kojima sudjelujete", boloes_gerenciar: "Upravljaj",
+                boloes_ver_ranking: "Vidi rang listu", boloes_vazio: "Još ne sudjelujete ni u jednoj kladionici.",
+                // ENTRAR BOLÃO
+                entrar_titulo: "Pridruži se kladionici", entrar_codigo: "KOD KLADIONICE", entrar_btn: "Pridruži se",
+                entrar_voltar: "← Natrag na Moje kladionice",
+                // INDEX
+                index_titulo: "⚽ Kladionice i projekcije", index_subtitulo: "Stvorite kladionice, izazovite prijatelje i pokažite tko zna više o nogometu!",
+                index_como: "Kako funkcionira", index_p1: "Stvori svoju kladionicu", index_p2: "Postavi svoje prognoze", index_p3: "Prati rang listu",
+                // PROJEÇÕES
+                proj_titulo: "Projekcije", proj_competicao: "NATJECANJE", proj_time: "KLUB", proj_projecao: "PROJEKCIJA",
+                proj_vence: "Pobijeda", proj_empata: "Neriješeno", proj_perde: "Poraz",
+                proj_meta: "Cilj dostignut", proj_faltam: "Nedostaje",
+                // DASHBOARD
+                dash_titulo: "Nadzorna ploča", dash_competicao: "NATJECANJE",
+                // VERIFICAR
+                ver_titulo: "Provjeri potvrdu", ver_valido: "Autentična potvrda!", ver_invalido: "Nevažeća potvrda",
+                ver_participante: "Sudionik:", ver_jogo: "Utakmica:", ver_palpite: "Prognoza:", ver_data: "Datum/Vrijeme:",
+                // BOLÃO DETALHES
+                bd_ranking: "🏆 Rang lista", bd_meus_palpites: "🎯 Moje prognoze", bd_todos_palpites: "📋 Sve prognoze",
+                bd_regras: "📋 Pravila", bd_participantes: "👥 Sudionici", bd_salvar_palpite: "💾 Spremi prognozu",
+                bd_comprovante: "📄 Vidi potvrdu", bd_atualizar: "🔄 Ažuriraj utakmice",
+                bd_copiar_link: "🔗 Kopiraj link",
+            }
+        };
+
+        function detectLang() {
+            // 1. Cookie tem prioridade (escolha manual)
+            const cookie = document.cookie.split(';').find(c => c.trim().startsWith('lang='));
+            if (cookie) return cookie.split('=')[1].trim();
+            // 2. Detecta pelo browser
+            const browser = (navigator.language || navigator.userLanguage || 'pt').substring(0, 2).toLowerCase();
+            if (['pt', 'en', 'hr'].includes(browser)) return browser;
+            return 'pt';
+        }
+
+        function setLang(lang) {
+            document.cookie = `lang=${lang};path=/;max-age=31536000`;
+            applyLang(lang);
+        }
+
+        function applyLang(lang) {
+            const t = TRANSLATIONS[lang] || TRANSLATIONS['pt'];
+            // Traduz elementos com data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+            // Destaca bandeira ativa
+            ['pt', 'en', 'hr'].forEach(l => {
+                const btn = document.getElementById('lang-' + l);
+                if (btn) btn.style.opacity = l === lang ? '1' : '0.4';
+            });
+        }
+
+        // Aplica ao carregar
+        document.addEventListener('DOMContentLoaded', () => applyLang(detectLang()));
+
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('active');
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
