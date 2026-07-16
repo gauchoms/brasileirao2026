@@ -190,6 +190,15 @@
     </div>
 
     <!-- AdSense: banner entre ranking e palpites -->
+    <div style="text-align:center; margin: 1.5rem 0;">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-8239762738099420"
+             data-ad-slot="SLOT_BOLAO_MEIO"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
 
     <!-- MODAIS GLOBAIS (fora de qualquer tab) -->
     <div id="modal-replicar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1001; align-items:center; justify-content:center;">
@@ -337,6 +346,7 @@
                     </div>
 
                     <!-- CONFRONTO COM LOGOS/BANDEIRAS -->
+                    {% set jogo_iniciado = jogo.data and jogo.data < agora %}
                     <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center;">
                         
                         <!-- TIME CASA -->
@@ -366,6 +376,11 @@
                                 <!-- JOGO FINALIZADO -->
                                 <div style="font-size: 2rem; font-weight: 700; color: var(--texto);">
                                     {{ jogo.gols_casa }}
+                                </div>
+                            {% elif jogo_iniciado %}
+                                <!-- JOGO INICIADO SEM PLACAR AINDA -->
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--texto-fraco);">
+                                    —
                                 </div>
                             {% else %}
                                 <!-- FAZER PALPITE -->
@@ -420,6 +435,11 @@
                                 <div style="font-size: 2rem; font-weight: 700; color: var(--texto);">
                                     {{ jogo.gols_fora }}
                                 </div>
+                            {% elif jogo_iniciado %}
+                                <!-- JOGO INICIADO SEM PLACAR AINDA -->
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--texto-fraco);">
+                                    —
+                                </div>
                             {% else %}
                                 <!-- FAZER PALPITE -->
                                 <input type="number" min="0" max="99"
@@ -436,9 +456,13 @@
                     <!-- BOTÃO SALVAR PALPITE -->
                     {% if jogo.gols_casa is none %}
                     <div style="margin-top: 1.5rem; text-align: center;">
+                        {% if not jogo_iniciado %}
                         <button onclick="salvarPalpite({{ jogo.id }}, {{ bolao.id }})"
                                 class="btn-primary"
                                 id="btn-salvar-{{ jogo.id }}" data-i18n="bd_salvar_palpite">💾 Salvar Palpite</button>
+                        {% else %}
+                        <div style="color: var(--texto-fraco); font-size: 0.85rem; padding: 0.5rem;">⏳ Jogo em andamento — palpites encerrados</div>
+                        {% endif %}
                         
 
 
