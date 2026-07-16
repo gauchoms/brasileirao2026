@@ -26,6 +26,7 @@ class Jogo(db.Model):
     data = db.Column(db.String(50), nullable=True)
     gols_casa = db.Column(db.Integer, nullable=True)
     gols_fora = db.Column(db.Integer, nullable=True)
+    status = db.Column(db.String(10), nullable=True)  # NS, FT, PST, TBD, etc (da API Football)
     alerta_24h_enviado = db.Column(db.Boolean, default=False)
     alerta_1h_enviado  = db.Column(db.Boolean, default=False)
 

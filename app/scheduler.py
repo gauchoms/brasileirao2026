@@ -45,8 +45,17 @@ def atualizar_resultados_job(app):
                         _sc = fixture.get('score', {}).get('fulltime', {})
                         gols_casa = _sc.get('home') if _sc.get('home') is not None else fixture['goals']['home']
                         gols_fora = _sc.get('away') if _sc.get('away') is not None else fixture['goals']['away']
+                        status_api = fixture['fixture']['status']['short']
 
                         jogo = Jogo.query.filter_by(api_id=api_id).first()
+
+                        if jogo:
+                            # Atualiza status sempre (captura PST, remarcações, etc)
+                            jogo.status = status_api
+                            # Se foi remarcado (saiu de PST), atualiza a data
+                            nova_data = fixture['fixture'].get('date')
+                            if nova_data and status_api != 'PST':
+                                jogo.data = nova_data
 
                         if jogo and gols_casa is not None and gols_fora is not None:
                             tinha_placar = jogo.gols_casa is not None and jogo.gols_fora is not None

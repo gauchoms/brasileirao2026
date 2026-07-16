@@ -1464,7 +1464,10 @@ def salvar_palpite():
     
     # Verifica se jogo ainda não começou (comparação em UTC para evitar erro de fuso)
     jogo = Jogo.query.get_or_404(jogo_id)
-    if jogo.data:
+    # Jogos adiados (PST) sempre permitem palpite independente da data
+    if jogo.status == 'PST':
+        pass  # adiado — libera palpite
+    elif jogo.data:
         from datetime import datetime
         data_str = jogo.data.replace('+00:00', '').replace('Z', '').split('+')[0][:19]
         try:

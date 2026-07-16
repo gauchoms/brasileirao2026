@@ -89,6 +89,7 @@ def processar_jogos(data):
             'data':         fixture['fixture']['date'],
             'gols_casa':    gols_casa,
             'gols_fora':    gols_fora,
+            'status':       fixture['fixture']['status']['short'],  # NS, FT, PST, TBD, etc
         }
         jogos.append(jogo)
     return jogos
@@ -201,7 +202,8 @@ def importar_jogos_time_ano(time_api_id, ano):
                     time_fora_id=times_cadastrados[jogo['time_fora_id']],
                     data=jogo['data'],
                     gols_casa=jogo['gols_casa'],
-                    gols_fora=jogo['gols_fora']
+                    gols_fora=jogo['gols_fora'],
+                    status=jogo.get('status')
                 )
                 db.session.add(novo_jogo)
                 total_jogos_importados += 1
@@ -212,6 +214,16 @@ def importar_jogos_time_ano(time_api_id, ano):
                         jogo_existente.grupo = jogo['grupo']
                     except Exception:
                         pass
+                # Atualiza status e data sempre (captura adiamentos e remarcações)
+                try:
+                    jogo_existente.status = jogo.get('status')
+                    if jogo.get('status') == 'PST':
+                        # Adiado: mantém data original para referência mas libera palpite
+                        pass
+                    elif jogo.get('data'):
+                        jogo_existente.data = jogo['data']
+                except Exception:
+                    pass
 
     db.session.commit()
     return {'competicoes_criadas': competicoes_criadas, 'total_jogos': total_jogos_importados}
